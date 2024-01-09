@@ -850,7 +850,7 @@ const u8 gMoveNames[MOVES_COUNT_DYNAMAX][MOVE_NAME_LENGTH + 1] =
     [MOVE_PSYCHIC_NOISE] = _("Psychic Noise"),
     [MOVE_UPPER_HAND] = _("Upper Hand"),
     [MOVE_MALIGNANT_CHAIN] = _("Malignant Chain"),
-   // [MOVE_VARIOUS_DMS_PREROGATIVE] = _("Authority of Anri")
+    [MOVE_DMS_PREROGATIVE] = _("Authority of Anri")
     // Max Moves
     [MOVE_MAX_GUARD] = _("Max Guard"),
     [MOVE_MAX_STRIKE] = _("Max Strike"),

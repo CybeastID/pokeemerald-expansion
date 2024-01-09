@@ -10627,6 +10627,7 @@ static void Cmd_various(void)
         return;
     }
     case VARIOUS_DMS_PREROGATIVE: {
+    
     s32 i;
     
     // Raise all battler stats to max. Reduce all opponent stats to minimum.
@@ -10634,8 +10635,8 @@ static void Cmd_various(void)
         gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
         gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
     }
-        gBattlescriptCurrInstr = cmd->nextInstr;    
-
+        gBattlescriptCurrInstr += 7;    
+    return;
     }
     } // End of switch (cmd->id)
 
@@ -13326,21 +13327,6 @@ static void Cmd_maxattackhalvehp(void)
     }
 }
 
-// Authority of Anri
-/* static void Cmd_authority(void)
-{
-    CMD_ARGS();
-
-    s32 i;
-    
-    // Raise all battler stats to max. Reduce all opponent stats to minimum.
-    for (i = 0; i < NUM_BATTLE_STATS; i++) {
-        gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
-        gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
-    }
-        gBattlescriptCurrInstr = cmd->nextInstr;
-} */
-
 // Psych Up
 static void Cmd_copyfoestats(void)
 {
@@ -15571,6 +15557,21 @@ void BS_JumpIfHoldEffect(void)
         gBattlescriptCurrInstr += 12;
     }
 }
+
+// Authority of Anri
+void BS_Authority(void)
+{
+    NATIVE_ARGS(const u8 *failInstr);
+    s16 i;
+    
+    // Raise all battler stats to max. Reduce all opponent stats to minimum.
+    for (i = 0; i < NUM_BATTLE_STATS; i++) {
+        gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
+        gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
+    }
+        gBattlescriptCurrInstr = cmd->nextInstr;
+} 
+
 
 void BS_DoStockpileStatChangesWearOff(void)
 {

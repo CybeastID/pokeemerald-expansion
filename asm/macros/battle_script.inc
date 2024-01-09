@@ -984,13 +984,7 @@
 	.byte 0xbc
 	.4byte \failInstr
 	.endm
-
-	.macro dmauthority battler:req, ptr:req
-    various \battler VARIOUS_DMS_PREROGATIVE
-    .4byte \ptr
-    .endm
-
-
+	
 	.macro copyfoestats unused:req
 	.byte 0xbd
 	.4byte \unused
@@ -1325,6 +1319,11 @@
 	.2byte \holdEffect
 	.4byte \jumpInstr
 	.endm
+
+	.macro dmauthority failInstr:req
+	callnative BS_DmsPrerogative
+	.4byte \failInstr
+    .endm
 
 	.macro dostockpilestatchangeswearoff, battler:req, statChangeInstr:req
 	callnative BS_DoStockpileStatChangesWearOff
