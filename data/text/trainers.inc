@@ -4794,3 +4794,15 @@ VSSeeker_Text_TrainersNotReady::
 	.string "The other Trainers don't appear\n"
 	.string "to be ready for battle.\p"
 	.string "Let's wait till later.{PAUSE_UNTIL_PRESS}$"
+
+Test_Text_RazeluxeIntro::
+	.string "Welcome to my island.\n"
+	.string "Prepare to be sent away.\p"
+
+Test_Text_RazeluxeDefeated::
+	.string "I can't believe you'd\n"
+	.string "actually come back here..."
+
+Test_Text_RazeluxePostBattle::
+	.string "Joke's on you.\n"
+	.string "That was the only way off this island...\p"

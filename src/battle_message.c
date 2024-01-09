@@ -833,6 +833,8 @@ static const u8 sText_HurtByTheSeaOfFire[] = _("{B_ATK_TEAM1} {B_ATK_NAME_WITH_P
 static const u8 sText_TheSeaOfFireDisappeared[] = _("The sea of fire around {B_ATK_TEAM2}\nteam disappeared!");
 static const u8 sText_SwampEnvelopedSide[] = _("A swamp enveloped\n{B_DEF_TEAM2} team!");
 static const u8 sText_TheSwampDisappeared[] = _("The swamp around {B_ATK_TEAM2}\nteam disappeared!");
+static const u8 sText_AuthorityWeakensYou[] = _("The overwhelming divine presence weakens you immensely!");
+static const u8 sText_AuthorityWeakensYou2[] = _("The overwhelming divine presence strengthens the opposing Pokemon immensely!");
 
 const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
 {
@@ -1521,6 +1523,8 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_ULTRABURSTCOMPLETED - BATTLESTRINGS_TABLE_START] = sText_UltraBurstCompleted,
     [STRINGID_TEAMGAINEDEXP - BATTLESTRINGS_TABLE_START] = sText_TeamGainedEXP,
     [STRINGID_TARGETCOVEREDINSTICKYCANDYSYRUP - BATTLESTRINGS_TABLE_START] = sText_TargetCoveredInStickyCandySyrup,
+    [STRINGID_RAZELUXEWEAKEN - BATTLESTRINGS_TABLE_START] = sText_AuthorityWeakensYou,
+    [STRINGID_RAZELUXESTRENGTHEN - BATTLESTRINGS_TABLE_START] = sText_AuthorityWeakensYou2,
 };
 
 const u16 gTrainerUsedItemStringIds[] =

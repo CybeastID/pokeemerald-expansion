@@ -610,6 +610,7 @@ static void Cmd_jumpifoppositegenders(void);
 static void Cmd_unused(void);
 static void Cmd_tryworryseed(void);
 static void Cmd_callnative(void);
+static void Cmd_authority(void);
 
 void (* const gBattleScriptingCommandsTable[])(void) =
 {
@@ -869,6 +870,7 @@ void (* const gBattleScriptingCommandsTable[])(void) =
     Cmd_unused,                                  //0xFD
     Cmd_tryworryseed,                            //0xFE
     Cmd_callnative,                              //0xFF
+    Cmd_authority,                               //0x100
 };
 
 const struct StatFractions gAccuracyStageRatios[] =
@@ -13311,6 +13313,21 @@ static void Cmd_maxattackhalvehp(void)
     {
         gBattlescriptCurrInstr = cmd->failInstr;
     }
+}
+
+// Authority of Anri
+static void Cmd_authority(void)
+{
+    CMD_ARGS();
+
+    s32 i;
+    
+    // Raise all battler stats to max. Reduce all opponent stats to minimum.
+    for (i = 0; i < NUM_BATTLE_STATS; i++) {
+        gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
+        gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
+    }
+        gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
 // Psych Up

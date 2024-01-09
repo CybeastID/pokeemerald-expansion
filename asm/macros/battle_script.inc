@@ -985,6 +985,12 @@
 	.4byte \failInstr
 	.endm
 
+	.macro dmauthority battler:req, ptr:req
+    various \battler 
+    .4byte \ptr
+    .endm
+
+
 	.macro copyfoestats unused:req
 	.byte 0xbd
 	.4byte \unused

@@ -14709,6 +14709,20 @@ const struct BattleMove gBattleMoves[MOVES_COUNT_DYNAMAX] =
         .zMoveEffect = Z_EFFECT_NONE,
     },
 
+   /* [MOVE_VARIOUS_DMS_PREROGATIVE] =
+    {
+        .effect = EFFECT_DMS_AUTHORITY,
+        .power = 100,
+        .type = TYPE_NONE,
+        .accuracy = 100,
+        .pp = 99,
+        .secondaryEffectChance = 50,
+        .target = MOVE_TARGET_OPPONENTS_FIELD,
+        .priority = 6,
+        .split = SPLIT_STATUS,
+        .zMoveEffect = Z_EFFECT_NONE,
+    },
+*/
     // Z-Moves
     [MOVE_BREAKNECK_BLITZ] =
     {

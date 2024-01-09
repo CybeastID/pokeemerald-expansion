@@ -420,7 +420,10 @@
 #define EFFECT_GLAIVE_RUSH                  414
 #define EFFECT_RAGING_BULL                  415
 #define EFFECT_RAGE_FIST                    416
+//Cy's idiocy
 
-#define NUM_BATTLE_MOVE_EFFECTS             417
+// #define EFFECT_DMS_AUTHORITY                417
+
+#define NUM_BATTLE_MOVE_EFFECTS             418
 
 #endif  // GUARD_CONSTANTS_BATTLE_MOVE_EFFECTS_H

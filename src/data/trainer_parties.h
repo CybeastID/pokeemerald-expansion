@@ -11804,3 +11804,12 @@ static const struct TrainerMon sParty_MayLinkPlaceholder[] = {
     .species = SPECIES_KYOGRE,
     }
 };
+
+static const struct TrainerMon sParty_Razeluxe[] = {
+	{
+	.lvl = 102,
+	.species = SPECIES_MEWTWO,
+    .heldItem = ITEM_MEWTWONITE_Y,
+    .moves = {MOVE_SHADOW_FORCE, MOVE_SPACIAL_REND, MOVE_ROAR_OF_TIME, MOVE_NONE}
+	},
+};

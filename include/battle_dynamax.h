@@ -2,6 +2,7 @@
 #define GUARD_BATTLE_DYNAMAX_H
 
 #define DYNAMAX_TURNS_COUNT	3
+#define DYNAMAX_TURNS_COUNT_CHEATER 99
 
 enum MaxMoveEffect
 {

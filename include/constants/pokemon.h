@@ -22,7 +22,8 @@
 #define TYPE_DRAGON           16
 #define TYPE_DARK             17
 #define TYPE_FAIRY            18
-#define NUMBER_OF_MON_TYPES   19
+#define TYPE_DIVINE           19
+#define NUMBER_OF_MON_TYPES   20
 
 // Pokemon egg groups
 #define EGG_GROUP_NONE                0
@@ -144,7 +145,7 @@
 #define MAX_GIFT_RIBBON 64
 
 #define MIN_LEVEL 1
-#define MAX_LEVEL 100
+#define MAX_LEVEL 105
 
 #define OT_ID_PLAYER_ID       0
 #define OT_ID_PRESET          1

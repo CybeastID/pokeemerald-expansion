@@ -3332,6 +3332,10 @@ static const u8 sMalignantChainDescription[] = _(
     "A corrosive chain attack\n"
     "that may badly poison.");
 
+static const u8 sDmsPrerogativeDescription[] = _(
+    "The Authority of the Lowells\n"
+    "weakens all who oppose them.");
+
 const u8 gNotDoneYetDescription[] = _(
     "This move can't be used. Its\n"
     "effect is in development.");
