@@ -986,7 +986,7 @@
 	.endm
 
 	.macro dmauthority battler:req, ptr:req
-    various \battler 
+    various \battler VARIOUS_DMS_PREROGATIVE
     .4byte \ptr
     .endm
 

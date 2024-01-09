@@ -443,7 +443,14 @@ gBattleScriptsForMoveEffects::
 	.4byte BattleScript_EffectGlaiveRush              @ EFFECT_GLAIVE_RUSH
 	.4byte BattleScript_EffectBrickBreak              @ EFFECT_RAGING_BULL
 	.4byte BattleScript_EffectHit                     @ EFFECT_RAGE_FIST
-	
+	.4byte BattleScript_EffectAuthority               @ EFFECT_DMS_PREROGATIVE
+
+BattleScript_EffectAuthority::
+    dmauthority
+    printstring STRINGID_RAZELUXEWEAKEN
+    waitmessage B_WAIT_TIME_LONG
+    printstring STRINGID_RAZELUXESTRENGTHEN
+    waitmessage B_WAIT_TIME_LONG
 
 BattleScript_EffectGlaiveRush::
 	call BattleScript_EffectHit_Ret

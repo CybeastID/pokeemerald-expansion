@@ -422,7 +422,7 @@
 #define EFFECT_RAGE_FIST                    416
 //Cy's idiocy
 
-// #define EFFECT_DMS_AUTHORITY                417
+#define EFFECT_DMS_AUTHORITY                417
 
 #define NUM_BATTLE_MOVE_EFFECTS             418
 
