@@ -15561,7 +15561,7 @@ void BS_JumpIfHoldEffect(void)
 // Authority of Anri
 void BS_Authority(void)
 {
-    NATIVE_ARGS(const u8 *failInstr);
+    NATIVE_ARGS();
     s16 i;
     
     // Raise all battler stats to max. Reduce all opponent stats to minimum.

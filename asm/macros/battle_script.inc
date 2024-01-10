@@ -1320,9 +1320,8 @@
 	.4byte \jumpInstr
 	.endm
 
-	.macro dmauthority failInstr:req
-	callnative BS_DmsPrerogative
-	.4byte \failInstr
+	.macro dmauthority 
+	callnative BS_Authority
     .endm
 
 	.macro dostockpilestatchangeswearoff, battler:req, statChangeInstr:req
