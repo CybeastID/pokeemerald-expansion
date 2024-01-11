@@ -446,6 +446,7 @@ gBattleScriptsForMoveEffects::
 	.4byte BattleScript_EffectAuthority               @ EFFECT_DMS_PREROGATIVE
 
 BattleScript_EffectAuthority::
+	attackstring
     dmauthority
     printstring STRINGID_RAZELUXEWEAKEN
     waitmessage B_WAIT_TIME_LONG

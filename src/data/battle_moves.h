@@ -14717,9 +14717,9 @@ const struct BattleMove gBattleMoves[MOVES_COUNT_DYNAMAX] =
         .accuracy = 100,
         .pp = 99,
         .secondaryEffectChance = 50,
-        .target = MOVE_TARGET_OPPONENTS_FIELD,
+        .target = MOVE_TARGET_SELECTED,
         .priority = 6,
-        .split = SPLIT_STATUS,
+        .split = SPLIT_SPECIAL,
         .zMoveEffect = Z_EFFECT_NONE,
     },
 

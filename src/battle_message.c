@@ -833,8 +833,8 @@ static const u8 sText_HurtByTheSeaOfFire[] = _("{B_ATK_TEAM1} {B_ATK_NAME_WITH_P
 static const u8 sText_TheSeaOfFireDisappeared[] = _("The sea of fire around {B_ATK_TEAM2}\nteam disappeared!");
 static const u8 sText_SwampEnvelopedSide[] = _("A swamp enveloped\n{B_DEF_TEAM2} team!");
 static const u8 sText_TheSwampDisappeared[] = _("The swamp around {B_ATK_TEAM2}\nteam disappeared!");
-static const u8 sText_AuthorityWeakensYou[] = _("The overwhelming divine presence weakens you immensely!");
-static const u8 sText_AuthorityWeakensYou2[] = _("The overwhelming divine presence strengthens the opposing Pokemon immensely!");
+static const u8 sText_AuthorityWeakensYou[] = _("The overwhelming divine presence\nweakens {B_DEF_NAME_WITH_PREFIX} immensely!");
+static const u8 sText_AuthorityWeakensYou2[] = _("The overwhelming divine presence\nstrengthens {B_ATK_NAME_WITH_PREFIX} immensely!");
 
 const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
 {
