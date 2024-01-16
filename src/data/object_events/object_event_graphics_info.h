@@ -4653,7 +4653,7 @@ const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_HoOh = {
     .affineAnims = gDummySpriteAffineAnimTable,
 };
 
-const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_BrendanNormal = {
+const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Razeluxe = {
     .tileTag = TAG_NONE,
     .paletteTag = OBJ_EVENT_PAL_TAG_RAZELUXE,
     .reflectionPaletteTag = OBJ_EVENT_PAL_TAG_NONE,
