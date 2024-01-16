@@ -11807,9 +11807,9 @@ static const struct TrainerMon sParty_MayLinkPlaceholder[] = {
 
 static const struct TrainerMon sParty_Razeluxe[] = {
 	{
-	.lvl = 103,
+	.lvl = 100,
 	.species = SPECIES_MEWTWO,
     .heldItem = ITEM_MEWTWONITE_Y,
-    .moves = {MOVE_SHADOW_FORCE, MOVE_SPACIAL_REND, MOVE_ROAR_OF_TIME, MOVE_DMS_PREROGATIVE}
+    .moves = {MOVE_SHADOW_FORCE, MOVE_SPACIAL_REND, MOVE_ROAR_OF_TIME, MOVE_NONE}
 	},
 };

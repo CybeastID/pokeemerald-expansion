@@ -3116,8 +3116,8 @@ static void DebugAction_Give_Pokemon_SelectLevel(u8 taskId)
         if (JOY_NEW(DPAD_UP))
         {
             gTasks[taskId].tInput += sPowersOfTen[gTasks[taskId].tDigit];
-            if (gTasks[taskId].tInput > 105)
-                gTasks[taskId].tInput = 105;
+            if (gTasks[taskId].tInput > 100)
+                gTasks[taskId].tInput = 100;
         }
         if (JOY_NEW(DPAD_DOWN))
         {
