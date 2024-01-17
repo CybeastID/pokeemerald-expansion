@@ -1,3 +1,4 @@
+#define UNFAIR_AI_CONSTANT 10000000
 #define SQUARE(n)(n * n)
 #define CUBE(n)(n * n * n)
 

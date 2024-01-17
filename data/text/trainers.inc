@@ -4806,3 +4806,4 @@ Test_Text_RazeluxeDefeated::
 Test_Text_RazeluxePostBattle::
 	.string "Joke's on you.\n"
 	.string "That was the only way off this island...$"
+	
