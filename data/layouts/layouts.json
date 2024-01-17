@@ -4417,7 +4417,7 @@
       "width": 20,
       "height": 20,
       "primary_tileset": "gTileset_General",
-      "secondary_tileset": "gTileset_BattleFactory",
+      "secondary_tileset": "gTileset_EliteFour",
       "border_filepath": "data/layouts/Test/border.bin",
       "blockdata_filepath": "data/layouts/Test/map.bin"
     }
