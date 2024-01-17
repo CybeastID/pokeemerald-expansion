@@ -770,8 +770,6 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_MEDIUM_FAST(98),
         EXP_MEDIUM_FAST(99),
         EXP_MEDIUM_FAST(100),
-        1000000,
-        1000000,
     },
     { // Medium Fast copy 3 (unused? to-do: investigate)
         0, // 0
@@ -875,7 +873,5 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_MEDIUM_FAST(98),
         EXP_MEDIUM_FAST(99),
         EXP_MEDIUM_FAST(100),
-        1000000,
-        1000000,
     }
 };
