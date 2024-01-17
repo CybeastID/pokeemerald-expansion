@@ -240,7 +240,7 @@
 #define VARIOUS_STORE_HEALING_WISH                   148
 #define VARIOUS_HIT_SWITCH_TARGET_FAILED             149
 #define VARIOUS_TRY_REVIVAL_BLESSING                 150
-#define VARIOUS_DMS_PREROGATIVE                      151
+
 
 // Cmd_manipulatedamage
 #define DMG_CHANGE_SIGN            0

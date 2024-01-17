@@ -10626,18 +10626,7 @@ static void Cmd_various(void)
         }
         return;
     }
-    case VARIOUS_DMS_PREROGATIVE: {
     
-    s32 i;
-    
-    // Raise all battler stats to max. Reduce all opponent stats to minimum.
-    for (i = 0; i < NUM_BATTLE_STATS; i++) {
-        gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
-        gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
-    }
-        gBattlescriptCurrInstr += 7;    
-    return;
-    }
     } // End of switch (cmd->id)
 
     gBattlescriptCurrInstr = cmd->nextInstr;
