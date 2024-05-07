@@ -593,7 +593,6 @@ static const TransitionStateFunc sShredSplit_Funcs[] =
 {
     ShredSplit_Init,
     ShredSplit_Main,
-    ShredSplit_BrokenCheck,
     ShredSplit_End
 };
 
@@ -2982,27 +2981,9 @@ static bool8 ShredSplit_Main(struct Task *task)
     return FALSE;
 }
 
-// This function never increments the state counter, because the loop condition
-// is always false, resulting in the game being stuck in an infinite loop.
-// It's possible this transition is only partially
-// done and the second part was left out.
-// In any case removing or bypassing this state allows the transition to finish.
-static bool8 ShredSplit_BrokenCheck(struct Task *task)
+bool8 ShredSplit_BrokenCheck(Task *)
 {
-    u16 i;
-    bool32 done = TRUE;
-    u16 checkVar2 = 0xFF10;
-
-    for (i = 0; i < DISPLAY_HEIGHT; i++)
-    {
-        if (gScanlineEffectRegBuffers[1][i] != DISPLAY_WIDTH && gScanlineEffectRegBuffers[1][i] != checkVar2)
-            done = FALSE;
-    }
-
-    if (done == TRUE)
-        task->tState++;
-
-    return FALSE;
+    return bool8();
 }
 
 static bool8 ShredSplit_End(struct Task *task)
