@@ -19823,6 +19823,9 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
     {
         .name = HANDLE_EXPANDED_MOVE_NAME("AnriAuthrity", "Anris Authority"),
         .effect = EFFECT_DMS_PREROGATIVE,
+        .description = COMPOUND_STRING(
+            "The Authority of the Lowells\n"
+            "weakens all who oppose them."),
         .power = 5,
         .type = TYPE_DIVINE,
         .accuracy = 100,
