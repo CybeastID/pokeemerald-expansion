@@ -2230,4 +2230,11 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
         .battleTvScore = 0, // TODO: Assign points
         .encourageEncore = TRUE,
     },
+
+    [EFFECT_DMS_PREROGATIVE] =
+    {
+        .battleScript = BattleScript_EffectAuthority,
+        .battleTvScore = 0, // TODO: Assign points
+        .encourageEncore = TRUE,
+    },
 };

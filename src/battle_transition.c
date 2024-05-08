@@ -2927,11 +2927,11 @@ static bool8 ShredSplit_Main(struct Task *task)
     return FALSE;
 }
 
-bool8 ShredSplit_BrokenCheck(Task *)
+/* bool8 ShredSplit_BrokenCheck(Task *)
 {
     return bool8();
 }
-
+*/
 static bool8 ShredSplit_End(struct Task *task)
 {
     DmaStop(0);

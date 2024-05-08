@@ -135,8 +135,10 @@ BattleScript_EffectAuthority::
     dmauthority
     printstring STRINGID_RAZELUXEWEAKEN
     waitmessage B_WAIT_TIME_LONG
+	waitmessage B_WAIT_TIME_LONG
     printstring STRINGID_RAZELUXESTRENGTHEN
     waitmessage B_WAIT_TIME_LONG
+	waitmessage B_WAIT_TIME_LONG
 
 BattleScript_EffectGlaiveRush::
 	call BattleScript_EffectHit_Ret
