@@ -459,6 +459,9 @@ const u8 gInitialMovementTypeFacingDirections[] = {
 #define OBJ_EVENT_PAL_TAG_RS_BRENDAN              0x1122
 #define OBJ_EVENT_PAL_TAG_RS_MAY                  0x1123
 #define OBJ_EVENT_PAL_TAG_RAZELUXE                0x1124
+#define OBJ_EVENT_PAL_TAG_ASTRA                   0x1125
+#define OBJ_EVENT_PAL_TAG_RUNA                    0x1126
+#define OBJ_EVENT_PAL_TAG_NAH                     0x1127
 #define OBJ_EVENT_PAL_TAG_NONE                    0x11FF
 
 
@@ -507,6 +510,9 @@ static const struct SpritePalette sObjectEventSpritePalettes[] = {
     {gObjectEventPal_RubySapphireBrendan,   OBJ_EVENT_PAL_TAG_RS_BRENDAN},
     {gObjectEventPal_RubySapphireMay,       OBJ_EVENT_PAL_TAG_RS_MAY},
     {gObjectEventPal_Razeluxe,              OBJ_EVENT_PAL_TAG_RAZELUXE},
+    {gObjectEventPal_Astra,              OBJ_EVENT_PAL_TAG_ASTRA},
+    {gObjectEventPal_Runa,              OBJ_EVENT_PAL_TAG_RUNA},
+    {gObjectEventPal_Nah,              OBJ_EVENT_PAL_TAG_NAH},
 #ifdef BUGFIX
     {NULL,                                  OBJ_EVENT_PAL_TAG_NONE},
 #else

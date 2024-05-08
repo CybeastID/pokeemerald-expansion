@@ -101,6 +101,43 @@ static const struct SpriteFrameImage sPicTable_Razeluxe[] = {
     overworld_frame(gObjectEventPic_Razeluxe, 2, 4, 8),
 };
 
+const struct SpriteFrameImage gObjectEventPicTable_Astra[] = {
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 0),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 1),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 2),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 3),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 4),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 5),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 6),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 7),
+    overworld_frame(gObjectEventPic_Astra, 4, 4, 8),
+};
+
+const struct SpriteFrameImage gObjectEventPicTable_Runa[] = {
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 0),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 1),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 2),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 3),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 4),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 5),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 6),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 7),
+    overworld_frame(gObjectEventPic_Runa, 4, 4, 8),
+};
+
+const struct SpriteFrameImage gObjectEventPicTable_Nah[] = {
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 0),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 1),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 2),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 3),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 4),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 5),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 6),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 7),
+    overworld_frame(gObjectEventPic_Nah, 4, 4, 8),
+};
+
+
 static const struct SpriteFrameImage sPicTable_Woman1[] = {
     overworld_ascending_frames(gObjectEventPic_Woman1, 2, 4),
 };

@@ -11806,10 +11806,49 @@ static const struct TrainerMon sParty_MayLinkPlaceholder[] = {
 };
 
 static const struct TrainerMon sParty_Razeluxe[] = {
-	{
-	.lvl = 103,
+    
+    {
+	.lvl = 105,
+	.species = SPECIES_CASTORIA,
+    .nickname = COMPOUND_STRING("CASTER"),
+    .heldItem = ITEM_FAIRY_GEM,
+    .moves = {MOVE_REVIVAL_BLESSING, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
+	},
+
+    {
+	.lvl = 100,
+	.species = SPECIES_KIRLIA,
+    .nickname = COMPOUND_STRING("The Face"),
+    .heldItem = ITEM_LUM_BERRY,
+	},
+	
+    {
+	.lvl = 100,
 	.species = SPECIES_MEWTWO,
+    .nickname = COMPOUND_STRING("The Sadist"),
     .heldItem = ITEM_MEWTWONITE_Y,
     .moves = {MOVE_SHADOW_FORCE, MOVE_SPACIAL_REND, MOVE_ROAR_OF_TIME, MOVE_DMS_PREROGATIVE}
+	},
+
+    {
+	.lvl = 100,
+	.species = SPECIES_HOOPA_UNBOUND,
+    .nickname = COMPOUND_STRING("The Ego"),
+    .heldItem = ITEM_LUM_BERRY,
+	},
+
+    {
+	.lvl = 100,
+	.species = SPECIES_ALAKAZAM,
+    .nickname = COMPOUND_STRING("The Brains"),
+    .heldItem = ITEM_LUM_BERRY,
+	},
+
+    {
+	.lvl = 105,
+	.species = SPECIES_CASTORIA,
+    .nickname = COMPOUND_STRING("CASTER"),
+    .heldItem = ITEM_FAIRY_GEM,
+    .moves = {MOVE_REVIVAL_BLESSING, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
 	},
 };

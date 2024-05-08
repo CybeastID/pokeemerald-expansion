@@ -19832,6 +19832,28 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
         .category = DAMAGE_CATEGORY_SPECIAL,
     },
 
+    /* [MOVE_REVIVAL_BLESSING_2] =
+    {
+        .name = HANDLE_EXPANDED_MOVE_NAME("Revivify", "Revivify"),
+        .description = COMPOUND_STRING(
+            "Revives a fainted party {PKMN}\n"
+            "and restores all of its HP."),
+        .effect = EFFECT_REVIVAL_BLESSING,
+        .power = 0,
+        .type = TYPE_NORMAL,
+        .accuracy = 0,
+        .pp = 99,
+        .target = MOVE_TARGET_USER,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_STATUS,
+        .ignoresProtect = TRUE,
+        .mirrorMoveBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .healingMove = TRUE,
+        .sketchBanned = (B_SKETCH_BANS >= GEN_9),
+    },
+    */
+
     // Z-Moves
     [MOVE_BREAKNECK_BLITZ] =
     {

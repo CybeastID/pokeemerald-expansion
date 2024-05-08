@@ -66,6 +66,7 @@ const struct SpeciesInfo gSpeciesInfo[] =
     #include "species_info/gen_7_families.h"
     #include "species_info/gen_8_families.h"
     #include "species_info/gen_9_families.h"
+    
 
     [SPECIES_EGG] =
     {
@@ -151,4 +152,5 @@ const struct SpeciesInfo gSpeciesInfo[] =
         .allPerfectIVs = TRUE,
     },
     */
+     
 };

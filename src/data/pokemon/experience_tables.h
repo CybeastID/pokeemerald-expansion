@@ -1,4 +1,4 @@
-#define UNFAIR_AI_CONSTANT 10000000
+#define UNFAIR_AI_CONSTANT 10000
 #define SQUARE(n)(n * n)
 #define CUBE(n)(n * n * n)
 
@@ -874,4 +874,5 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_MEDIUM_FAST(99),
         EXP_MEDIUM_FAST(100),
     }
+
 };

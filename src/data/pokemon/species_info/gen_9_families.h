@@ -6764,6 +6764,61 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
     },
 #endif //P_FAMILY_PECHARUNT
 
+ [SPECIES_CASTORIA] =
+   {
+        .baseHP        = 88,
+        .baseAttack    = 88,
+        .baseDefense   = 160,
+        .baseSpeed     = 88,
+        .baseSpAttack  = 255,
+        .baseSpDefense = 200,
+     
+        .types = MON_TYPES(TYPE_FAIRY, TYPE_DIVINE),
+        .catchRate = 1,
+        .expYield = 300,
+        .evYield_Defense = 3,
+        .genderRatio = MON_FEMALE,
+        .eggCycles = 20,
+        .friendship = 0,
+        .growthRate = GROWTH_SLOW,
+        .eggGroups = MON_EGG_GROUPS(EGG_GROUP_NO_EGGS_DISCOVERED),
+        .abilities = { ABILITY_SERENE_GRACE, ABILITY_SUPER_LUCK, ABILITY_PIXILATE },
+        .bodyColor = BODY_COLOR_WHITE,
+        .speciesName = _("Caster?"),
+        .cryId = CRY_NONE,
+        .natDexNum = NATIONAL_DEX_NONE,
+        .categoryName = _("Faerie"),
+        .height = 3870,
+        .weight = 387,
+        .description = COMPOUND_STRING(
+            "This is a newly discovered Pokémon.\n"
+            "It is currently under investigation.\n"
+            "No detailed information is available\n"
+            "at this time."),
+        .pokemonScale = 256,
+        .pokemonOffset = 0,
+        .trainerScale = 365,
+        .trainerOffset = 7,
+        .frontPic = gMonFrontPic_Castoria,
+        .frontPicSize = MON_COORDS_SIZE(64, 64),
+        .frontPicYOffset = 13,
+        .frontAnimFrames = sAnims_Castoria,
+        .frontAnimId = ANIM_V_SHAKE_SLOW,
+        .backPic = gMonBackPic_Castoria,
+        .backPicSize = MON_COORDS_SIZE(64, 64),
+        .backPicYOffset = 5,
+        .backAnimId = BACK_ANIM_NONE,
+        .palette = gMonPalette_Castoria,
+        .shinyPalette = gMonShinyPalette_Castoria,
+        .iconSprite = gMonIcon_Castoria,
+        .iconPalIndex = 0,
+        //FOOTPRINT(Pecharunt)
+        .isMythical = TRUE,
+        .levelUpLearnset = sNoneLevelUpLearnset,
+        .teachableLearnset = sNoneTeachableLearnset,
+        
+    },
+
 #ifdef __INTELLISENSE__
 };
 #endif

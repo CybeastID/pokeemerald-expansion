@@ -1629,9 +1629,12 @@
 #define SPECIES_URSHIFU_RAPID_STRIKE_STYLE_GIGANTAMAX   1522
 #define SPECIES_MIMIKYU_TOTEM_BUSTED                    1523
 
-#define SPECIES_EGG SPECIES_MIMIKYU_TOTEM_BUSTED + 1
-#define SPECIES_CASTORIA                                SPECIES_EGG + 1
+#define GEN_CUSTOM_START                                1523
 
-#define NUM_SPECIES SPECIES_CASTORIA
+#define SPECIES_CASTORIA                                1524
+
+#define SPECIES_EGG                                     1525
+
+#define NUM_SPECIES                                     SPECIES_EGG
 
 #endif  // GUARD_CONSTANTS_SPECIES_H

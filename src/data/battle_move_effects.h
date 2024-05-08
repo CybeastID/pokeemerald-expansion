@@ -2237,4 +2237,10 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
         .battleTvScore = 0, // TODO: Assign points
         .encourageEncore = TRUE,
     },
+   /* [EFFECT_REVIVAL_BLESSING_2] =
+    {
+        .battleScript = BattleScript_EffectRevivalBlessing,
+        .battleTvScore = 0, // TODO: Assign points
+    },
+    */
 };

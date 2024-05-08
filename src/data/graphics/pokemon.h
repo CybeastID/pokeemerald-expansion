@@ -13053,10 +13053,9 @@ const u8 gMonFootprint_QuestionMark[] = INCBIN_U8("graphics/pokemon/question_mar
     const u32 gMonFrontPic_Egg[] = INCBIN_U32("graphics/pokemon/egg/anim_front.4bpp.lz");
     const u32 gMonPalette_Egg[] = INCBIN_U32("graphics/pokemon/egg/normal.gbapal.lz");
     const u8 gMonIcon_Egg[] = INCBIN_U8("graphics/pokemon/egg/icon.4bpp");
-/*
-    const u32 gMonFrontPic_Castoria[] = INCBIN_U32("graphics/pokemon/castoria/anim_front.4bpp.lz");
+
+    const u32 gMonFrontPic_Castoria[] = INCBIN_U32("graphics/pokemon/castoria/front.4bpp.lz");
     const u32 gMonPalette_Castoria[] = INCBIN_U32("graphics/pokemon/castoria/normal.gbapal.lz");
     const u32 gMonBackPic_Castoria[] = INCBIN_U32("graphics/pokemon/castoria/back.4bpp.lz");
     const u32 gMonShinyPalette_Castoria[] = INCBIN_U32("graphics/pokemon/castoria/shiny.gbapal.lz");
     const u8 gMonIcon_Castoria[] = INCBIN_U8("graphics/pokemon/castoria/icon.4bpp");
-*/

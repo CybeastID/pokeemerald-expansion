@@ -15747,6 +15747,50 @@ void BS_Authority(void)
     }
         gBattlescriptCurrInstr = cmd->nextInstr;
 } 
+/* void BS_Revivify(void)
+{
+        NATIVE_ARGS(const u8 *failInstr);
+        u32 side = GetBattlerSide(gBattlerAttacker);
+        u8 index = GetFirstFaintedPartyIndex(gBattlerAttacker);
+
+        // Move fails if there are no battlers to revive.
+        if (index == PARTY_SIZE)
+        {
+            gBattlescriptCurrInstr = cmd->failInstr;
+            return;
+        }
+
+        // Battler selected! Revive and go to next instruction.
+        if (gSelectedMonPartyId != PARTY_SIZE)
+        {
+            struct Pokemon *party = GetSideParty(side);
+
+            u16 hp = GetMonData(&party[gSelectedMonPartyId], MON_DATA_MAX_HP);
+            BtlController_EmitSetMonData(gBattlerAttacker, BUFFER_A, REQUEST_HP_BATTLE, gBitTable[gSelectedMonPartyId], sizeof(hp), &hp);
+            MarkBattlerForControllerExec(gBattlerAttacker);
+            PREPARE_SPECIES_BUFFER(gBattleTextBuff1, GetMonData(&party[gSelectedMonPartyId], MON_DATA_SPECIES));
+
+            // If an on-field battler is revived, it needs to be sent out again.
+            if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE &&
+                gBattlerPartyIndexes[BATTLE_PARTNER(gBattlerAttacker)] == gSelectedMonPartyId)
+            {
+                gBattleScripting.battler = BATTLE_PARTNER(gBattlerAttacker);
+                gBattleCommunication[MULTIUSE_STATE] = TRUE;
+            }
+
+            gSelectedMonPartyId = PARTY_SIZE;
+            gBattlescriptCurrInstr = cmd->nextInstr;
+            return;
+        }
+
+        // Open party menu, wait to go to next instruction.
+        else
+        {
+            BtlController_EmitChoosePokemon(gBattlerAttacker, BUFFER_A, PARTY_ACTION_CHOOSE_FAINTED_MON, PARTY_SIZE, ABILITY_NONE, gBattleStruct->battlerPartyOrders[gBattlerAttacker]);
+            MarkBattlerForControllerExec(gBattlerAttacker);
+        }
+        return;
+    } */
 
 
 void BS_DoStockpileStatChangesWearOff(void)

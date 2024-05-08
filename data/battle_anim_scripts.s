@@ -876,6 +876,7 @@ gBattleAnims_Moves::
 	.4byte Move_UPPER_HAND
 	.4byte Move_MALIGNANT_CHAIN
 	.4byte Move_DMS_PREROGATIVE
+	
 @@@@ Z MOVES
 	.4byte Move_BREAKNECK_BLITZ
 	.4byte Move_ALL_OUT_PUMMELING
@@ -17888,6 +17889,7 @@ Move_DRAGON_CHEER::
 Move_SUPERCELL_SLAM::
 Move_MALIGNANT_CHAIN::
 Move_DMS_PREROGATIVE::
+
 	end @to do
 
 @@@@@@@@@@@@@@@@@@@@@@@ GEN 1-3 @@@@@@@@@@@@@@@@@@@@@@@
