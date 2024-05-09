@@ -6791,10 +6791,10 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .height = 3870,
         .weight = 387,
         .description = COMPOUND_STRING(
-            "This is a newly discovered Pokémon.\n"
-            "It is currently under investigation.\n"
-            "No detailed information is available\n"
-            "at this time."),
+            "A fairy under the command of\n"
+            "Razeluxe Lowell.\n"
+            "She's absolutely not a Pokemon.\n"
+            "Don't give her your name."),
         .pokemonScale = 256,
         .pokemonOffset = 0,
         .trainerScale = 365,

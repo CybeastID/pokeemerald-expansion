@@ -10279,6 +10279,7 @@ const struct Trainer gTrainers[] = {
         .items = {ITEM_FULL_RESTORE, ITEM_FULL_RESTORE, ITEM_NONE, ITEM_NONE},
         .doubleBattle = FALSE,
         .mugshotEnabled = TRUE,
+        .mugshotColor = MUGSHOT_COLOR_GREEN,
         .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_OMNISCIENT,
         .party = TRAINER_PARTY(sParty_Razeluxe),
     },
