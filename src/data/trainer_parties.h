@@ -11812,12 +11812,14 @@ static const struct TrainerMon sParty_Razeluxe[] = {
 	.species = SPECIES_CASTORIA,
     .nickname = COMPOUND_STRING("CASTER"),
     .heldItem = ITEM_FAIRY_GEM,
+    .ball = ITEM_CHERISH_BALL,
     .moves = {MOVE_REVIVAL_BLESSING, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
 	},
 
     {
 	.lvl = 100,
 	.species = SPECIES_KIRLIA,
+    .ball = ITEM_LUXURY_BALL,
     .nickname = COMPOUND_STRING("The Face"),
     .heldItem = ITEM_LUM_BERRY,
 	},
@@ -11827,12 +11829,14 @@ static const struct TrainerMon sParty_Razeluxe[] = {
 	.species = SPECIES_MEWTWO,
     .nickname = COMPOUND_STRING("The Sadist"),
     .heldItem = ITEM_MEWTWONITE_Y,
+    .ball = ITEM_MASTER_BALL,
     .moves = {MOVE_SHADOW_FORCE, MOVE_SPACIAL_REND, MOVE_ROAR_OF_TIME, MOVE_DMS_PREROGATIVE}
 	},
 
     {
 	.lvl = 100,
 	.species = SPECIES_HOOPA_UNBOUND,
+    .ball = ITEM_SPORT_BALL,
     .nickname = COMPOUND_STRING("The Ego"),
     .heldItem = ITEM_LUM_BERRY,
 	},
@@ -11840,6 +11844,7 @@ static const struct TrainerMon sParty_Razeluxe[] = {
     {
 	.lvl = 100,
 	.species = SPECIES_ALAKAZAM,
+    .ball = ITEM_QUICK_BALL,
     .nickname = COMPOUND_STRING("The Brains"),
     .heldItem = ITEM_LUM_BERRY,
 	},
