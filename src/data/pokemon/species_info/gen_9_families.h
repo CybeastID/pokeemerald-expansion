@@ -6775,7 +6775,7 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
      
         .types = MON_TYPES(TYPE_FAIRY, TYPE_DIVINE),
         .catchRate = 1,
-        .expYield = 300,
+        .expYield = 30,
         .evYield_Defense = 3,
         .genderRatio = MON_FEMALE,
         .eggCycles = 20,
