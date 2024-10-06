@@ -11808,15 +11808,6 @@ static const struct TrainerMon sParty_MayLinkPlaceholder[] = {
 static const struct TrainerMon sParty_Razeluxe[] = {
     
     {
-	.lvl = 105,
-	.species = SPECIES_CASTORIA,
-    .nickname = COMPOUND_STRING("CASTER"),
-    .heldItem = ITEM_FAIRY_GEM,
-    .ball = ITEM_CHERISH_BALL,
-    .moves = {MOVE_REVIVAL_BLESSING, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
-	},
-
-    {
 	.lvl = 100,
 	.species = SPECIES_KIRLIA,
     .ball = ITEM_LUXURY_BALL,
@@ -11856,4 +11847,6 @@ static const struct TrainerMon sParty_Razeluxe[] = {
     .heldItem = ITEM_FAIRY_GEM,
     .moves = {MOVE_REVIVAL_BLESSING, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
 	},
+
+    
 };
