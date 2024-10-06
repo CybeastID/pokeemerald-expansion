@@ -42183,16 +42183,3 @@ F_TRAINER_FEMALE |
             },
         },
     },
-        [TRAINER_RAZELUXE] =
-    {
-        .trainerClass = TRAINER_CLASS_RAZELUXE,
-        .encounterMusic_gender = TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR,
-        .trainerPic = TRAINER_PIC_RAZELUXE,
-        .trainerName = _("Razeluxe"),
-        .items = {ITEM_FULL_RESTORE, ITEM_FULL_RESTORE, ITEM_NONE, ITEM_NONE},
-        .doubleBattle = FALSE,
-        .mugshotEnabled = TRUE,
-        .mugshotColor = MUGSHOT_COLOR_GREEN,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_OMNISCIENT,
-        .party = TRAINER_PARTY(sParty_Razeluxe),
-    },
