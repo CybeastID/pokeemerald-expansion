@@ -212,7 +212,6 @@ static bool8 AngledWipes_TryEnd(struct Task *);
 static bool8 AngledWipes_StartNext(struct Task *);
 static bool8 ShredSplit_Init(struct Task *);
 static bool8 ShredSplit_Main(struct Task *);
-static bool8 ShredSplit_BrokenCheck(struct Task *);
 static bool8 ShredSplit_End(struct Task *);
 static bool8 Blackhole_Init(struct Task *);
 static bool8 Blackhole_Vibrate(struct Task *);
@@ -2927,11 +2926,6 @@ static bool8 ShredSplit_Main(struct Task *task)
     return FALSE;
 }
 
-/* bool8 ShredSplit_BrokenCheck(Task *)
-{
-    return bool8();
-}
-*/
 static bool8 ShredSplit_End(struct Task *task)
 {
     DmaStop(0);
