@@ -42251,59 +42251,63 @@ F_TRAINER_FEMALE |
             .gender = TRAINER_MON_RANDOM_GENDER,
 #line 16898
             .heldItem = ITEM_LUM_BERRY,
-#line 16902
+#line 16903
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16899
             .ability = ABILITY_MAGICIAN,
-#line 16900
-            .lvl = 100,
 #line 16901
+            .lvl = 100,
+#line 16902
             .ball = ITEM_SPORT_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+#line 16900
+            .teraType = TYPE_DIVINE,
             },
             {
-#line 16903
+#line 16904
             .nickname = COMPOUND_STRING("The Brains"),
-#line 16903
+#line 16904
             .species = SPECIES_ALAKAZAM_MEGA,
             .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16903
-            .heldItem = ITEM_RED_CARD,
-#line 16907
-            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16904
-            .ability = ABILITY_MAGIC_GUARD,
+            .heldItem = ITEM_RED_CARD,
+#line 16908
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16905
-            .lvl = 100,
+            .ability = ABILITY_MAGIC_GUARD,
 #line 16906
+            .lvl = 100,
+#line 16907
             .ball = ITEM_QUICK_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
             },
             {
-#line 16908
-            .nickname = COMPOUND_STRING("CASTER"),
-#line 16908
-            .species = SPECIES_CASTORIA,
-#line 16908
-            .gender = TRAINER_MON_FEMALE,
-#line 16908
-            .heldItem = ITEM_FAIRY_GEM,
-#line 16914
-            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16909
-            .ability = ABILITY_SERENE_GRACE,
-#line 16910
-            .lvl = 105,
+            .nickname = COMPOUND_STRING("CASTER"),
+#line 16909
+            .species = SPECIES_CASTORIA,
+#line 16909
+            .gender = TRAINER_MON_FEMALE,
+#line 16909
+            .heldItem = ITEM_FAIRY_GEM,
 #line 16913
+            .ev = TRAINER_PARTY_EVS(255, 0, 0, 0, 0, 0),
+#line 16916
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16910
+            .ability = ABILITY_SERENE_GRACE,
+#line 16911
+            .lvl = 105,
+#line 16915
             .ball = ITEM_CHERISH_BALL,
             .nature = NATURE_HARDY,
-#line 16911
+#line 16912
             .dynamaxLevel = 10,
             .shouldUseDynamax = TRUE,
             .moves = {
-#line 16914
+#line 16916
                 MOVE_REVIVAL_BLESSING,
                 MOVE_GROWTH,
                 MOVE_HYDRO_PUMP,

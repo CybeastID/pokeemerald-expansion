@@ -7853,19 +7853,19 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .bodyColor = BODY_COLOR_WHITE,
         .speciesName = _("Caster?"),
         .cryId = CRY_NONE,
-        .natDexNum = NATIONAL_DEX_NONE,
+        .natDexNum = NATIONAL_DEX_CASTORIA,
         .categoryName = _("Faerie"),
-        .height = 3870,
+        .height = 1500,
         .weight = 387,
         .description = COMPOUND_STRING(
             "A fairy under the command of\n"
             "Razeluxe Lowell.\n"
             "She's absolutely not a Pokemon.\n"
             "Don't give her your name."),
-        .pokemonScale = 256,
+        .pokemonScale = 250,
         .pokemonOffset = 0,
-        .trainerScale = 365,
-        .trainerOffset = 7,
+        .trainerScale = 4800,
+        .trainerOffset = -50,
         .frontPic = gMonFrontPic_Castoria,
         .frontPicSize = MON_COORDS_SIZE(64, 64),
         .frontPicYOffset = 13,

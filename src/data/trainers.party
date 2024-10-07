@@ -16885,7 +16885,6 @@ AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_
 
 The Face (SPECIES_KIRLIA) @ Lum Berry
 Level: 100
-Tera Type: Divine
 Ball: ITEM_LUXURY_BALL
 
 The Sadist (Mewtwo) @ Mewtwonite Y
@@ -16911,6 +16910,7 @@ CASTER (SPECIES_CASTORIA) (F) @ Fairy Gem
 Ability: Serene Grace
 Level: 105  
 Dynamax Level: 10
+EVs: 255 HP
 Tera Type: Divine  
 Ball: Cherish Ball  
 - Revival Blessing  
