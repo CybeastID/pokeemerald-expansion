@@ -93,6 +93,7 @@ static const u8 ALIGNED(4) sIceIndicatorGfx[] = INCBIN_U8("graphics/battle_inter
 static const u8 ALIGNED(4) sDragonIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/dragon_indicator.4bpp");
 static const u8 ALIGNED(4) sDarkIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/dark_indicator.4bpp");
 static const u8 ALIGNED(4) sFairyIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/fairy_indicator.4bpp");
+static const u8 ALIGNED(4) sDivineIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/divine_indicator.4bpp");
 static const u8 ALIGNED(4) sStellarIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/stellar_indicator.4bpp");
 
 static const u16 sMiscIndicatorPal[] = INCBIN_U16("graphics/battle_interface/misc_indicator.gbapal"); // has room for more colors
@@ -125,6 +126,7 @@ static const struct SpriteSheet sTeraIndicatorSpriteSheets[NUMBER_OF_MON_TYPES +
     {sDragonIndicatorGfx, sizeof(sDragonIndicatorGfx), TAG_DRAGON_INDICATOR_TILE},
     {sDarkIndicatorGfx, sizeof(sDarkIndicatorGfx), TAG_DARK_INDICATOR_TILE},
     {sFairyIndicatorGfx, sizeof(sFairyIndicatorGfx), TAG_FAIRY_INDICATOR_TILE},
+    {sDivineIndicatorGfx, sizeof(sDivineIndicatorGfx), TAG_DIVINE_INDICATOR_TILE},
     {sStellarIndicatorGfx, sizeof(sStellarIndicatorGfx), TAG_STELLAR_INDICATOR_TILE},
     {0}
 };

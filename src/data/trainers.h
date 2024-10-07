@@ -42183,16 +42183,132 @@ F_TRAINER_FEMALE |
             },
         },
     },
-        [TRAINER_RAZELUXE] =
+#line 16877
+    [TRAINER_RAZELUXE] =
     {
-        .trainerClass = TRAINER_CLASS_RAZELUXE,
-        .encounterMusic_gender = TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR,
-        .trainerPic = TRAINER_PIC_RAZELUXE,
+#line 16878
         .trainerName = _("Razeluxe"),
-        .items = {ITEM_FULL_RESTORE, ITEM_FULL_RESTORE, ITEM_NONE, ITEM_NONE},
+#line 16879
+        .trainerClass = TRAINER_CLASS_RAZELUXE,
+#line 16880
+        .trainerPic = TRAINER_PIC_RAZELUXE,
+        .encounterMusic_gender = 
+#line 16882
+            TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR,
+#line 16883
         .doubleBattle = FALSE,
-        .mugshotEnabled = TRUE,
-        .mugshotColor = MUGSHOT_COLOR_GREEN,
-        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_OMNISCIENT,
-        .party = TRAINER_PARTY(sParty_Razeluxe),
+#line 16884
+        .aiFlags = AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_ACE_POKEMON | AI_FLAG_OMNISCIENT | AI_FLAG_TRY_TO_FAINT,
+        .partySize = 5,
+        .party = (const struct TrainerMon[])
+        {
+            {
+#line 16886
+            .nickname = COMPOUND_STRING("The Face"),
+#line 16886
+            .species = SPECIES_KIRLIA,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 16886
+            .heldItem = ITEM_LUM_BERRY,
+#line 16889
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16887
+            .lvl = 100,
+#line 16888
+            .ball = ITEM_LUXURY_BALL,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            },
+            {
+#line 16890
+            .nickname = COMPOUND_STRING("The Sadist"),
+#line 16890
+            .species = SPECIES_MEWTWO,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 16890
+            .heldItem = ITEM_MEWTWONITE_Y,
+#line 16893
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16891
+            .lvl = 102,
+#line 16892
+            .ball = ITEM_MASTER_BALL,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 16893
+                MOVE_SPACIAL_REND,
+                MOVE_ROAR_OF_TIME,
+                MOVE_SHADOW_FORCE,
+                MOVE_DMS_PREROGATIVE,
+            },
+            },
+            {
+#line 16898
+            .nickname = COMPOUND_STRING("The Ego"),
+#line 16898
+            .species = SPECIES_HOOPA_UNBOUND,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 16898
+            .heldItem = ITEM_LUM_BERRY,
+#line 16902
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16899
+            .ability = ABILITY_MAGICIAN,
+#line 16900
+            .lvl = 100,
+#line 16901
+            .ball = ITEM_SPORT_BALL,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            },
+            {
+#line 16903
+            .nickname = COMPOUND_STRING("The Brains"),
+#line 16903
+            .species = SPECIES_ALAKAZAM_MEGA,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 16903
+            .heldItem = ITEM_RED_CARD,
+#line 16907
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16904
+            .ability = ABILITY_MAGIC_GUARD,
+#line 16905
+            .lvl = 100,
+#line 16906
+            .ball = ITEM_QUICK_BALL,
+            .nature = NATURE_HARDY,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            },
+            {
+#line 16908
+            .nickname = COMPOUND_STRING("CASTER"),
+#line 16908
+            .species = SPECIES_CASTORIA,
+#line 16908
+            .gender = TRAINER_MON_FEMALE,
+#line 16908
+            .heldItem = ITEM_FAIRY_GEM,
+#line 16914
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16909
+            .ability = ABILITY_SERENE_GRACE,
+#line 16910
+            .lvl = 105,
+#line 16913
+            .ball = ITEM_CHERISH_BALL,
+            .nature = NATURE_HARDY,
+#line 16911
+            .dynamaxLevel = 10,
+            .shouldUseDynamax = TRUE,
+            .moves = {
+#line 16914
+                MOVE_REVIVAL_BLESSING,
+                MOVE_GROWTH,
+                MOVE_HYDRO_PUMP,
+                MOVE_FIRE_BLAST,
+            },
+            },
+        },
     },

@@ -16873,3 +16873,47 @@ Double Battle: No
 Kyogre
 Level: 5
 IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
+
+=== TRAINER_RAZELUXE ===
+Name: Razeluxe
+Class: Razeluxe
+Pic: Razeluxe
+Gender: Male
+Music: Elite Four
+Double Battle: No
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
+
+The Face (SPECIES_KIRLIA) @ Lum Berry
+Level: 100
+Tera Type: Divine
+Ball: ITEM_LUXURY_BALL
+
+The Sadist (Mewtwo) @ Mewtwonite Y
+Level: 102
+Ball: Master Ball
+- Spacial Rend  
+- Roar of Time  
+- Shadow Force
+- MOVE_DMS_PREROGATIVE
+
+The Ego (Hoopa-Unbound) @ Lum Berry  
+Ability: Magician
+Tera Type: Divine
+Level: 100
+Ball: Sport Ball
+
+The Brains (Alakazam-Mega) @ Red Card  
+Ability: Magic Guard
+Level: 100
+Ball: Quick Ball
+
+CASTER (SPECIES_CASTORIA) (F) @ Fairy Gem  
+Ability: Serene Grace
+Level: 105  
+Dynamax Level: 10
+Tera Type: Divine  
+Ball: Cherish Ball  
+- Revival Blessing  
+- Growth  
+- Hydro Pump  
+- Fire Blast
