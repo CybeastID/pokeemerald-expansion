@@ -1076,3 +1076,5 @@ EventScript_VsSeekerChargingDone::
 	.include "data/text/birch_speech.inc"
 
 	.include "data/maps/Test/scripts.inc"
+
+	.include "data/maps/MysteryZone/scripts.inc"

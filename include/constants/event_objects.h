@@ -246,12 +246,13 @@
 #define OBJ_EVENT_GFX_ASTRA                      242
 #define OBJ_EVENT_GFX_RUNA                       243
 #define OBJ_EVENT_GFX_NAH                        244
+#define OBJ_EVENT_GFX_CASTORIA                   245
 
 
 // NOTE: The maximum amount of object events has been expanded from 255 to 65535.
 // Since dynamic graphics ids still require at least 16 free values, the actual limit
 // is 65519, but even considering follower Pokémon, this should be more than enough :)
-#define NUM_OBJ_EVENT_GFX                        245
+#define NUM_OBJ_EVENT_GFX                        246
 
 
 // These are dynamic object gfx ids.
@@ -385,7 +386,8 @@
 #define OBJ_EVENT_PAL_TAG_ASTRA                   0x1125
 #define OBJ_EVENT_PAL_TAG_RUNA                    0x1126
 #define OBJ_EVENT_PAL_TAG_NAH                     0x1127
-#define OBJ_EVENT_PAL_TAG_DYNAMIC                 0x1128
+#define OBJ_EVENT_PAL_TAG_CASTORIA                0X1128
+#define OBJ_EVENT_PAL_TAG_DYNAMIC                 0x1129
 
 #if OW_FOLLOWERS_POKEBALLS
 // Vanilla

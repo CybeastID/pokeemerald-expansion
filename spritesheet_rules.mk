@@ -402,6 +402,9 @@ $(OBJEVENTGFXDIR)/people/razeluxe_ow.4bpp: %.4bpp: %.png
 $(OBJEVENTGFXDIR)/people/astra_overword.4bpp: %.4bpp: %.png
 	$(GFX) $< $@ -mwidth 2 -mheight 4
 
+$(OBJEVENTGFXDIR)/people/castoria_overworld.4bpp: %.4bpp: %.png
+	$(GFX) $< $@ -mwidth 2 -mheight 4
+
 $(OBJEVENTGFXDIR)/people/runa_overword.4bpp: %.4bpp: %.png
 	$(GFX) $< $@ -mwidth 2 -mheight 4
 

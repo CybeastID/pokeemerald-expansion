@@ -4420,6 +4420,16 @@
       "secondary_tileset": "gTileset_EliteFour",
       "border_filepath": "data/layouts/Test/border.bin",
       "blockdata_filepath": "data/layouts/Test/map.bin"
+    },
+    {
+      "id": "LAYOUT_MYSTERY_ZONE",
+      "name": "MysteryZone_Layout",
+      "width": 20,
+      "height": 30,
+      "primary_tileset": "gTileset_Building",
+      "secondary_tileset": "gTileset_Shop",
+      "border_filepath": "data/layouts/MysteryZone/border.bin",
+      "blockdata_filepath": "data/layouts/MysteryZone/map.bin"
     }
   ]
 }

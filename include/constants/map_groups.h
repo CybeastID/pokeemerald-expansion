@@ -6,7 +6,8 @@
 //
 
 // gMapGroup_RazeluxeDomain
-#define MAP_TEST (0 | (0 << 8))
+#define MAP_TEST         (0 | (0 << 8))
+#define MAP_MYSTERY_ZONE (1 | (0 << 8))
 
 // gMapGroup_TownsAndRoutes
 #define MAP_PETALBURG_CITY      (0 | (1 << 8))
