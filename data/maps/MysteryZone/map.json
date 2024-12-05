@@ -270,7 +270,7 @@
       "elevation": 0,
       "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     }
   ],
   "bg_events": [
