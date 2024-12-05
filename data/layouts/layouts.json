@@ -4424,9 +4424,9 @@
     {
       "id": "LAYOUT_MYSTERY_ZONE",
       "name": "MysteryZone_Layout",
-      "width": 20,
+      "width": 19,
       "height": 30,
-      "primary_tileset": "gTileset_Building",
+      "primary_tileset": "gTileset_General",
       "secondary_tileset": "gTileset_Shop",
       "border_filepath": "data/layouts/MysteryZone/border.bin",
       "blockdata_filepath": "data/layouts/MysteryZone/map.bin"

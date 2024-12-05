@@ -4797,12 +4797,12 @@ VSSeeker_Text_TrainersNotReady::
 
 Test_Text_RazeluxeIntro::
 	.string "Welcome to my island.\n"
-	.string "Prepare to be sent away.$"
+	.string "{COLOR RED}Prepare to be sent away.$"
 
 Test_Text_RazeluxeDefeated::
 	.string "I can't believe you'd\n"
 	.string "actually come back here...$"
 
 Test_Text_RazeluxePostBattle::
-	.string "Joke's on you.\n"
-	.string "That was the only way off this island...$"
+	.string "Well played.\n"
+	.string "...No Castoria you cant keep them.$"
