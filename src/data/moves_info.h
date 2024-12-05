@@ -20687,7 +20687,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_DYNAMAX] =
 
     [MOVE_DMS_PREROGATIVE] =
     {
-        .name = HANDLE_EXPANDED_MOVE_NAME("AnriAuthrity", "Anris Authority"),
+        .name = COMPOUND_STRING("Anris Authority"),
         .effect = EFFECT_DMS_PREROGATIVE,
         .description = COMPOUND_STRING(
             "The Authority of the Lowells\n"

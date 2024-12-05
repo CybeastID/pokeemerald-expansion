@@ -886,8 +886,8 @@ const u8 *const gBattleStringsTable[BATTLESTRINGS_COUNT] =
     [STRINGID_ELECTRICCURRENTISRUNNING]             = COMPOUND_STRING("An electric current is running across the battlefield!"),
     [STRINGID_SEEMSWEIRD]                           = COMPOUND_STRING("The battlefield seems weird!"),
     [STRINGID_WAGGLINGAFINGER]                      = COMPOUND_STRING("Waggling a finger let it use {B_CURRENT_MOVE}!"),
-    [STRINGID_AUTHORITYWEAKENTARGET] = COMPOUND_STRING("The overwhelming divine presence weakens {B_DEF_NAME_WITH_PREFIX} immensely!");
-    [STRINGID_AUTHORITYSTRENGTHENUSER]              = COMPOUND_STRING("The overwhelming divine presence strengthens {B_ATK_NAME_WITH_PREFIX} immensely!");
+    [STRINGID_AUTHORITYWEAKENTARGET]                = COMPOUND_STRING("The overwhelming divine presence weakens {B_DEF_NAME_WITH_PREFIX} immensely!"),
+    [STRINGID_AUTHORITYSTRENGTHENUSER]              = COMPOUND_STRING("The overwhelming divine presence strengthens {B_ATK_NAME_WITH_PREFIX} immensely!"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

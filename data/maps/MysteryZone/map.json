@@ -16,7 +16,7 @@
   "object_events": [
     {
       "graphics_id": "OBJ_EVENT_GFX_CASTORIA",
-      "x": 10,
+      "x": 8,
       "y": 14,
       "elevation": 0,
       "movement_type": "MOVEMENT_TYPE_FACE_DOWN",
@@ -29,7 +29,7 @@
     },
     {
       "graphics_id": "OBJ_EVENT_GFX_CASTORIA",
-      "x": 9,
+      "x": 7,
       "y": 15,
       "elevation": 0,
       "movement_type": "MOVEMENT_TYPE_FACE_RIGHT",
@@ -42,7 +42,7 @@
     },
     {
       "graphics_id": "OBJ_EVENT_GFX_CASTORIA",
-      "x": 11,
+      "x": 9,
       "y": 15,
       "elevation": 0,
       "movement_type": "MOVEMENT_TYPE_FACE_LEFT",
@@ -55,7 +55,7 @@
     },
     {
       "graphics_id": "OBJ_EVENT_GFX_CASTORIA",
-      "x": 10,
+      "x": 8,
       "y": 16,
       "elevation": 0,
       "movement_type": "MOVEMENT_TYPE_FACE_UP",
@@ -69,21 +69,21 @@
   ],
   "warp_events": [
     {
-      "x": 10,
+      "x": 8,
       "y": 23,
       "elevation": 0,
       "dest_map": "MAP_MYSTERY_ZONE",
       "dest_warp_id": "0"
     },
     {
-      "x": 10,
-      "y": 2,
+      "x": 8,
+      "y": 1,
       "elevation": 0,
       "dest_map": "MAP_LITTLEROOT_TOWN",
       "dest_warp_id": "4"
     },
     {
-      "x": 10,
+      "x": 8,
       "y": 15,
       "elevation": 0,
       "dest_map": "MAP_MYSTERY_ZONE",
@@ -94,178 +94,169 @@
   "coord_events": [
     {
       "type": "trigger",
-      "x": 7,
-      "y": 13,
+      "x": 8,
+      "y": 4,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
-      "x": 13,
-      "y": 13,
+      "x": 0,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
+    },
+    {
+      "type": "trigger",
+      "x": 1,
+      "y": 12,
+      "elevation": 0,
+      "var": "VAR_CASTER_REVEAL",
+      "var_value": "0",
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 2,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 3,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 4,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 5,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
-    },
-    {
-      "type": "trigger",
-      "x": 6,
-      "y": 13,
-      "elevation": 0,
-      "var": "VAR_TEMP_0",
-      "var_value": "0",
-      "script": "NULL"
-    },
-    {
-      "type": "trigger",
-      "x": 9,
-      "y": 3,
-      "elevation": 0,
-      "var": "VAR_TEMP_0",
-      "var_value": "0",
-      "script": "NULL"
-    },
-    {
-      "type": "trigger",
-      "x": 9,
-      "y": 4,
-      "elevation": 0,
-      "var": "VAR_TEMP_0",
-      "var_value": "0",
-      "script": "NULL"
-    },
-    {
-      "type": "trigger",
-      "x": 10,
-      "y": 4,
-      "elevation": 0,
-      "var": "VAR_TEMP_0",
-      "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 11,
-      "y": 4,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
-    },
-    {
-      "type": "trigger",
-      "x": 11,
-      "y": 3,
-      "elevation": 0,
-      "var": "VAR_TEMP_0",
-      "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 12,
-      "y": 5,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
-      "x": 8,
-      "y": 5,
+      "x": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 14,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 15,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
       "x": 16,
-      "y": 13,
+      "y": 12,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
-      "x": 17,
-      "y": 13,
+      "x": 7,
+      "y": 2,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
-      "x": 18,
-      "y": 13,
+      "x": 7,
+      "y": 3,
       "elevation": 0,
-      "var": "VAR_TEMP_0",
+      "var": "VAR_CASTER_REVEAL",
       "var_value": "0",
-      "script": "NULL"
+      "script": "CastersTrap"
     },
     {
       "type": "trigger",
-      "x": 10,
+      "x": 8,
+      "y": 3,
+      "elevation": 0,
+      "var": "VAR_CASTER_REVEAL",
+      "var_value": "0",
+      "script": "CastersTrap"
+    },
+    {
+      "type": "trigger",
+      "x": 9,
+      "y": 3,
+      "elevation": 0,
+      "var": "VAR_CASTER_REVEAL",
+      "var_value": "0",
+      "script": "CastersTrap"
+    },
+    {
+      "type": "trigger",
+      "x": 9,
+      "y": 2,
+      "elevation": 0,
+      "var": "VAR_CASTER_REVEAL",
+      "var_value": "0",
+      "script": "CastersTrap"
+    },
+    {
+      "type": "trigger",
+      "x": 8,
       "y": 15,
       "elevation": 0,
       "var": "VAR_CASTER_REVEAL",

@@ -240,10 +240,10 @@ BattleScript_EffectDoodle_AfterCopy:
 BattleScript_EffectAuthority::
 	attackstring
     dmauthority
-    printstring STRINGID_RAZELUXEWEAKEN
+    printstring STRINGID_AUTHORITYWEAKENTARGET
     waitmessage B_WAIT_TIME_LONG
 	waitmessage B_WAIT_TIME_LONG
-    printstring STRINGID_RAZELUXESTRENGTHEN
+    printstring STRINGID_AUTHORITYSTRENGTHENUSER
     waitmessage B_WAIT_TIME_LONG
 	waitmessage B_WAIT_TIME_LONG
 
