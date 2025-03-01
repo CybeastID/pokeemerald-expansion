@@ -1755,6 +1755,12 @@
 	.4byte \failInstr
 	.endm
 
+	.macro tryrevivalblessing2, failInstr:req
+	callnative BS_TryRevivalBlessing2
+	.4byte \failInstr
+	.endm
+
+
 	.macro jumpifblockedbysoundproof battler:req, failInstr:req
 	callnative BS_JumpIfBlockedBySoundproof
 	.byte \battler

@@ -21028,17 +21028,17 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .category = DAMAGE_CATEGORY_SPECIAL,
     },
 
-    /* [MOVE_REVIVAL_BLESSING_2] =
+     [MOVE_REVIVAL_BLESSING_2] =
     {
-        .name = HANDLE_EXPANDED_MOVE_NAME("Revivify", "Revivify"),
+        .name = COMPOUND_STRING("Revivify"),
         .description = COMPOUND_STRING(
             "Revives a fainted party {PKMN}\n"
-            "and restores all of its HP."),
-        .effect = EFFECT_REVIVAL_BLESSING,
+            "and restores ALL of its HP."),
+        .effect = EFFECT_REVIVAL_BLESSING_2,
         .power = 0,
-        .type = TYPE_NORMAL,
+        .type = TYPE_DIVINE,
         .accuracy = 0,
-        .pp = 99,
+        .pp = 10,
         .target = MOVE_TARGET_USER,
         .priority = 0,
         .category = DAMAGE_CATEGORY_STATUS,
@@ -21047,8 +21047,9 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .metronomeBanned = TRUE,
         .healingMove = TRUE,
         .sketchBanned = (B_SKETCH_BANS >= GEN_9),
+        .battleAnimScript = gBattleAnimMove_RevivalBlessing,
     },
-    */
+    
 
     // Z-Moves
     [MOVE_BREAKNECK_BLITZ] =

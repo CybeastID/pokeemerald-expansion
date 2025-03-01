@@ -11845,7 +11845,7 @@ static const struct TrainerMon sParty_Razeluxe[] = {
 	.species = SPECIES_CASTORIA,
     .nickname = COMPOUND_STRING("CASTER"),
     .heldItem = ITEM_FAIRY_GEM,
-    .moves = {MOVE_REVIVAL_BLESSING, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
+    .moves = {MOVE_REVIVAL_BLESSING_2, MOVE_HYDRO_PUMP, MOVE_FIRE_BLAST, MOVE_GROWTH}
 	},
 
     

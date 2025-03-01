@@ -2671,6 +2671,15 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
              && AI_IsSlower(battlerAtk, battlerDef, move))
                 ADJUST_SCORE(-10);
             break;
+        case EFFECT_REVIVAL_BLESSING_2:
+            if (GetFirstFaintedPartyIndex(battlerAtk) == PARTY_SIZE)
+                ADJUST_SCORE(-10);
+            else if (CanAIFaintTarget(battlerAtk, battlerDef, 0))
+                ADJUST_SCORE(-10);
+            else if (CanTargetFaintAi(battlerDef, battlerAtk)
+             && AI_IsSlower(battlerAtk, battlerDef, move))
+                ADJUST_SCORE(-10);
+            break;
         case EFFECT_JUNGLE_HEALING:
            if (AI_BattlerAtMaxHp(battlerAtk)
             && AI_BattlerAtMaxHp(BATTLE_PARTNER(battlerAtk))
@@ -4559,6 +4568,16 @@ static u32 AI_CalcMoveEffectScore(u32 battlerAtk, u32 battlerDef, u32 move)
             ADJUST_SCORE(DECENT_EFFECT);
         break;
     case EFFECT_REVIVAL_BLESSING:
+        if (GetFirstFaintedPartyIndex(battlerAtk) != PARTY_SIZE)
+        {
+            ADJUST_SCORE(DECENT_EFFECT);
+            if (AI_DATA->shouldSwitch & (1u << battlerAtk)) // Bad matchup
+                ADJUST_SCORE(WEAK_EFFECT);
+            if (AI_DATA->mostSuitableMonId[battlerAtk] != PARTY_SIZE) // Good mon to send in after
+                ADJUST_SCORE(WEAK_EFFECT);
+        }
+        break;
+    case EFFECT_REVIVAL_BLESSING_2:
         if (GetFirstFaintedPartyIndex(battlerAtk) != PARTY_SIZE)
         {
             ADJUST_SCORE(DECENT_EFFECT);

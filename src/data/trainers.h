@@ -42179,7 +42179,7 @@ F_TRAINER_FEMALE |
         },
     },
 #line 16877
-    [TRAINER_RAZELUXE] =
+    [DIFFICULTY_NORMAL][TRAINER_RAZELUXE] =
     {
 #line 16878
         .trainerName = _("Razeluxe"),
@@ -42187,7 +42187,7 @@ F_TRAINER_FEMALE |
         .trainerClass = TRAINER_CLASS_RAZELUXE,
 #line 16880
         .trainerPic = TRAINER_PIC_RAZELUXE,
-        .encounterMusic_gender = 
+        .encounterMusic_gender =
 #line 16882
             TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR,
 #line 16883
@@ -42303,7 +42303,7 @@ F_TRAINER_FEMALE |
             .shouldUseDynamax = TRUE,
             .moves = {
 #line 16916
-                MOVE_REVIVAL_BLESSING,
+                MOVE_REVIVAL_BLESSING_2,
                 MOVE_GROWTH,
                 MOVE_HYDRO_PUMP,
                 MOVE_FIRE_BLAST,

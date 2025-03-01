@@ -18071,6 +18071,9 @@ PopulationBombContinue:
 gBattleAnimMove_RevivalBlessing::
 	goto gBattleAnimMove_LunarBlessing
 
+gBattleAnimMove_RevivalBlessing2::
+	goto gBattleAnimMove_LunarBlessing
+
 gBattleAnimMove_TeraStarstorm::
 	loadspritegfx ANIM_TAG_STARSTORM
 	loadspritegfx ANIM_TAG_YELLOW_STAR
