@@ -42201,10 +42201,10 @@ F_TRAINER_FEMALE |
 #line 16886
             .nickname = COMPOUND_STRING("The Face"),
 #line 16886
-            .species = SPECIES_KIRLIA,
+            .species = SPECIES_RAZE_KIRLIA,
             .gender = TRAINER_MON_RANDOM_GENDER,
 #line 16886
-            .heldItem = ITEM_LUM_BERRY,
+            .heldItem = ITEM_EVIOLITE,
 #line 16889
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16887
@@ -42215,23 +42215,23 @@ F_TRAINER_FEMALE |
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
             },
             {
-#line 16890
+#line 16891
             .nickname = COMPOUND_STRING("The Sadist"),
-#line 16890
+#line 16891
             .species = SPECIES_MEWTWO,
             .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16890
-            .heldItem = ITEM_MEWTWONITE_Y,
-#line 16893
-            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16891
-            .lvl = 102,
+            .heldItem = ITEM_MEWTWONITE_Y,
+#line 16894
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16892
+            .lvl = 102,
+#line 16893
             .ball = ITEM_MASTER_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
             .moves = {
-#line 16893
+#line 16894
                 MOVE_SPACIAL_REND,
                 MOVE_ROAR_OF_TIME,
                 MOVE_SHADOW_FORCE,
@@ -42239,66 +42239,66 @@ F_TRAINER_FEMALE |
             },
             },
             {
-#line 16898
+#line 16899
             .nickname = COMPOUND_STRING("The Ego"),
-#line 16898
+#line 16899
             .species = SPECIES_HOOPA_UNBOUND,
             .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16898
-            .heldItem = ITEM_LUM_BERRY,
-#line 16903
-            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16899
+            .heldItem = ITEM_LUM_BERRY,
+#line 16904
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16900
             .ability = ABILITY_MAGICIAN,
-#line 16901
-            .lvl = 100,
 #line 16902
+            .lvl = 100,
+#line 16903
             .ball = ITEM_SPORT_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
-#line 16900
-            .teraType = TYPE_DIVINE,
+#line 16901
+            .teraType = TYPE_STELLAR,
             },
             {
-#line 16904
+#line 16905
             .nickname = COMPOUND_STRING("The Brains"),
-#line 16904
+#line 16905
             .species = SPECIES_ALAKAZAM_MEGA,
             .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16904
-            .heldItem = ITEM_RED_CARD,
-#line 16908
-            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16905
-            .ability = ABILITY_MAGIC_GUARD,
+            .heldItem = ITEM_RED_CARD,
+#line 16909
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16906
-            .lvl = 100,
+            .ability = ABILITY_MAGIC_GUARD,
 #line 16907
+            .lvl = 100,
+#line 16908
             .ball = ITEM_QUICK_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
             },
             {
-#line 16909
+#line 16910
             .nickname = COMPOUND_STRING("CASTER"),
-#line 16909
+#line 16910
             .species = SPECIES_CASTORIA,
-#line 16909
+#line 16910
             .gender = TRAINER_MON_FEMALE,
-#line 16909
+#line 16910
             .heldItem = ITEM_FAIRY_GEM,
-#line 16913
-            .ev = TRAINER_PARTY_EVS(255, 0, 0, 0, 0, 0),
+#line 16914
+            .ev = TRAINER_PARTY_EVS(60, 0, 0, 0, 0, 0),
 #line 16916
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
-#line 16910
-            .ability = ABILITY_SERENE_GRACE,
 #line 16911
+            .ability = ABILITY_SERENE_GRACE,
+#line 16912
             .lvl = 105,
 #line 16915
             .ball = ITEM_CHERISH_BALL,
             .nature = NATURE_HARDY,
-#line 16912
+#line 16913
             .dynamaxLevel = 10,
             .shouldUseDynamax = TRUE,
             .moves = {

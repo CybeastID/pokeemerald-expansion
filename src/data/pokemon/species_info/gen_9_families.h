@@ -8097,10 +8097,10 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
    {
         .baseHP        = 88,
         .baseAttack    = 88,
-        .baseDefense   = 160,
+        .baseDefense   = 80,
         .baseSpeed     = 88,
-        .baseSpAttack  = 255,
-        .baseSpDefense = 200,
+        .baseSpAttack  = 200,
+        .baseSpDefense = 120,
      
         .types = MON_TYPES(TYPE_FAIRY, TYPE_DIVINE),
         .catchRate = 1,
@@ -8146,6 +8146,74 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .levelUpLearnset = sNoneLevelUpLearnset,
         .teachableLearnset = sNoneTeachableLearnset,
         
+    },
+
+    [SPECIES_RAZE_KIRLIA] =
+    {
+        .baseHP        = 38,
+        .baseAttack    = 35,
+        .baseDefense   = 35,
+        .baseSpeed     = 50,
+        .baseSpAttack  = 65,
+        .baseSpDefense = 55,
+        .types = MON_TYPES(TYPE_PSYCHIC, RALTS_FAMILY_TYPE2),
+        .catchRate = 120,
+        .expYield = (P_UPDATED_EXP_YIELDS >= GEN_5) ? 97 : 140,
+        .evYield_SpAttack = 2,
+        .genderRatio = PERCENT_FEMALE(50),
+        .eggCycles = 20,
+        .friendship = 35,
+        .growthRate = GROWTH_SLOW,
+        .eggGroups = RALTS_FAMILY_EGG_GROUPS,
+        .abilities = { ABILITY_SYNCHRONIZE, ABILITY_TRACE, ABILITY_TELEPATHY },
+        .bodyColor = BODY_COLOR_WHITE,
+        .speciesName = _("RazeKirlia"),
+        .cryId = CRY_KIRLIA,
+        .natDexNum = NATIONAL_DEX_KIRLIA,
+        .categoryName = _("Emotion"),
+        .height = 8,
+        .weight = 202,
+        .description = COMPOUND_STRING(
+            "A Kirlia has the psychic power to create \n"
+            "a rip in the dimensions and see into the\n"
+            "future. It is said to dance with pleasure\n"
+            "on sunny mornings."),
+        .pokemonScale = 354,
+        .pokemonOffset = 0,
+        .trainerScale = 256,
+        .trainerOffset = 0,
+        .frontPic = gMonFrontPic_Kirlia,
+        .frontPicSize = MON_COORDS_SIZE(32, 56),
+        .frontPicYOffset = 6,
+        .frontAnimFrames = ANIM_FRAMES(
+            ANIMCMD_FRAME(0, 10),
+            ANIMCMD_FRAME(1, 39),
+            ANIMCMD_FRAME(0, 10),
+        ),
+        .frontAnimId = ANIM_V_SQUISH_AND_BOUNCE,
+        .backPic = gMonBackPic_Kirlia,
+        .backPicSize = P_GBA_STYLE_SPECIES_GFX ? MON_COORDS_SIZE(40, 56) : MON_COORDS_SIZE(48, 56),
+        .backPicYOffset = 6,
+        .backAnimId = BACK_ANIM_SHRINK_GROW_VIBRATE,
+        .palette = gMonPalette_Kirlia,
+        .shinyPalette = gMonShinyPalette_Kirlia,
+        .iconSprite = gMonIcon_Kirlia,
+        .iconPalIndex = 1,
+        SHADOW(-2, 7, SHADOW_SIZE_S)
+        FOOTPRINT(Kirlia)
+        OVERWORLD(
+            sPicTable_Kirlia,
+            SIZE_32x32,
+            SHADOW_SIZE_M,
+            TRACKS_FOOT,
+            sAnimTable_Following,
+            gOverworldPalette_Kirlia,
+            gShinyOverworldPalette_Kirlia
+        )
+        .levelUpLearnset = sKirliaLevelUpLearnset,
+        .teachableLearnset = sKirliaTeachableLearnset,
+        .evolutions = EVOLUTION({EVO_LEVEL, 30, SPECIES_GARDEVOIR},
+                                {EVO_ITEM_MALE, ITEM_DAWN_STONE, SPECIES_GALLADE}),
     },
 
 #ifdef __INTELLISENSE__

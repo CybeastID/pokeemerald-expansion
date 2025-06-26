@@ -16699,7 +16699,7 @@ void BS_Authority(void)
     s16 i;
     
     // Raise all battler stats to max. Reduce all opponent stats to minimum.
-    for (i = 0; i < NUM_BATTLE_STATS; i++) {
+    for (i = 0; i < NUM_STATS; i++) {
         gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
         gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
     }

@@ -1641,8 +1641,9 @@
 #define GEN_CUSTOM_START                                1523
 
 #define SPECIES_CASTORIA                                1524
+#define SPECIES_RAZE_KIRLIA                             1525
 
-#define SPECIES_EGG (SPECIES_CASTORIA + 1)
+#define SPECIES_EGG (SPECIES_RAZE_KIRLIA + 1)
 
 #define NUM_SPECIES SPECIES_EGG
 

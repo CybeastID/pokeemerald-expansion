@@ -428,6 +428,18 @@ LittlerootTown_EventScript_BirchsHouseSignMale::
 	msgbox LittlerootTown_Text_ProfBirchsHouse, MSGBOX_DEFAULT
 	return
 
+LittlerootTown_EventScript_RoadClosed::
+	lockall
+	msgbox LittlerootTown_Text_RoadClosed, MSGBOX_DEFAULT
+	givemon SPECIES_SERPERIOR, 100, ITEM_LEFTOVERS, 1, NATURE_TIMID, 2, 1, 248, 0, 0, 252, 8, 0, 31, 0, 31, 31, 31, 31, MOVE_LEAF_STORM, MOVE_TERA_BLAST, MOVE_GLARE, MOVE_SYNTHESIS, 0, 0, TYPE_GROUND, 0
+	givemon SPECIES_WEAVILE, 100, ITEM_CHOICE_BAND, 1, NATURE_ADAMANT, 0, 0, 0, 252, 0, 252, 0, 4, 31, 31, 31, 31, 31, 31, MOVE_ICE_SHARD, MOVE_KNOCK_OFF, MOVE_ICICLE_CRASH, MOVE_TRIPLE_AXEL, 0, 0, TYPE_ICE, 0
+	givemon SPECIES_ALOMOMOLA, 100, ITEM_HEAVY_DUTY_BOOTS, 1, NATURE_RELAXED, 2, 1, 8, 0, 252, 0, 8, 248, 31, 31, 31, 0, 31, 31, MOVE_FLIP_TURN, MOVE_SCALD, MOVE_WISH, MOVE_PROTECT, 0, 0, TYPE_FAIRY, 0
+	givemon SPECIES_MOLTRES, 100, ITEM_HEAVY_DUTY_BOOTS, 1, NATURE_BOLD, 2, 1, 240, 0, 252, 16, 8, 0, 31, 31, 31, 31, 31, 31, MOVE_U_TURN, MOVE_HURRICANE, MOVE_WILL_O_WISP, MOVE_ROOST, 0, 0, TYPE_GHOST, 0
+	givemon SPECIES_IRON_TREADS, 100, ITEM_LEFTOVERS, 1, NATURE_JOLLY, 0, 1, 248, 0, 0, 104, 8, 156, 31, 31, 31, 31, 31, 31, MOVE_VOLT_SWITCH, MOVE_RAPID_SPIN, MOVE_EARTHQUAKE, MOVE_STEALTH_ROCK, 0, 0, TYPE_GRASS, 0
+	givemon SPECIES_DRAGAPULT, 100, ITEM_HEAVY_DUTY_BOOTS, 1, NATURE_NAIVE, 1, 1, 0, 4, 0, 252, 252, 0, 31, 31, 31, 31, 31, 31, MOVE_HEX, MOVE_DRAGON_DARTS, MOVE_U_TURN, MOVE_THUNDER_WAVE, 0, 0, TYPE_GHOST, 0
+	releaseall
+	end
+
 LittlerootTown_EventScript_PlayersHouseSignFemale::
 	msgbox LittlerootTown_Text_PlayersHouse, MSGBOX_DEFAULT
 	return
@@ -1007,6 +1019,9 @@ LittlerootTown_Text_PlayersHouse:
 
 LittlerootTown_Text_ProfBirchsHouse:
 	.string "PROF. BIRCH'S HOUSE$"
+
+LittlerootTown_Text_RoadClosed:
+	.string "ROAD CLOSED.$"
 
 LittlerootTown_Text_BirchSomethingToShowYouAtLab:
 	.string "PROF. BIRCH: Well, well, {PLAYER}{KUN}!\n"

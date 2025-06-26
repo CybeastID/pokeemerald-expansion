@@ -35,17 +35,21 @@ CastersTrap::
 	setvar VAR_CASTER_REVEAL, 1
 	clearflag FLAG_HIDES_CASTER
 	warpteleport MAP_MYSTERY_ZONE, 2
-	
+	fadescreen FADE_FROM_BLACK
 	playbgm MUS_ENCOUNTER_AQUA, FALSE
 	return
 
 
 OnTransition_Text_0:
-	.string "What a delightfully cute pet I've\n"
+	.string "What a delightfully cute pet I've\l"
 	.string "found! They'd look positively fetching\l"
 	.string "in my terrarium!$"
 
 
 CastersTrap_Text_0:
 	.string "{COLOR LIGHT_GRAY} ??? {COLOR DARK_GRAY}used Teleport!$"
+
+CasterTrap_2::
+	playbgm MUS_ENCOUNTER_AQUA, FALSE
+	msgbox OnTransition_Text_0
 
