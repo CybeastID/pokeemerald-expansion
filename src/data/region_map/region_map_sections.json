@@ -1706,9 +1706,9 @@
     },
     {
       "map_section": "MAPSEC_DIVINE_ZONE",
-      "name": "RAZE'S TOYBOX",
-      "x": 27,
-      "y": 0,
+      "name": "RAZES TOYBOX",
+      "x": 8,
+      "y": 8,
       "width": 1,
       "height": 1
     }

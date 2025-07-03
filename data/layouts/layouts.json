@@ -4430,6 +4430,26 @@
       "secondary_tileset": "gTileset_Shop",
       "border_filepath": "data/layouts/MysteryZone/border.bin",
       "blockdata_filepath": "data/layouts/MysteryZone/map.bin"
+    },
+    {
+      "id": "LAYOUT_CASTERS_TERRARIUM",
+      "name": "CastersTerrarium_Layout",
+      "width": 14,
+      "height": 9,
+      "primary_tileset": "gTileset_General",
+      "secondary_tileset": "gTileset_PokemonCenter",
+      "border_filepath": "data/layouts/CastersTerrarium/border.bin",
+      "blockdata_filepath": "data/layouts/CastersTerrarium/map.bin"
+    },
+    {
+      "id": "LAYOUT_CASTERS_TERRARIUM_EXTERIOR",
+      "name": "CastersTerrariumExterior_Layout",
+      "width": 20,
+      "height": 16,
+      "primary_tileset": "gTileset_General",
+      "secondary_tileset": "gTileset_RusturfTunnel",
+      "border_filepath": "data/layouts/CastersTerrariumExterior/border.bin",
+      "blockdata_filepath": "data/layouts/CastersTerrariumExterior/map.bin"
     }
   ]
 }

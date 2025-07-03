@@ -38,7 +38,9 @@
   ],
   "gMapGroup_RazeluxeDomain": [
     "Test",
-    "MysteryZone"
+    "MysteryZone",
+    "CastersTerrarium",
+    "CastersTerrariumExterior"
   ],
   "gMapGroup_TownsAndRoutes": [
     "PetalburgCity",
