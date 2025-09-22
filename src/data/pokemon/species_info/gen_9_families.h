@@ -8111,7 +8111,7 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         .friendship = 0,
         .growthRate = GROWTH_SLOW,
         .eggGroups = MON_EGG_GROUPS(EGG_GROUP_NO_EGGS_DISCOVERED),
-        .abilities = { ABILITY_SERENE_GRACE, ABILITY_SUPER_LUCK, ABILITY_PIXILATE },
+        .abilities = { ABILITY_MAGIC_GUARD, ABILITY_SUPER_LUCK, ABILITY_PIXILATE },
         .bodyColor = BODY_COLOR_WHITE,
         .speciesName = _("Caster?"),
         .cryId = CRY_NONE,
@@ -8152,10 +8152,10 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
     {
         .baseHP        = 38,
         .baseAttack    = 35,
-        .baseDefense   = 35,
+        .baseDefense   = 61,   // Values adjusted to fake Eviolite
         .baseSpeed     = 50,
         .baseSpAttack  = 65,
-        .baseSpDefense = 55,
+        .baseSpDefense = 91,   // Values adjusted to fake Eviolite
         .types = MON_TYPES(TYPE_PSYCHIC, RALTS_FAMILY_TYPE2),
         .catchRate = 120,
         .expYield = (P_UPDATED_EXP_YIELDS >= GEN_5) ? 97 : 140,

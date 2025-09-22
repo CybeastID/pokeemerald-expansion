@@ -16883,9 +16883,15 @@ Music: Elite Four
 Double Battle: No
 AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
 
-The Face (SPECIES_RAZE_KIRLIA) @ Eviolite
+The Face (SPECIES_RAZE_KIRLIA) @ Psychium-Z
 Level: 100
 Ball: ITEM_LUXURY_BALL
+Nature: Timid
+EVs: 252 HP / 0 Atk / 0 Def / 4 SpA / 0 SpD / 252 Spe
+- Psychic
+- Dazzling Gleam
+- Will-O-Wisp
+- Thunder Wave
 
 
 The Sadist (Mewtwo) @ Mewtwonite Y
@@ -16896,24 +16902,34 @@ Ball: Master Ball
 - Shadow Force
 - MOVE_DMS_PREROGATIVE
 
-The Ego (Hoopa-Unbound) @ Lum Berry  
+The Ego (Hoopa-Unbound) @ Life Orb  
 Ability: Magician
-Tera Type: Stellar
+Tera Type: Divine
 Level: 100
+Nature: Naive
 Ball: Sport Ball
+- Hyperspace Fury
+- Psychic
+- Drain Punch
+- Gunk Shot
 
 The Brains (Alakazam-Mega) @ Red Card  
-Ability: Magic Guard
+Ability: Trace
 Level: 100
 Ball: Quick Ball
+- Psychic
+- Dazzling Gleam
+- Calm Mind
+- Shadow Ball
 
 CASTER (SPECIES_CASTORIA) (F) @ Fairy Gem  
-Ability: Serene Grace
+Ability: Magic Guard
 Level: 105  
 Dynamax Level: 10
-EVs: 60 HP
+Nature: Bold
+EVs: 252 HP / 0 Atk / 4 Def / 0 SpA / 0 SpD / 252 Spe
 Ball: Cherish Ball  
 - Revival Blessing 2  
-- Growth  
-- Hydro Pump  
-- Fire Blast
+- Calm Mind
+- Earth Power  
+- Moon Blast
