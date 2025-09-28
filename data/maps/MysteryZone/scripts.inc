@@ -46,7 +46,7 @@ CastersTrap::
 OnTransition_Text_0:
 	.string "What a delightfully cute pet I've\n"
 	.string "found! They'd look positively fetching\l"
-	.string "in my terrarium! Well...in you go, my\n"
+	.string "in my terrarium! Well...in you go, my\l"
 	.string "cute little humant!$"
 
 

@@ -42204,34 +42204,44 @@ F_TRAINER_FEMALE |
             .species = SPECIES_RAZE_KIRLIA,
             .gender = TRAINER_MON_RANDOM_GENDER,
 #line 16886
-            .heldItem = ITEM_EVIOLITE,
-#line 16889
+            .heldItem = ITEM_PSYCHIUM_Z,
+#line 16890
+            .ev = TRAINER_PARTY_EVS(252, 0, 0, 252, 4, 0),
+#line 16891
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16887
             .lvl = 100,
 #line 16888
             .ball = ITEM_LUXURY_BALL,
-            .nature = NATURE_HARDY,
+#line 16889
+            .nature = NATURE_TIMID,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 16891
+                MOVE_PSYCHIC,
+                MOVE_DAZZLING_GLEAM,
+                MOVE_WILL_O_WISP,
+                MOVE_THUNDER_WAVE,
+            },
             },
             {
-#line 16891
+#line 16897
             .nickname = COMPOUND_STRING("The Sadist"),
-#line 16891
+#line 16897
             .species = SPECIES_MEWTWO,
             .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16891
+#line 16897
             .heldItem = ITEM_MEWTWONITE_Y,
-#line 16894
+#line 16900
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
-#line 16892
+#line 16898
             .lvl = 102,
-#line 16893
+#line 16899
             .ball = ITEM_MASTER_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
             .moves = {
-#line 16894
+#line 16900
                 MOVE_SPACIAL_REND,
                 MOVE_ROAR_OF_TIME,
                 MOVE_SHADOW_FORCE,
@@ -42239,74 +42249,90 @@ F_TRAINER_FEMALE |
             },
             },
             {
-#line 16899
+#line 16905
             .nickname = COMPOUND_STRING("The Ego"),
-#line 16899
+#line 16905
             .species = SPECIES_HOOPA_UNBOUND,
             .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16899
-            .heldItem = ITEM_LUM_BERRY,
-#line 16904
-            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
-#line 16900
-            .ability = ABILITY_MAGICIAN,
-#line 16902
-            .lvl = 100,
-#line 16903
-            .ball = ITEM_SPORT_BALL,
-            .nature = NATURE_HARDY,
-            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
-#line 16901
-            .teraType = TYPE_STELLAR,
-            },
-            {
 #line 16905
-            .nickname = COMPOUND_STRING("The Brains"),
-#line 16905
-            .species = SPECIES_ALAKAZAM_MEGA,
-            .gender = TRAINER_MON_RANDOM_GENDER,
-#line 16905
-            .heldItem = ITEM_RED_CARD,
-#line 16909
+            .heldItem = ITEM_LIFE_ORB,
+#line 16911
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
 #line 16906
-            .ability = ABILITY_MAGIC_GUARD,
-#line 16907
-            .lvl = 100,
+            .ability = ABILITY_MAGICIAN,
 #line 16908
+            .lvl = 100,
+#line 16910
+            .ball = ITEM_SPORT_BALL,
+#line 16909
+            .nature = NATURE_NAIVE,
+            .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+#line 16907
+            .teraType = TYPE_DIVINE,
+            .moves = {
+#line 16911
+                MOVE_HYPERSPACE_FURY,
+                MOVE_PSYCHIC,
+                MOVE_DRAIN_PUNCH,
+                MOVE_GUNK_SHOT,
+            },
+            },
+            {
+#line 16916
+            .nickname = COMPOUND_STRING("The Brains"),
+#line 16916
+            .species = SPECIES_ALAKAZAM_MEGA,
+            .gender = TRAINER_MON_RANDOM_GENDER,
+#line 16916
+            .heldItem = ITEM_RED_CARD,
+#line 16920
+            .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
+#line 16917
+            .ability = ABILITY_TRACE,
+#line 16918
+            .lvl = 100,
+#line 16919
             .ball = ITEM_QUICK_BALL,
             .nature = NATURE_HARDY,
             .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+            .moves = {
+#line 16920
+                MOVE_PSYCHIC,
+                MOVE_DAZZLING_GLEAM,
+                MOVE_CALM_MIND,
+                MOVE_SHADOW_BALL,
+            },
             },
             {
-#line 16910
+#line 16925
             .nickname = COMPOUND_STRING("CASTER"),
-#line 16910
+#line 16925
             .species = SPECIES_CASTORIA,
-#line 16910
+#line 16925
             .gender = TRAINER_MON_FEMALE,
-#line 16910
+#line 16925
             .heldItem = ITEM_FAIRY_GEM,
-#line 16914
-            .ev = TRAINER_PARTY_EVS(60, 0, 0, 0, 0, 0),
-#line 16916
+#line 16930
+            .ev = TRAINER_PARTY_EVS(252, 0, 4, 252, 0, 0),
+#line 16932
             .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
-#line 16911
-            .ability = ABILITY_SERENE_GRACE,
-#line 16912
+#line 16926
+            .ability = ABILITY_MAGIC_GUARD,
+#line 16927
             .lvl = 105,
-#line 16915
+#line 16931
             .ball = ITEM_CHERISH_BALL,
-            .nature = NATURE_HARDY,
-#line 16913
+#line 16929
+            .nature = NATURE_BOLD,
+#line 16928
             .dynamaxLevel = 10,
             .shouldUseDynamax = TRUE,
             .moves = {
-#line 16916
+#line 16932
                 MOVE_REVIVAL_BLESSING_2,
-                MOVE_GROWTH,
-                MOVE_HYDRO_PUMP,
-                MOVE_FIRE_BLAST,
+                MOVE_CALM_MIND,
+                MOVE_EARTH_POWER,
+                MOVE_MOONBLAST,
             },
             },
         },
