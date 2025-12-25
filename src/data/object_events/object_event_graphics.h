@@ -476,3 +476,5 @@ const u16 gObjectEventPal_Astra[] = INCBIN_U16("graphics/object_events/pics/peop
 const u16 gObjectEventPal_Runa[] = INCBIN_U16("graphics/object_events/pics/people/runa_overword.gbapal");
 const u16 gObjectEventPal_Nah[] = INCBIN_U16("graphics/object_events/pics/people/nah_overworld.gbapal");
 const u16 gObjectEventPal_Castoria[] = INCBIN_U16("graphics/object_events/palettes/castoria_overworld.gbapal");
+
+const u32 gObjectEventPic_ApricornTree[] = INCBIN_U32("graphics/object_events/pics/misc/apricorn_tree.4bpp");
