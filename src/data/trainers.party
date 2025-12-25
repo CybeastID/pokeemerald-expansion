@@ -16903,6 +16903,7 @@ Ball: Master Ball
 - MOVE_DMS_PREROGATIVE
 
 The Ego (Hoopa-Unbound) @ Life Orb  
+EVs: 4 HP / 252 Atk / 0 Def / 0 SpA / 0 SpD / 252 Spe
 Ability: Magician
 Tera Type: Divine
 Level: 100
@@ -16913,10 +16914,11 @@ Ball: Sport Ball
 - Drain Punch
 - Gunk Shot
 
-The Brains (Alakazam-Mega) @ Red Card  
+The Brains (Alakazam-Mega) @ Focus Sash
 Ability: Trace
 Level: 100
 Ball: Quick Ball
+EVs: 4 HP / 0 Atk / 0 Def / 252 SpA / 0 SpD / 252 Spe
 - Psychic
 - Dazzling Gleam
 - Calm Mind
