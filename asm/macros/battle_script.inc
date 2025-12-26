@@ -1391,10 +1391,6 @@
 	callnative BS_Authority
     .endm
 
-	.macro dmauthority 
-	callnative BS_Authority
-    .endm
-
 	.macro dostockpilestatchangeswearoff, battler:req, statChangeInstr:req
 	callnative BS_DoStockpileStatChangesWearOff
 	.byte \battler

@@ -19217,11 +19217,10 @@ MightyCleaveDiggingRun:
 	delay 5
 	return
 
-gBattleAnimMove_SupercellSlam::
-<<<<<<< HEAD
 gBattleAnimMove_DmsPrerogative::
 	end @to do
-=======
+
+gBattleAnimMove_SupercellSlam::
 	loadspritegfx ANIM_TAG_IMPACT
 	loadspritegfx ANIM_TAG_SPARK_2
 	delay 0
@@ -19326,6 +19325,8 @@ gBattleAnimMove_BlazingTorque::
 	blendoff
 	call UnsetPsychicBg
 	end
+
+
 
 gBattleAnimMove_WickedTorque::
 	loadspritegfx ANIM_TAG_IMPACT
@@ -21155,7 +21156,6 @@ MatchaGotchaDoubleProjectile:
 	createsprite gSludgeProjectileSpriteTemplate, ANIM_TARGET, 2, 20, 0, 60, 0, TRUE
 	delay 3
 	return
->>>>>>> 66ea9ac4060e2fb32e6d02553e8959e16a9bc4f1
 
 @@@@@@@@@@@@@@@@@@@@@@@ GEN 1-3 @@@@@@@@@@@@@@@@@@@@@@@
 gBattleAnimMove_None::

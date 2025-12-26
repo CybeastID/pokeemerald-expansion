@@ -280,8 +280,8 @@ const u16 gTrainerPalette_RubySapphireBrendan[] = INCBIN_U16("graphics/trainers/
 const u32 gTrainerFrontPic_RubySapphireMay[] = INCBIN_U32("graphics/trainers/front_pics/may_rs.4bpp.smol");
 const u16 gTrainerPalette_RubySapphireMay[] = INCBIN_U16("graphics/trainers/palettes/may_rs.gbapal");
 
-const u32 gTrainerFrontPic_Razeluxe[] = INCBIN_U32("graphics/trainers/front_pics/razeluxe.4bpp.lz");
-const u32 gTrainerPalette_Razeluxe[] = INCBIN_U32("graphics/trainers/front_pics/razeluxe.gbapal.lz");
+const u32 gTrainerFrontPic_Razeluxe[] = INCBIN_U32("graphics/trainers/front_pics/razeluxe.4bpp.smol");
+const u16 gTrainerPalette_Razeluxe[] = INCBIN_U16("graphics/trainers/front_pics/razeluxe.gbapal");
 
 const u8 gTrainerBackPic_Brendan[] = INCBIN_U8("graphics/trainers/back_pics/brendan.4bpp");
 const u8 gTrainerBackPic_May[] = INCBIN_U8("graphics/trainers/back_pics/may.4bpp");

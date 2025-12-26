@@ -1232,7 +1232,7 @@
       "height": 1
     },
     {
-      "map_section": "MAPSEC_DIVINE_ZONE",
+      "id": "MAPSEC_DIVINE_ZONE",
       "name": "RAZES TOYBOX",
       "x": 8,
       "y": 8,

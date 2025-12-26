@@ -206,7 +206,6 @@ BattleScript_EffectDoodleMoveEnd:
 	.4byte BattleScript_EffectAuthority               @ EFFECT_DMS_PREROGATIVE
 
 BattleScript_EffectAuthority::
-	attackstring
     dmauthority
     printstring STRINGID_AUTHORITYWEAKENTARGET
     waitmessage B_WAIT_TIME_LONG
@@ -446,8 +445,6 @@ BattleScript_EffectRevivalBlessing::
 
 BattleScript_EffectRevivalBlessing2::
 	attackcanceler
-	attackstring
-	ppreduce
 	tryrevivalblessing2 BattleScript_ButItFailed
 	attackanimation
 	waitanimation

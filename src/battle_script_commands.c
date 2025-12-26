@@ -14546,22 +14546,6 @@ void BS_JumpIfMoreThanHalfHP(void)
         gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
-void BS_JumpIfHoldEffect(void)
-{
-    u8 battler = gBattlescriptCurrInstr[5];
-    u16 holdEffect = T1_READ_16(gBattlescriptCurrInstr + 6);
-
-    if (GetBattlerHoldEffect(battler, TRUE) == holdEffect)
-    {
-        gBattlescriptCurrInstr = T1_READ_PTR(gBattlescriptCurrInstr + 8);
-    }
-    else
-    {
-        RecordItemEffectBattle(battler, holdEffect);
-        gLastUsedItem = gBattleMons[battler].item;   // For B_LAST_USED_ITEM
-        gBattlescriptCurrInstr += 12;
-    }
-}
 
 // DM's Authority
 void BS_Authority(void)
@@ -14596,7 +14580,7 @@ void BS_TryRevivalBlessing2(void)
         struct Pokemon *party = GetSideParty(side);
 
         u16 hp = GetMonData(&party[gSelectedMonPartyId], MON_DATA_MAX_HP);
-        BtlController_EmitSetMonData(gBattlerAttacker, BUFFER_A, REQUEST_HP_BATTLE, 1u << gSelectedMonPartyId, sizeof(hp), &hp);
+        BtlController_EmitSetMonData(gBattlerAttacker, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 1u << gSelectedMonPartyId, sizeof(hp), &hp);
         MarkBattlerForControllerExec(gBattlerAttacker);
         PREPARE_SPECIES_BUFFER(gBattleTextBuff1, GetMonData(&party[gSelectedMonPartyId], MON_DATA_SPECIES));
 
@@ -14616,7 +14600,7 @@ void BS_TryRevivalBlessing2(void)
     // Open party menu, wait to go to next instruction.
     else
     {
-        BtlController_EmitChoosePokemon(gBattlerAttacker, BUFFER_A, PARTY_ACTION_CHOOSE_FAINTED_MON, PARTY_SIZE, ABILITY_NONE, gBattleStruct->battlerPartyOrders[gBattlerAttacker]);
+        BtlController_EmitChoosePokemon(gBattlerAttacker, B_COMM_TO_CONTROLLER, PARTY_ACTION_CHOOSE_FAINTED_MON, PARTY_SIZE, ABILITY_NONE, 0, gBattleStruct->battlerPartyOrders[gBattlerAttacker]);
         MarkBattlerForControllerExec(gBattlerAttacker);
     }
     return;
