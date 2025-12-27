@@ -1,0 +1,35 @@
+{
+  "id": "MAP_TERRARIUM_TOWN",
+  "name": "TerrariumTown",
+  "layout": "LAYOUT_TERRARIUM_TOWN",
+  "music": "MUS_RG_SEVII_ROUTE",
+  "region_map_section": "MAPSEC_CASTERSWORLD",
+  "requires_flash": false,
+  "weather": "WEATHER_SUNNY",
+  "map_type": "MAP_TYPE_TOWN",
+  "allow_cycling": false,
+  "allow_escaping": false,
+  "allow_running": false,
+  "show_map_name": true,
+  "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
+  "connections": [
+    {
+      "map": "MAP_TERRARIUM_EAST_WATER",
+      "offset": 2,
+      "direction": "right"
+    }
+  ],
+  "object_events": [],
+  "warp_events": [
+    {
+      "warp_id": "WARP_ID_FAERIETOWN_NORTH",
+      "x": 14,
+      "y": 0,
+      "elevation": 0,
+      "dest_map": "MAP_CASTERS_TERRARIUM_EXTERIOR",
+      "dest_warp_id": "1"
+    }
+  ],
+  "coord_events": [],
+  "bg_events": []
+}

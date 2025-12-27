@@ -2,10 +2,10 @@
   "id": "MAP_CASTERS_TERRARIUM",
   "name": "CastersTerrarium",
   "layout": "LAYOUT_CASTERS_TERRARIUM",
-  "music": "MUS_RG_LAVENDER",
+  "music": "MUS_WEATHER_GROUDON",
   "region_map_section": "MAPSEC_DIVINE_ZONE",
   "requires_flash": false,
-  "weather": "WEATHER_FOG_HORIZONTAL",
+  "weather": "WEATHER_NONE",
   "map_type": "MAP_TYPE_UNKNOWN",
   "allow_cycling": false,
   "allow_escaping": false,
@@ -13,7 +13,22 @@
   "show_map_name": false,
   "battle_scene": "MAP_BATTLE_SCENE_NORMAL",
   "connections": null,
-  "object_events": [],
+  "object_events": [
+    {
+      "local_id": "LOCALID_CASTERS_NURSE",
+      "graphics_id": "OBJ_EVENT_GFX_NURSE",
+      "x": 4,
+      "y": 6,
+      "elevation": 0,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "Terrarium_Nurse_EventScript",
+      "flag": "0"
+    }
+  ],
   "warp_events": [
     {
       "x": 6,
@@ -23,7 +38,7 @@
       "dest_warp_id": "0"
     },
     {
-      "x": 8,
+      "x": 7,
       "y": 15,
       "elevation": 0,
       "dest_map": "MAP_CASTERS_TERRARIUM",

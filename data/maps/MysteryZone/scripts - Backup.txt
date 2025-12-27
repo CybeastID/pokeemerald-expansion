@@ -1,28 +1,37 @@
 MysteryZone_MapScripts::
-	map_script MAP_SCRIPT_ON_TRANSITION, MysteryZone_OnTransition
-	map_script MAP_SCRIPT_ON_FRAME_TABLE, MysteryZone_On_Frame
+	map_script MAP_SCRIPT_ON_TRANSITION, OnTransition
+	map_script MAP_SCRIPT_ON_FRAME_TABLE, On_Frame
 	.byte 0
 
-MysteryZone_On_Frame:
-	map_script_2 VAR_CASTER_REVEAL, 1, MysteryZone_OnFrame_1
+On_Frame:
+	map_script_2 VAR_CASTER_REVEAL, 1, OnFrame_1
 	.2byte 0
 
-MysteryZone_OnFrame_1::
+OnFrame_1::
 	delay 10
-	msgbox CutieTrap_Text MSGBOX_AUTOCLOSE
+	msgbox CutieTrap_Text
+	waitmessage
+	closemessage
 	callnative StartPlayerShrinkAnimation
-	playbgm MUS_ENCOUNTER_SUSPICIOUS FALSE
+	fadenewbgm MUS_ENCOUNTER_SUSPICIOUS
 	delay 70
-	msgbox MysteryZone_OnTransition_Text_0 MSGBOX_AUTOCLOSE
-	fadescreen FADE_TO_BLACK
+	msgbox OnTransition_Text_0
+	waitmessage
+	closemessage
+	addvar VAR_CASTER_REVEAL, 1
+	fadescreenspeed FADE_TO_BLACK, 1
 	fadeoutbgm 1
-	delay 50
-	msgbox CutieTrap2_Text MSGBOX_AUTOCLOSE
+	msgbox CutieTrap2_Text
+	waitmessage
+	closemessage
+	releaseall
+	warpwhitefade MAP_CASTERS_TERRARIUM, 6, 5
 	playse SE_FALL
-	waitse
-	warpsilent MAP_CASTERS_TERRARIUM, 1
-	waitstate
 	return
+	
+	waitmessage
+	closemessage
+
 Dbug1_Text:
 	.string "Debug: Player should be falling now.$"
 
@@ -31,18 +40,18 @@ CutieTrap_Text:
 	.string "found! They'd look positively fetching\l"
 	.string "in my terrarium!$"
 	
-MysteryZone_OnTransition::
+OnTransition::
 	compare VAR_CASTER_REVEAL, 0
-	goto_if_eq MysteryZone_OnTransition_1
+	goto_if_eq OnTransition_1
 	compare VAR_CASTER_REVEAL, 1
-	goto_if_eq MysteryZone_OnTransition_4
+	goto_if_eq OnTransition_4
 	return
 
-MysteryZone_OnTransition_1:
+OnTransition_1:
 	setflag FLAG_HIDES_CASTER
 	return
 
-MysteryZone_OnTransition_4:
+OnTransition_4:
 	
 	return
 
@@ -58,7 +67,7 @@ CastersTrap::
 	return
 
 
-MysteryZone_OnTransition_Text_0:
+OnTransition_Text_0:
 	.string "Teehee~! A little cutie like you...\n"
 	.string "you'll never escape me! Well...in you go,\l"
 	.string "my cute little pet Trainer!$"

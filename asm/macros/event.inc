@@ -2710,3 +2710,4 @@
 	callnative ScrCmd_istmrelearneractive, requests_effects=1
 	.4byte \destination
 	.endm
+

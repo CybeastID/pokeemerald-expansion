@@ -1038,6 +1038,8 @@ ShrinkPlayerScript::
 	release
 	waitmessage
 	closemessage
+	fadescreenspeed FADE_TO_BLACK, 1
+	warpsilent MAP_CASTERS_TERRARIUM, 1
 
 ShrinkPlayerScript_Text_Shrink:
     .string "??? Used Legendary Reduce!$"

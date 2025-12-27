@@ -2,7 +2,7 @@
   "id": "MAP_CASTERS_TERRARIUM_EXTERIOR",
   "name": "CastersTerrariumExterior",
   "layout": "LAYOUT_CASTERS_TERRARIUM_EXTERIOR",
-  "music": "MUS_RG_MT_MOON",
+  "music": "MUS_WEATHER_GROUDON",
   "region_map_section": "MAPSEC_DIVINE_ZONE",
   "requires_flash": false,
   "weather": "WEATHER_FOG_DIAGONAL",
@@ -20,6 +20,13 @@
       "y": 3,
       "elevation": 0,
       "dest_map": "MAP_CASTERS_TERRARIUM",
+      "dest_warp_id": "0"
+    },
+    {
+      "x": 9,
+      "y": 14,
+      "elevation": 0,
+      "dest_map": "MAP_TERRARIUM_TOWN",
       "dest_warp_id": "0"
     }
   ],

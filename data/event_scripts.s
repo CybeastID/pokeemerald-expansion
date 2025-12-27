@@ -1172,3 +1172,7 @@ EventScript_VsSeekerChargingDone::
 	.include "data/scripts/apricorn_tree.inc"
 
 	.include "data/maps/IntermediateWarpMap/scripts.inc"
+
+	.include "data/maps/TerrariumTown/scripts.inc"
+
+	.include "data/maps/TerrariumEastWater/scripts.inc"

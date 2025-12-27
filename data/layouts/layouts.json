@@ -4460,6 +4460,26 @@
       "secondary_tileset": "gTileset_Petalburg",
       "border_filepath": "data/layouts/IntermediateWarpMap/border.bin",
       "blockdata_filepath": "data/layouts/IntermediateWarpMap/map.bin"
+    },
+    {
+      "id": "LAYOUT_TERRARIUM_TOWN",
+      "name": "TerrariumTown_Layout",
+      "width": 34,
+      "height": 24,
+      "primary_tileset": "gTileset_General",
+      "secondary_tileset": "gTileset_Rustboro",
+      "border_filepath": "data/layouts/TerrariumTown/border.bin",
+      "blockdata_filepath": "data/layouts/TerrariumTown/map.bin"
+    },
+    {
+      "id": "LAYOUT_TERRARIUM_EAST_WATER",
+      "name": "TerrariumEastWater_Layout",
+      "width": 20,
+      "height": 22,
+      "primary_tileset": "gTileset_General",
+      "secondary_tileset": "gTileset_Petalburg",
+      "border_filepath": "data/layouts/TerrariumEastWater/border.bin",
+      "blockdata_filepath": "data/layouts/TerrariumEastWater/map.bin"
     }
   ]
 }
