@@ -45,3 +45,10 @@ const struct OamData gObjectEventBaseOam_64x64 = {
     .size = SPRITE_SIZE(64x64),
     .priority = 2
 };
+
+const struct OamData gObjectEventBaseOam_16x32_Affine = {
+    .shape = SPRITE_SHAPE(16x32),
+    .size = SPRITE_SIZE(16x32),
+    .priority = 2,
+    .affineMode = ST_OAM_AFFINE_DOUBLE, // Enable affine transformations
+};

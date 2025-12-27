@@ -4435,7 +4435,7 @@
       "id": "LAYOUT_CASTERS_TERRARIUM",
       "name": "CastersTerrarium_Layout",
       "width": 14,
-      "height": 9,
+      "height": 16,
       "primary_tileset": "gTileset_General",
       "secondary_tileset": "gTileset_PokemonCenter",
       "border_filepath": "data/layouts/CastersTerrarium/border.bin",
@@ -4450,6 +4450,16 @@
       "secondary_tileset": "gTileset_RusturfTunnel",
       "border_filepath": "data/layouts/CastersTerrariumExterior/border.bin",
       "blockdata_filepath": "data/layouts/CastersTerrariumExterior/map.bin"
+    },
+    {
+      "id": "LAYOUT_INTERMEDIATE_WARP_MAP",
+      "name": "IntermediateWarpMap_Layout",
+      "width": 1,
+      "height": 1,
+      "primary_tileset": "gTileset_General",
+      "secondary_tileset": "gTileset_Petalburg",
+      "border_filepath": "data/layouts/IntermediateWarpMap/border.bin",
+      "blockdata_filepath": "data/layouts/IntermediateWarpMap/map.bin"
     }
   ]
 }

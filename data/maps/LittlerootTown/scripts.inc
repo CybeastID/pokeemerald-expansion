@@ -1029,3 +1029,17 @@ LittlerootTown_Text_BirchSomethingToShowYouAtLab:
 	.string "I have something to show you.\n"
 	.string "Let's go to my LAB.$"
 
+ShrinkPlayerScript::
+    lock
+    msgbox ShrinkPlayerScript_Text_Shrink, MSGBOX_AUTOCLOSE
+    callnative StartPlayerShrinkAnimation
+    delay 60
+    msgbox ShrinkPlayerScript_Text_Shrunk, MSGBOX_DEFAULT
+	release
+	waitmessage
+	closemessage
+
+ShrinkPlayerScript_Text_Shrink:
+    .string "??? Used Legendary Reduce!$"
+ShrinkPlayerScript_Text_Shrunk:
+    .string "You hear fae giggling...$"

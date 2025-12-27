@@ -1170,3 +1170,5 @@ EventScript_VsSeekerChargingDone::
 	.include "data/maps/CastersTerrariumExterior/scripts.inc"
 	.include "data/scripts/battle_frontier.inc"
 	.include "data/scripts/apricorn_tree.inc"
+
+	.include "data/maps/IntermediateWarpMap/scripts.inc"

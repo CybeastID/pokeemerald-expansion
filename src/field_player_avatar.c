@@ -149,6 +149,8 @@ static void Task_WaitStopSurfing(u8);
 
 static u8 TrySpinPlayerForWarp(struct ObjectEvent *, s16 *);
 
+void AdjustAffineSpriteOffset(struct Sprite *sprite);
+
 static bool8 (*const sForcedMovementTestFuncs[NUM_FORCED_MOVEMENTS])(u8) =
 {
     MetatileBehavior_IsTrickHouseSlipperyFloor,
@@ -327,6 +329,8 @@ static bool8 (*const sPlayerAvatarSecretBaseMatSpin[])(struct Task *, struct Obj
 
 void MovementType_Player(struct Sprite *sprite)
 {
+    sprite->x2 = -8; // Offset player
+    sprite->y2 = -16; // Offset player
     UpdateObjectEventCurrentMovement(&gObjectEvents[sprite->data[0]], sprite, (bool8 (*)(struct ObjectEvent *, struct Sprite *))ObjectEventCB2_NoMovement2);
 }
 
@@ -1177,7 +1181,19 @@ void PlayerSetAnimId(u8 movementActionId, u8 copyableMovement)
     {
         PlayerSetCopyableMovement(copyableMovement);
         ObjectEventSetHeldMovement(&gObjectEvents[gPlayerAvatar.objectEventId], movementActionId);
+        AdjustAffineSpriteOffset(&gSprites[gPlayerAvatar.spriteId]);
     }
+}
+
+void AdjustAffineSpriteOffset(struct Sprite *sprite)
+{
+    // Adjust pivot point
+    sprite->x2 = -8;  // Example: Shift left by 8 pixels
+    sprite->y2 = -16; // Example: Shift up by 16 pixels
+
+    // Update OAM to apply changes
+    sprite->oam.x = sprite->x + sprite->x2;
+    sprite->oam.y = sprite->y + sprite->y2;
 }
 
 // slow stairs (from FRLG--faster than slow)

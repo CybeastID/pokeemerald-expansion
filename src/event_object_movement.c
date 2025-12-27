@@ -1898,6 +1898,15 @@ u8 CreateObjectGraphicsSpriteWithTag(u16 graphicsId, void (*callback)(struct Spr
     if (spriteId != MAX_SPRITES && subspriteTables != NULL)
     {
         sprite = &gSprites[spriteId];
+        // Fix affine center pivot offset for player sprite if applicable
+        if (graphicsId == OBJ_EVENT_GFX_BRENDAN_NORMAL || graphicsId == OBJ_EVENT_GFX_MAY_NORMAL)
+            {
+            // sprite->x2 -= 8;  // Shift left by half a 32x32 sprite width
+            // sprite->y2 -= 16;  // Shift up by half height (adjust if using 16x32 sprites: x2 -= 8)
+
+            sprite->oam.x = sprite->x + sprite->x2;
+            sprite->oam.y = sprite->y + sprite->y2;
+            }
         if (OW_GFX_COMPRESS && graphicsInfo->compressed)
             sprite->sheetSpan = GetSpanPerImage(sprite->oam.shape, sprite->oam.size);
         SetSubspriteTables(sprite, subspriteTables);

@@ -40,7 +40,8 @@
     "Test",
     "MysteryZone",
     "CastersTerrarium",
-    "CastersTerrariumExterior"
+    "CastersTerrariumExterior",
+    "IntermediateWarpMap"
   ],
   "gMapGroup_TownsAndRoutes": [
     "PetalburgCity",
