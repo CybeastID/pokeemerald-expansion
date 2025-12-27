@@ -33,7 +33,6 @@ CastersTerrarium_Text_WelcomeToCastersTerrarium:
 	.string "Well...welcome to the Pokemon Center.\p"
 	.string "I'm the Nurse Joy she scooped up to helm\n" 
 	.string "the place.$"
-	.string 
 
 EventScript_TerrariumPkmnCenterNurse::
 	lock

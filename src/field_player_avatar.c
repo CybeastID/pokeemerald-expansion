@@ -329,8 +329,16 @@ static bool8 (*const sPlayerAvatarSecretBaseMatSpin[])(struct Task *, struct Obj
 
 void MovementType_Player(struct Sprite *sprite)
 {
-    sprite->x2 = -8; // Offset player
-    sprite->y2 = -16; // Offset player
+    if (sprite->oam.affineMode == ST_OAM_AFFINE_DOUBLE)
+    {
+        sprite->x2 = -8; // Offset player
+        sprite->y2 = -16; // Offset player
+    }
+    else
+    {
+        sprite->x2 = 0;
+        sprite->y2 = 0; // Reset offset
+    }
     UpdateObjectEventCurrentMovement(&gObjectEvents[sprite->data[0]], sprite, (bool8 (*)(struct ObjectEvent *, struct Sprite *))ObjectEventCB2_NoMovement2);
 }
 

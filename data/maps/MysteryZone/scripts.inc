@@ -9,17 +9,16 @@ MysteryZone_On_Frame:
 
 MysteryZone_OnFrame_1::
 	delay 10
-	msgbox CutieTrap_Text MSGBOX_AUTOCLOSE
+	msgbox CutieTrap_Text MSGBOX_NPC
 	callnative StartPlayerShrinkAnimation
 	playbgm MUS_ENCOUNTER_SUSPICIOUS FALSE
 	delay 70
-	msgbox MysteryZone_OnTransition_Text_0 MSGBOX_AUTOCLOSE
+	msgbox MysteryZone_OnTransition_Text_0 MSGBOX_NPC
 	fadescreen FADE_TO_BLACK
 	fadeoutbgm 1
 	delay 50
-	msgbox CutieTrap2_Text MSGBOX_AUTOCLOSE
+	msgbox CutieTrap2_Text MSGBOX_NPC
 	playse SE_FALL
-	waitse
 	warpsilent MAP_CASTERS_TERRARIUM, 1
 	waitstate
 	return
