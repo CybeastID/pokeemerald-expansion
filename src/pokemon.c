@@ -2,6 +2,7 @@
 #include "malloc.h"
 #include "apprentice.h"
 #include "battle.h"
+#include "battle_main.h"
 #include "battle_ai_switch_items.h"
 #include "battle_anim.h"
 #include "battle_controllers.h"
@@ -1027,6 +1028,28 @@ void ZeroEnemyPartyMons(void)
         ZeroMonData(&gEnemyParty[i]);
 }
 
+void PlayerSmolDifficultyTweak(struct Pokemon *mon)
+{
+    if (FlagGet(FLAG_PLAYER_SMOL)) {
+        // Enemy-only
+        if (IsEnemyMon(mon)) {
+            // Multiply all stats by 5x (adjust factor)
+            s32 n;
+            for (u8 i = 1; i < NUM_STATS; i++) {  // Non-HP
+                n = GetMonData(mon, MON_DATA_MAX_HP + i);
+                n = (n * 5);
+                SetMonData(mon, MON_DATA_MAX_HP + i, &n);  // Update
+            }
+            // Adjust current HP
+            s32 maxHP = GetMonData(mon, MON_DATA_MAX_HP);
+            maxHP = (maxHP * 10);
+            s32 currentHP = maxHP;
+            SetMonData(mon, MON_DATA_MAX_HP, &maxHP);  // Update max HP first
+            SetMonData(mon, MON_DATA_HP, &currentHP);  // Full heal
+        }
+    }
+}
+
 void CreateMon(struct Pokemon *mon, u16 species, u8 level, u8 fixedIV, u8 hasFixedPersonality, u32 fixedPersonality, u8 otIdType, u32 fixedOtId)
 {
     u32 mail;
@@ -1695,6 +1718,10 @@ static u16 CalculateBoxMonChecksumReencrypt(struct BoxPokemon *boxMon)
     return checksum;
 }
 
+bool8 IsEnemyMon(struct Pokemon *mon) {
+    return (mon >= gEnemyParty && mon < gEnemyParty + PARTY_SIZE);
+}
+
 void CalculateMonStats(struct Pokemon *mon)
 {
     s32 oldMaxHP = GetMonData(mon, MON_DATA_MAX_HP, NULL);
@@ -1770,8 +1797,10 @@ void CalculateMonStats(struct Pokemon *mon)
     // Ensure currentHP does not surpass newMaxHP.
     if (currentHP > newMaxHP)
         currentHP = newMaxHP;
+    
 
     SetMonData(mon, MON_DATA_HP, &currentHP);
+    PlayerSmolDifficultyTweak(mon);
 }
 
 void BoxMonToMon(const struct BoxPokemon *src, struct Pokemon *dest)

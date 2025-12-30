@@ -5,5 +5,6 @@
 
 void StartPlayerShrinkAnimation(struct ScriptContext *ctx);
 void ResetPlayerSprite(struct ScriptContext *ctx);
+void PlayerStaysShrunk(struct ScriptContext *ctx);
 
 #endif

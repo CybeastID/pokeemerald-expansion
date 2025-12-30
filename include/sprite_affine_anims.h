@@ -10,4 +10,7 @@ extern const union AffineAnimCmd *const gAffineAnims_Shrinking[];
 extern const union AffineAnimCmd gAffineAnim_Reset[];
 extern const union AffineAnimCmd *const gAffineAnims_Reset[];
 
+extern const union AffineAnimCmd gAffineAnim_ShrunkPlayer[];
+extern const union AffineAnimCmd *const gAffineAnims_ShrunkPlayer[];
+
 #endif

@@ -25,6 +25,8 @@
 #include "task.h"
 #include "tv.h"
 #include "wild_encounter.h"
+#include "sprite_affine_anims.h"
+#include "sprite_effects.h"
 #include "constants/abilities.h"
 #include "constants/event_objects.h"
 #include "constants/event_object_movement.h"
@@ -333,6 +335,14 @@ void MovementType_Player(struct Sprite *sprite)
     {
         sprite->x2 = -8; // Offset player
         sprite->y2 = -16; // Offset player
+        u8 dir = gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;
+        s8 flip = (dir == DIR_EAST) ? -1 : 1;
+        
+        struct OamMatrix *matrix = &gOamMatrices[sprite->oam.matrixNum];
+        
+        s16 currentPA = matrix->a;
+        s16 magnitude = (currentPA < 0 ? -currentPA : currentPA);
+        matrix->a = flip * magnitude;
     }
     else
     {
@@ -1058,6 +1068,10 @@ static void DoPlayerAvatarTransition(void)
                 sPlayerAvatarTransitionFuncs[i](&gObjectEvents[gPlayerAvatar.objectEventId]);
         }
         gPlayerAvatar.transitionFlags = 0;
+
+/*    if (FlagGet(FLAG_PLAYER_SMOL)) {
+      PlayerStaysShrunk(NULL);
+}*/
     }
 }
 

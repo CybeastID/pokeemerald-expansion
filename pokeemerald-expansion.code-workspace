@@ -6,7 +6,8 @@
 	],
 	"settings": {
 		"files.associations": {
-			"recorded_battle.h": "c"
+			"recorded_battle.h": "c",
+			"metatile_behaviors.h": "c"
 		},
 		"makefile.configureOnOpen": false
 	}

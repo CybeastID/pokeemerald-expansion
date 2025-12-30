@@ -34,6 +34,7 @@
 #include "constants/songs.h"
 #include "constants/items.h"
 #include "caps.h"
+#include "event_data.h"
 
 enum
 {   // Corresponds to gHealthboxElementsGfxTable (and the tables after it) in graphics.c
@@ -901,7 +902,7 @@ void InitBattlerHealthboxCoords(u8 battler)
     UpdateSpritePos(gHealthboxSpriteIds[battler], x, y);
 }
 
-static void UpdateLvlInHealthbox(u8 healthboxSpriteId, u8 lvl)
+static void UpdateLvlInHealthbox(u8 healthboxSpriteId, u8 lvl, u16 species)
 {
     u32 windowId, spriteTileNum;
     u8 *windowTileData;
@@ -922,10 +923,27 @@ static void UpdateLvlInHealthbox(u8 healthboxSpriteId, u8 lvl)
     {
         text[0] = CHAR_EXTRA_SYMBOL;
         text[1] = CHAR_LV_2;
-
+        if (GetBattlerSide(battler) == B_SIDE_OPPONENT && (lvl > 100 || FlagGet(FLAG_PLAYER_SMOL))) {
+            // Replace with "???"
+            text[2] = CHAR_QUESTION_MARK;
+            text[3] = CHAR_QUESTION_MARK;
+            text[4] = CHAR_QUESTION_MARK;
+            text[5] = EOS;
+            xPos = 0;  // Adjust xPos for "???"
+            UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
+    }   else if (species == SPECIES_CASTORIA)
+        {
+            text[2] = CHAR_1;
+            text[3] = EOS;
+            xPos = 10;  // Adjust xPos for "1"
+            UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
+        }
+        else {
+    
         objVram = ConvertIntToDecimalStringN(text + 2, lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
         xPos = 5 * (3 - (objVram - (text + 2)));
         UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
+        }
     }
 
     windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(text, xPos, 3, 2, &windowId);
@@ -1995,7 +2013,7 @@ void UpdateHealthboxAttribute(u8 healthboxSpriteId, struct Pokemon *mon, u8 elem
         u8 isDoubles = GetBattlerCoordsIndex(battler) == BATTLE_COORDS_DOUBLES;
 
         if (elementId == HEALTHBOX_LEVEL || elementId == HEALTHBOX_ALL)
-            UpdateLvlInHealthbox(healthboxSpriteId, GetMonData(mon, MON_DATA_LEVEL));
+            UpdateLvlInHealthbox(healthboxSpriteId, GetMonData(mon, MON_DATA_LEVEL), GetMonData(mon,MON_DATA_SPECIES));
 
         if (elementId == HEALTHBOX_ALL)
             UpdateHpTextInHealthbox(healthboxSpriteId, HP_BOTH, currHp, maxHp);
@@ -2040,7 +2058,7 @@ void UpdateHealthboxAttribute(u8 healthboxSpriteId, struct Pokemon *mon, u8 elem
     else
     {
         if (elementId == HEALTHBOX_LEVEL || elementId == HEALTHBOX_ALL)
-            UpdateLvlInHealthbox(healthboxSpriteId, GetMonData(mon, MON_DATA_LEVEL));
+            UpdateLvlInHealthbox(healthboxSpriteId, GetMonData(mon, MON_DATA_LEVEL), GetMonData(mon, MON_DATA_SPECIES));
         if (gBattleSpritesDataPtr->battlerData[battler].hpNumbersNoBars)
         {
             if (elementId == HEALTHBOX_ALL)

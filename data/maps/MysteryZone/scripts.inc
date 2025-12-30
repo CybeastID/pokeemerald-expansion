@@ -13,6 +13,7 @@ MysteryZone_OnFrame_1::
 	callnative StartPlayerShrinkAnimation
 	playbgm MUS_ENCOUNTER_SUSPICIOUS FALSE
 	delay 70
+	setflag FLAG_PLAYER_SMOL
 	msgbox MysteryZone_OnTransition_Text_0 MSGBOX_NPC
 	fadescreen FADE_TO_BLACK
 	fadeoutbgm 1
@@ -20,8 +21,8 @@ MysteryZone_OnFrame_1::
 	msgbox CutieTrap2_Text MSGBOX_NPC
 	playse SE_FALL
 	warpsilent MAP_CASTERS_TERRARIUM, 1
-	waitstate
 	return
+
 Dbug1_Text:
 	.string "Debug: Player should be falling now.$"
 

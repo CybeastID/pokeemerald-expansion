@@ -11565,7 +11565,7 @@
           "map": "MAP_LITTLEROOT_TOWN",
           "base_label": "gLittlerootTown0",
           "land_mons": {
-            "encounter_rate": 100,
+            "encounter_rate": 107,
             "mons": [
               {
                 "min_level": 5,
