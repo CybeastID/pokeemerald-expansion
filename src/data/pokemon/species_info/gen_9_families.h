@@ -8250,6 +8250,7 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
             "Don't give her your name."),
         .pokemonScale = 250,
         .pokemonOffset = 0,
+        .enemyMonElevation = 16,
         .trainerScale = 4800,
         .trainerOffset = -50,
         .frontPic = gMonFrontPic_Castoria,
