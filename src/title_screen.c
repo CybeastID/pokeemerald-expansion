@@ -46,11 +46,12 @@ enum {
 #define RESET_RTC_BUTTON_COMBO (B_BUTTON | SELECT_BUTTON | DPAD_LEFT)
 #define BERRY_UPDATE_BUTTON_COMBO (B_BUTTON | SELECT_BUTTON)
 #define A_B_START_SELECT (A_BUTTON | B_BUTTON | START_BUTTON | SELECT_BUTTON)
+
 #ifdef NEW_TITLE_SCREEN
-#define tFadeTimer     data[10]  // Safe unused
+#define tFadeTimer     data[10]
 #define tFadeStep      data[11]
-#define tFadeActive    data[12]  // 0=wait, 1=fading
-#define tFadeDir       data[13]
+#define tFadeActive    data[12]  // 0=wait, 1=fading out, 2=fading in
+#define tCurrentBg     data[13]  // 0=bg1, 1=bg2
 #endif
 
 
@@ -712,20 +713,9 @@ LoadPalette(blackPalette, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
 // LoadPalette(sTitleScreenRayquazaPal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);  // sTitleScreenRayquazaPal = INCBIN_U16("graphics/title_screen/rayquaza.gbapal");
 #endif
         // second bg3
-#ifdef NEW_TITLE_SCREEN
-// Load second background for crossfade
-DecompressDataWithHeaderVram(sTitleScreenAltGfx, (void *)BG_CHAR_ADDR(1));
-LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
 
-// Use a static buffer instead of dynamic allocation
-static u16 tilemapBuffer[32 * 32];
-LZ77UnCompWram(sTitleScreenAltTilemap, tilemapBuffer);
-for (int i = 0; i < 32 * 32; i++)
-{
-    tilemapBuffer[i] = (tilemapBuffer[i] & 0xFFF) | (15 << 12);  // Set to palette 15
-}
-CpuCopy16(tilemapBuffer, (void *)BG_SCREEN_ADDR(31), 32 * 32 * 2);
-#endif
+
+
 
         ScanlineEffect_Stop();
         ResetTasks();
@@ -779,51 +769,42 @@ CpuCopy16(tilemapBuffer, (void *)BG_SCREEN_ADDR(31), 32 * 32 * 2);
         #endif
 
         SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(2) | BGCNT_SCREENBASE(26) | BGCNT_16COLOR | BGCNT_TXT256x256);
-        #ifdef NEW_TITLE_SCREEN_BETA
-        SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(27) | BGCNT_16COLOR | BGCNT_TXT256x256);
-        #endif
+    //    #ifdef NEW_TITLE_SCREEN_BETA
         SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(9) | BGCNT_256COLOR | BGCNT_AFF256x256);
 #ifdef NEW_TITLE_SCREEN
-SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(1) | BGCNT_SCREENBASE(31) | BGCNT_16COLOR | BGCNT_TXT256x256);
-SetGpuReg(REG_OFFSET_BG3HOFS, 0);
-SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+/*// NEW_TITLE_SCREEN uses BG1 for second background crossfade
+SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(30) | BGCNT_16COLOR | BGCNT_TXT256x256);
+SetGpuReg(REG_OFFSET_BG1HOFS, 0);
+SetGpuReg(REG_OFFSET_BG1VOFS, 0);
+*/
+#elif defined(NEW_TITLE_SCREEN_BETA)
+// BETA doesn't use BG1 (clouds disabled)
+// Don't set up BG1CNT at all
+#else
+// Original uses BG1 for clouds
+SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(27) | BGCNT_16COLOR | BGCNT_TXT256x256);
 #endif
         
-        #ifdef NEW_TITLE_SCREEN_BETA
+        EnableInterrupts(INTR_FLAG_VBLANK);
+
+#if defined(NEW_TITLE_SCREEN_BETA)
+// BETA (with or without NEW_TITLE_SCREEN): BG0 (custom bg) + BG2 (logo), no BG1
 SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
                             | DISPCNT_OBJ_1D_MAP
-                            | DISPCNT_BG0_ON   // Your custom BG
-                            
-                            | DISPCNT_BG2_ON   // Logo
+                            | DISPCNT_BG0_ON
+                            | DISPCNT_BG2_ON
                             | DISPCNT_OBJ_ON
                             | DISPCNT_WIN0_ON
                             | DISPCNT_OBJWIN_ON);
-
-// Remove clouds blend (in Task_TitleScreenPhase2)
-// SetGpuReg(REG_OFFSET_BLDCNT, 0);  // No blend needed without clouds
-// SetGpuReg(REG_OFFSET_BLDALPHA, 0);
-        #endif
-        EnableInterrupts(INTR_FLAG_VBLANK);
-        #ifdef NEW_TITLE_SCREEN
-        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
+#else
+// Original title screen
+SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
                             | DISPCNT_OBJ_1D_MAP
-                            | DISPCNT_BG0_ON
-                            | DISPCNT_BG3_ON   // Start with BG3 visible (will fade to BG0)
                             | DISPCNT_BG2_ON
                             | DISPCNT_OBJ_ON
                             | DISPCNT_WIN0_ON
                             | DISPCNT_OBJWIN_ON);
 #endif
-        #ifndef NEW_TITLE_SCREEN
-        #ifndef NEW_TITLE_SCREEN_BETA
-        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
-                            | DISPCNT_OBJ_1D_MAP                        
-                            | DISPCNT_BG2_ON   // Pokémon logo                            
-                            | DISPCNT_OBJ_ON
-                            | DISPCNT_WIN0_ON
-                            | DISPCNT_OBJWIN_ON);
-        #endif
-        #endif
         m4aSongNumStart(MUS_TITLE);
         gMain.state = 5;
         break;
@@ -855,7 +836,7 @@ static void Task_TitleScreenPhase1(u8 taskId)
 gTasks[taskId].tFadeTimer   = 0;
 gTasks[taskId].tFadeStep    = 0;
 gTasks[taskId].tFadeActive  = 0;
-gTasks[taskId].tFadeDir     = 0;
+gTasks[taskId].tCurrentBg     = 0;
 #endif
     // Skip to next phase when A, B, Start, or Select is pressed
     if (JOY_NEW(A_B_START_SELECT) || gTasks[taskId].tSkipToNext)
@@ -1010,30 +991,75 @@ static void Task_TitleScreenPhase3(u8 taskId)
     }
     else
     {
- #ifdef NEW_TITLE_SCREEN
-if (gTasks[taskId].tFadeActive)
+#ifdef NEW_TITLE_SCREEN
+// Fade out to black, swap background, fade in
+if (gTasks[taskId].tFadeActive == 1)
 {
-    if (++gTasks[taskId].tFadeStep > 32)
+    // Fading out to black
+    if (++gTasks[taskId].tFadeStep >= 16)
     {
-        gTasks[taskId].tFadeActive = 0;
+        // Fade complete, swap the background
+        if (gTasks[taskId].tCurrentBg == 0)
+        {
+            // Load second background
+            DecompressDataWithHeaderVram(sTitleScreenAltGfx, (void *)BG_CHAR_ADDR(2));
+            DecompressDataWithHeaderVram(sTitleScreenAltTilemap, (void *)BG_SCREEN_ADDR(26));
+            LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+            gTasks[taskId].tCurrentBg = 1;
+        }
+        else
+        {
+            // Load first background
+            DecompressDataWithHeaderVram(sTitleScreenRayquazaGfx, (void *)BG_CHAR_ADDR(2));
+            DecompressDataWithHeaderVram(sTitleScreenRayquazaTilemap, (void *)BG_SCREEN_ADDR(26));
+            CpuCopy16(&sOriginalBgPalette[0], &gPlttBufferUnfaded[BG_PLTT_ID(14)], PLTT_SIZE_4BPP);
+            gTasks[taskId].tCurrentBg = 0;
+        }
+        
+        gTasks[taskId].tFadeActive = 2;  // Start fading in
         gTasks[taskId].tFadeStep = 0;
-        // Restore original clouds blend
-        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_BD);
-        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(6, 15));
     }
     else
     {
-        u8 eva = gTasks[taskId].tFadeDir ? (32 - gTasks[taskId].tFadeStep) : gTasks[taskId].tFadeStep;
-        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(eva / 2, 16 - (eva / 2)));
+        // Darken palette
+        u8 fadeAmount = 16 - gTasks[taskId].tFadeStep;
+        for (int i = 0; i < 16; i++)
+        {
+            u16 originalColor = gPlttBufferUnfaded[BG_PLTT_ID(14) + i];
+            u8 r = (GET_R(originalColor) * fadeAmount) / 16;
+            u8 g = (GET_G(originalColor) * fadeAmount) / 16;
+            u8 b = (GET_B(originalColor) * fadeAmount) / 16;
+            gPlttBufferFaded[BG_PLTT_ID(14) + i] = RGB(r, g, b);
+        }
     }
 }
-else if (++gTasks[taskId].tFadeTimer > 900)  // ~15s
+else if (gTasks[taskId].tFadeActive == 2)
+{
+    // Fading in from black
+    if (++gTasks[taskId].tFadeStep >= 16)
+    {
+        // Fade in complete
+        gTasks[taskId].tFadeActive = 0;
+        gTasks[taskId].tFadeStep = 0;
+    }
+    else
+    {
+        // Brighten palette
+        u8 fadeAmount = gTasks[taskId].tFadeStep;
+        for (int i = 0; i < 16; i++)
+        {
+            u16 originalColor = gPlttBufferUnfaded[BG_PLTT_ID(14) + i];
+            u8 r = (GET_R(originalColor) * fadeAmount) / 16;
+            u8 g = (GET_G(originalColor) * fadeAmount) / 16;
+            u8 b = (GET_B(originalColor) * fadeAmount) / 16;
+            gPlttBufferFaded[BG_PLTT_ID(14) + i] = RGB(r, g, b);
+        }
+    }
+}
+else if (++gTasks[taskId].tFadeTimer > 300)  // ~5s between swaps
 {
     gTasks[taskId].tFadeTimer = 0;
-    gTasks[taskId].tFadeActive = 1;
-    gTasks[taskId].tFadeDir ^= 1;
-    // Override for BG3 ↔ BG0
-    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG3);
+    gTasks[taskId].tFadeActive = 1;  // Start fade out
 }
 #endif
         SetGpuReg(REG_OFFSET_BG2Y_L, 0);
