@@ -36,7 +36,7 @@ enum {
 // #define NEW_TITLE_SCREEN
 #define NEW_TITLE_SCREEN_BETA
 #ifdef NEW_TITLE_SCREEN_BETA
-#define VERSION_BANNER_Y_GOAL 104
+#define VERSION_BANNER_Y_GOAL 114
 #else
 #define VERSION_BANNER_Y_GOAL 66
 #endif
@@ -648,6 +648,10 @@ void CB2_InitTitleScreen(void)
     default:
     case 0:
         SetVBlankCallback(NULL);
+        #ifdef NEW_TITLE_SCREEN_BETA
+    // Reset static variables for title screen loop
+    sPaletteStored = FALSE;
+    #endif
         SetGpuReg(REG_OFFSET_BLDCNT, 0);
         SetGpuReg(REG_OFFSET_BLDALPHA, 0);
         SetGpuReg(REG_OFFSET_BLDY, 0);
@@ -709,11 +713,18 @@ LoadPalette(blackPalette, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
 #endif
         // second bg3
 #ifdef NEW_TITLE_SCREEN
-// Load gfx early (VRAM safe post-clear)
-LZ77UnCompVram(sTitleScreenAltGfx, (void *)BG_CHAR_ADDR(1));  // FREE charbase 1!
-
-// Pal slot 15 (safe, post default 0-14)
+// Load second background for crossfade
+DecompressDataWithHeaderVram(sTitleScreenAltGfx, (void *)BG_CHAR_ADDR(1));
 LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+
+// Use a static buffer instead of dynamic allocation
+static u16 tilemapBuffer[32 * 32];
+LZ77UnCompWram(sTitleScreenAltTilemap, tilemapBuffer);
+for (int i = 0; i < 32 * 32; i++)
+{
+    tilemapBuffer[i] = (tilemapBuffer[i] & 0xFFF) | (15 << 12);  // Set to palette 15
+}
+CpuCopy16(tilemapBuffer, (void *)BG_SCREEN_ADDR(31), 32 * 32 * 2);
 #endif
 
         ScanlineEffect_Stop();
@@ -772,6 +783,12 @@ LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
         SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(27) | BGCNT_16COLOR | BGCNT_TXT256x256);
         #endif
         SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(9) | BGCNT_256COLOR | BGCNT_AFF256x256);
+#ifdef NEW_TITLE_SCREEN
+SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(1) | BGCNT_SCREENBASE(31) | BGCNT_16COLOR | BGCNT_TXT256x256);
+SetGpuReg(REG_OFFSET_BG3HOFS, 0);
+SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+#endif
+        
         #ifdef NEW_TITLE_SCREEN_BETA
 SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
                             | DISPCNT_OBJ_1D_MAP
@@ -786,37 +803,17 @@ SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
 // SetGpuReg(REG_OFFSET_BLDCNT, 0);  // No blend needed without clouds
 // SetGpuReg(REG_OFFSET_BLDALPHA, 0);
         #endif
-        #ifdef NEW_TITLE_SCREEN
-SetGpuReg(REG_OFFSET_BG3CNT,
-    BGCNT_PRIORITY(3)     // Overlay BG0 perfectly
-  | BGCNT_CHARBASE(1)     // FREE!
-  | BGCNT_SCREENBASE(31)  // FREE!
-  | BGCNT_16COLOR
-  | BGCNT_TXT256x256);
-SetGpuReg(REG_OFFSET_BG3HOFS, 0);
-SetGpuReg(REG_OFFSET_BG3VOFS, 0);
-
-// Tilemap only (gfx/pal pre-loaded)
-u16 tilemapBuffer[32 * 32];
-LZ77UnCompWram(sTitleScreenAltTilemap, tilemapBuffer);  // FIXED: Wram for RAM!
-for (int i = 0; i < 32 * 32; i++)
-{
-    tilemapBuffer[i] = (tilemapBuffer[i] & 0xFFF) | (15 << 12);  // Pal slot 15
-}
-CpuCopy16(tilemapBuffer, (void *)BG_SCREEN_ADDR(31), 32 * 32 * 2);
-        #endif
         EnableInterrupts(INTR_FLAG_VBLANK);
         #ifdef NEW_TITLE_SCREEN
         SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
                             | DISPCNT_OBJ_1D_MAP
-                            | DISPCNT_BG0_ON   // Main background (Rayquaza or your first image)
-                            | DISPCNT_BG1_ON   // Clouds / wave effect
-                            | DISPCNT_BG2_ON   // Pokémon logo
-                            | DISPCNT_BG3_ON   // <--- Your second background for crossfade                            
+                            | DISPCNT_BG0_ON
+                            | DISPCNT_BG3_ON   // Start with BG3 visible (will fade to BG0)
+                            | DISPCNT_BG2_ON
                             | DISPCNT_OBJ_ON
                             | DISPCNT_WIN0_ON
                             | DISPCNT_OBJWIN_ON);
-        #endif
+#endif
         #ifndef NEW_TITLE_SCREEN
         #ifndef NEW_TITLE_SCREEN_BETA
         SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
@@ -971,12 +968,11 @@ static void Task_TitleScreenPhase3(u8 taskId)
 {
     #ifdef NEW_TITLE_SCREEN_BETA
     // Gradually fade in background after final shine
-    static u8 bgFadeCounter = 0;
-    if (bgFadeCounter < 32)  // Fade in over 32 frames
+    // Use data[7] for fade counter (safe, unused by other phases)
+    if (gTasks[taskId].data[7] < 32)  // Fade in over 32 frames
     {
-        bgFadeCounter++;
-        u8 fadeAmount = (bgFadeCounter * 16) / 32;  // 0-16 range
-        
+        gTasks[taskId].data[7]++;
+        u8 fadeAmount = (gTasks[taskId].data[7] * 16) / 32;  // 0-16 range
         // Gradually restore background palette from black to full
         for (int i = 0; i < 16; i++)
         {
@@ -1037,7 +1033,7 @@ else if (++gTasks[taskId].tFadeTimer > 900)  // ~15s
     gTasks[taskId].tFadeActive = 1;
     gTasks[taskId].tFadeDir ^= 1;
     // Override for BG3 ↔ BG0
-    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG3 | BLDCNT_TGT2_BG0);
+    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG3);
 }
 #endif
         SetGpuReg(REG_OFFSET_BG2Y_L, 0);
