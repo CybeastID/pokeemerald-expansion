@@ -70,4 +70,3 @@ CutieTrap2_Text:
 
 CastersTrap_Text_0:
 	.string "{COLOR LIGHT_GRAY} ??? {COLOR DARK_GRAY}used Teleport!$"
-
