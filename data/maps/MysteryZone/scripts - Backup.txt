@@ -29,6 +29,7 @@ OnFrame_1::
 	playse SE_FALL
 	return
 	
+	
 	waitmessage
 	closemessage
 

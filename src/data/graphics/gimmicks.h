@@ -93,8 +93,8 @@ static const u8 ALIGNED(4) sIceIndicatorGfx[] = INCBIN_U8("graphics/battle_inter
 static const u8 ALIGNED(4) sDragonIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/dragon_indicator.4bpp");
 static const u8 ALIGNED(4) sDarkIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/dark_indicator.4bpp");
 static const u8 ALIGNED(4) sFairyIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/fairy_indicator.4bpp");
-static const u8 ALIGNED(4) sDivineIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/divine_indicator.4bpp");
 static const u8 ALIGNED(4) sStellarIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/stellar_indicator.4bpp");
+static const u8 ALIGNED(4) sDivineIndicatorGfx[] = INCBIN_U8("graphics/battle_interface/divine_indicator.4bpp");
 
 static const u16 sMiscIndicatorPal[] = INCBIN_U16("graphics/battle_interface/misc_indicator.gbapal"); // has room for more colors
 static const u16 sMegaIndicatorPal[] = INCBIN_U16("graphics/battle_interface/mega_indicator.gbapal");
@@ -123,6 +123,7 @@ static const u8 *const sTeraIndicatorDataPtrs[] =
     sDarkIndicatorGfx,
     sFairyIndicatorGfx,
     sStellarIndicatorGfx,
+    sDivineIndicatorGfx,
 };
 
 static const struct SpritePalette sSpritePalette_MiscIndicator = {sMiscIndicatorPal, TAG_MISC_INDICATOR_PAL};

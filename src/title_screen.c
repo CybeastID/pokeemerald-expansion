@@ -33,13 +33,27 @@ enum {
 #define VERSION_BANNER_LEFT_X 98
 #define VERSION_BANNER_RIGHT_X 162
 #define VERSION_BANNER_Y 2
+// #define NEW_TITLE_SCREEN
+#define NEW_TITLE_SCREEN_BETA
+#ifdef NEW_TITLE_SCREEN_BETA
+#define VERSION_BANNER_Y_GOAL 104
+#else
 #define VERSION_BANNER_Y_GOAL 66
+#endif
 #define START_BANNER_X 128
 
 #define CLEAR_SAVE_BUTTON_COMBO (B_BUTTON | SELECT_BUTTON | DPAD_UP)
 #define RESET_RTC_BUTTON_COMBO (B_BUTTON | SELECT_BUTTON | DPAD_LEFT)
 #define BERRY_UPDATE_BUTTON_COMBO (B_BUTTON | SELECT_BUTTON)
 #define A_B_START_SELECT (A_BUTTON | B_BUTTON | START_BUTTON | SELECT_BUTTON)
+#ifdef NEW_TITLE_SCREEN
+#define tFadeTimer     data[10]  // Safe unused
+#define tFadeStep      data[11]
+#define tFadeActive    data[12]  // 0=wait, 1=fading
+#define tFadeDir       data[13]
+#endif
+
+
 
 static void MainCB2(void);
 static void Task_TitleScreenPhase1(u8);
@@ -50,8 +64,9 @@ static void CB2_GoToClearSaveDataScreen(void);
 static void CB2_GoToResetRtcScreen(void);
 static void CB2_GoToBerryFixScreen(void);
 static void CB2_GoToCopyrightScreen(void);
+#ifndef NEW_TITLE_SCREEN_BETA
 static void UpdateLegendaryMarkingColor(u8);
-
+#endif
 static void SpriteCB_VersionBannerLeft(struct Sprite *sprite);
 static void SpriteCB_VersionBannerRight(struct Sprite *sprite);
 static void SpriteCB_PressStartCopyrightBanner(struct Sprite *sprite);
@@ -59,12 +74,25 @@ static void SpriteCB_PokemonLogoShine(struct Sprite *sprite);
 
 // const rom data
 static const u16 sUnusedUnknownPal[] = INCBIN_U16("graphics/title_screen/unused.gbapal");
-
+#ifndef NEW_TITLE_SCREEN_BETA
 static const u32 sTitleScreenRayquazaGfx[] = INCBIN_U32("graphics/title_screen/rayquaza.4bpp.smol");
 static const u32 sTitleScreenRayquazaTilemap[] = INCBIN_U32("graphics/title_screen/rayquaza.bin.smolTM");
+#endif
+#ifdef NEW_TITLE_SCREEN_BETA
+static const u32 sTitleScreenRayquazaGfx[] = INCBIN_U32("graphics/title_screen/titlebg_1.4bpp.smol");
+static const u32 sTitleScreenRayquazaTilemap[] = INCBIN_U32("graphics/title_screen/titlebg_1.bin.smolTM");
+// static const u16 sTitleScreenRayquazaPal[] = INCBIN_U16("graphics/title_screen/titlebg_1.gbapal");
+static u16 sOriginalBgPalette[16];
+static bool8 sPaletteStored = FALSE;
+#endif
 static const u32 sTitleScreenLogoShineGfx[] = INCBIN_U32("graphics/title_screen/logo_shine.4bpp.smol");
 static const u32 sTitleScreenCloudsGfx[] = INCBIN_U32("graphics/title_screen/clouds.4bpp.smol");
 
+#ifdef NEW_TITLE_SCREEN
+static const u16 gTitleScreenAltPal[] = INCBIN_U16("graphics/title_screen/titlebg_2_1.gbapal");
+static const u32 sTitleScreenAltGfx[] = INCBIN_U32("graphics/title_screen/titlebg_2_1.4bpp.smol");
+static const u32 sTitleScreenAltTilemap[] = INCBIN_U32("graphics/title_screen/titlebg_2_1.bin.smolTM");
+#endif
 
 
 // Used to blend "Emerald Version" as it passes over over the Pokémon banner.
@@ -471,9 +499,10 @@ static void SpriteCB_PokemonLogoShine(struct Sprite *sprite)
         // In any mode except SHINE_MODE_SINGLE_NO_BG_COLOR the background
         // color will change, in addition to the shine sprite moving.
         if (sprite->sMode != SHINE_MODE_SINGLE_NO_BG_COLOR)
-        {
+        {   
+            #ifndef NEW_TITLE_SCREEN_BETA
             u16 backgroundColor;
-
+            #endif
             if (sprite->x < DISPLAY_WIDTH / 2)
             {
                 // Brighten background color
@@ -490,9 +519,10 @@ static void SpriteCB_PokemonLogoShine(struct Sprite *sprite)
                 if (sprite->sBgColor != 0)
                     sprite->sBgColor--;
             }
-
+            
+            #ifndef NEW_TITLE_SCREEN_BETA
             backgroundColor = _RGB(sprite->sBgColor, sprite->sBgColor, sprite->sBgColor);
-
+            
             // Flash the background green for 4 frames of movement.
             // Otherwise use the updating color.
             if (sprite->x == DISPLAY_WIDTH / 2 + (3 * SHINE_SPEED)
@@ -503,6 +533,39 @@ static void SpriteCB_PokemonLogoShine(struct Sprite *sprite)
             else
                 gPlttBufferFaded[0] = backgroundColor;
         }
+            #endif
+            #ifdef NEW_TITLE_SCREEN_BETA
+// Calculate distance from center for background flash
+    s16 centerX = DISPLAY_WIDTH / 2;
+    s16 distanceFromCenter = (sprite->x > centerX) ? (sprite->x - centerX) : (centerX - sprite->x);
+    
+    // Flash background visible when shine passes through center
+    if (distanceFromCenter < 40)  // Within 40 pixels of center
+    {
+        // Calculate fade amount (0-16 scale)
+        u8 fadeAmount = ((40 - distanceFromCenter) * 16) / 40;
+        
+        // Fade in the background's palette (slot 14) from black to original colors
+        for (int i = 0; i < 16; i++)
+        {
+            u16 originalColor = sOriginalBgPalette[i];
+            u8 r = (GET_R(originalColor) * fadeAmount) / 16;
+            u8 g = (GET_G(originalColor) * fadeAmount) / 16;
+            u8 b = (GET_B(originalColor) * fadeAmount) / 16;
+            
+            gPlttBufferFaded[BG_PLTT_ID(14) + i] = RGB(r, g, b);
+        }
+    }
+    else
+    {
+        // Keep background palette black when shine is far from center
+        for (int i = 0; i < 16; i++)
+        {
+            gPlttBufferFaded[BG_PLTT_ID(14) + i] = RGB_BLACK;
+        }
+    }
+            #endif
+        }
 
         sprite->x += SHINE_SPEED;
     }
@@ -510,6 +573,17 @@ static void SpriteCB_PokemonLogoShine(struct Sprite *sprite)
     {
         // Sprite has moved fully offscreen
         gPlttBufferFaded[0] = RGB_BLACK;
+        #ifdef NEW_TITLE_SCREEN_BETA
+    // Leave background black - Phase3 will fade it in gradually
+    // (Only for non-SINGLE modes, SINGLE mode leaves it black for Phase3 to handle)
+    if (sprite->sMode != SHINE_MODE_SINGLE)
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            gPlttBufferFaded[BG_PLTT_ID(14) + i] = RGB_BLACK;
+        }
+    }
+    #endif
         DestroySprite(sprite);
     }
 }
@@ -595,6 +669,7 @@ void CB2_InitTitleScreen(void)
         gMain.state = 1;
         break;
     case 1:
+    #ifndef NEW_TITLE_SCREEN_BETA
         // bg2
         DecompressDataWithHeaderVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
         DecompressDataWithHeaderVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
@@ -605,6 +680,42 @@ void CB2_InitTitleScreen(void)
         // bg1
         DecompressDataWithHeaderVram(sTitleScreenCloudsGfx, (void *)(BG_CHAR_ADDR(3)));
         DecompressDataWithHeaderVram(gTitleScreenCloudsTilemap, (void *)(BG_SCREEN_ADDR(27)));
+    #endif
+#ifdef NEW_TITLE_SCREEN_BETA
+// bg2
+DecompressDataWithHeaderVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
+DecompressDataWithHeaderVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
+LoadPalette(gTitleScreenBgPalettes, BG_PLTT_ID(0), 15 * PLTT_SIZE_4BPP);
+
+// Store original BG0 palette for flash effect
+if (!sPaletteStored)
+{
+    CpuCopy16(&gPlttBufferUnfaded[BG_PLTT_ID(14)], sOriginalBgPalette, PLTT_SIZE_4BPP);
+    sPaletteStored = TRUE;
+}
+
+// bg3 (your custom background)
+DecompressDataWithHeaderVram(sTitleScreenRayquazaGfx, (void *)(BG_CHAR_ADDR(2)));
+DecompressDataWithHeaderVram(sTitleScreenRayquazaTilemap, (void *)(BG_SCREEN_ADDR(26)));
+
+// Set that palette to black initially (invisible)
+u16 blackPalette[16] = {0};
+LoadPalette(blackPalette, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+
+// bg1 (clouds - we'll disable below)
+
+// Override with your custom palette (replaces shared one for BG0)
+// LoadPalette(sTitleScreenRayquazaPal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);  // sTitleScreenRayquazaPal = INCBIN_U16("graphics/title_screen/rayquaza.gbapal");
+#endif
+        // second bg3
+#ifdef NEW_TITLE_SCREEN
+// Load gfx early (VRAM safe post-clear)
+LZ77UnCompVram(sTitleScreenAltGfx, (void *)BG_CHAR_ADDR(1));  // FREE charbase 1!
+
+// Pal slot 15 (safe, post default 0-14)
+LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+#endif
+
         ScanlineEffect_Stop();
         ResetTasks();
         ResetSpriteData();
@@ -645,19 +756,77 @@ void CB2_InitTitleScreen(void)
         SetGpuReg(REG_OFFSET_WIN1V, 0);
         SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN1_BG_ALL | WININ_WIN1_OBJ);
         SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WINOBJ_ALL);
+        #ifdef NEW_TITLE_SCREEN_BETA
+        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG2 | BLDCNT_EFFECT_LIGHTEN);
+        SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+        SetGpuReg(REG_OFFSET_BLDY, 16);
+        #endif
+        #ifndef NEW_TITLE_SCREEN_BETA
         SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG2 | BLDCNT_EFFECT_LIGHTEN);
         SetGpuReg(REG_OFFSET_BLDALPHA, 0);
         SetGpuReg(REG_OFFSET_BLDY, 12);
+        #endif
+
         SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(2) | BGCNT_SCREENBASE(26) | BGCNT_16COLOR | BGCNT_TXT256x256);
+        #ifdef NEW_TITLE_SCREEN_BETA
         SetGpuReg(REG_OFFSET_BG1CNT, BGCNT_PRIORITY(2) | BGCNT_CHARBASE(3) | BGCNT_SCREENBASE(27) | BGCNT_16COLOR | BGCNT_TXT256x256);
+        #endif
         SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(1) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(9) | BGCNT_256COLOR | BGCNT_AFF256x256);
+        #ifdef NEW_TITLE_SCREEN_BETA
+SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
+                            | DISPCNT_OBJ_1D_MAP
+                            | DISPCNT_BG0_ON   // Your custom BG
+                            
+                            | DISPCNT_BG2_ON   // Logo
+                            | DISPCNT_OBJ_ON
+                            | DISPCNT_WIN0_ON
+                            | DISPCNT_OBJWIN_ON);
+
+// Remove clouds blend (in Task_TitleScreenPhase2)
+// SetGpuReg(REG_OFFSET_BLDCNT, 0);  // No blend needed without clouds
+// SetGpuReg(REG_OFFSET_BLDALPHA, 0);
+        #endif
+        #ifdef NEW_TITLE_SCREEN
+SetGpuReg(REG_OFFSET_BG3CNT,
+    BGCNT_PRIORITY(3)     // Overlay BG0 perfectly
+  | BGCNT_CHARBASE(1)     // FREE!
+  | BGCNT_SCREENBASE(31)  // FREE!
+  | BGCNT_16COLOR
+  | BGCNT_TXT256x256);
+SetGpuReg(REG_OFFSET_BG3HOFS, 0);
+SetGpuReg(REG_OFFSET_BG3VOFS, 0);
+
+// Tilemap only (gfx/pal pre-loaded)
+u16 tilemapBuffer[32 * 32];
+LZ77UnCompWram(sTitleScreenAltTilemap, tilemapBuffer);  // FIXED: Wram for RAM!
+for (int i = 0; i < 32 * 32; i++)
+{
+    tilemapBuffer[i] = (tilemapBuffer[i] & 0xFFF) | (15 << 12);  // Pal slot 15
+}
+CpuCopy16(tilemapBuffer, (void *)BG_SCREEN_ADDR(31), 32 * 32 * 2);
+        #endif
         EnableInterrupts(INTR_FLAG_VBLANK);
+        #ifdef NEW_TITLE_SCREEN
         SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
-                                    | DISPCNT_OBJ_1D_MAP
-                                    | DISPCNT_BG2_ON
-                                    | DISPCNT_OBJ_ON
-                                    | DISPCNT_WIN0_ON
-                                    | DISPCNT_OBJWIN_ON);
+                            | DISPCNT_OBJ_1D_MAP
+                            | DISPCNT_BG0_ON   // Main background (Rayquaza or your first image)
+                            | DISPCNT_BG1_ON   // Clouds / wave effect
+                            | DISPCNT_BG2_ON   // Pokémon logo
+                            | DISPCNT_BG3_ON   // <--- Your second background for crossfade                            
+                            | DISPCNT_OBJ_ON
+                            | DISPCNT_WIN0_ON
+                            | DISPCNT_OBJWIN_ON);
+        #endif
+        #ifndef NEW_TITLE_SCREEN
+        #ifndef NEW_TITLE_SCREEN_BETA
+        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
+                            | DISPCNT_OBJ_1D_MAP                        
+                            | DISPCNT_BG2_ON   // Pokémon logo                            
+                            | DISPCNT_OBJ_ON
+                            | DISPCNT_WIN0_ON
+                            | DISPCNT_OBJWIN_ON);
+        #endif
+        #endif
         m4aSongNumStart(MUS_TITLE);
         gMain.state = 5;
         break;
@@ -665,7 +834,9 @@ void CB2_InitTitleScreen(void)
         if (!UpdatePaletteFade())
         {
             StartPokemonLogoShine(SHINE_MODE_SINGLE_NO_BG_COLOR);
+            #ifndef NEW_TITLE_SCREEN_BETA
             ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 0, SCANLINE_EFFECT_REG_BG1HOFS, TRUE);
+            #endif
             SetMainCallback2(MainCB2);
         }
         break;
@@ -683,6 +854,12 @@ static void MainCB2(void)
 // Shine the Pokémon logo two more times, and fade in the version banner
 static void Task_TitleScreenPhase1(u8 taskId)
 {
+#ifdef NEW_TITLE_SCREEN
+gTasks[taskId].tFadeTimer   = 0;
+gTasks[taskId].tFadeStep    = 0;
+gTasks[taskId].tFadeActive  = 0;
+gTasks[taskId].tFadeDir     = 0;
+#endif
     // Skip to next phase when A, B, Start, or Select is pressed
     if (JOY_NEW(A_B_START_SELECT) || gTasks[taskId].tSkipToNext)
     {
@@ -747,9 +924,21 @@ static void Task_TitleScreenPhase2(u8 taskId)
     else
     {
         gTasks[taskId].tSkipToNext = TRUE;
-        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_BD);
+        #ifdef NEW_TITLE_SCREEN_BETA
+SetGpuReg(REG_OFFSET_BLDCNT, 0);  // No blend needed without clouds
+#else
+SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_BD);
+#endif
         SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(6, 15));
         SetGpuReg(REG_OFFSET_BLDY, 0);
+        #ifdef NEW_TITLE_SCREEN_BETA
+        SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
+                                    | DISPCNT_OBJ_1D_MAP
+                                    | DISPCNT_BG0_ON
+                                    | DISPCNT_BG2_ON
+                                    | DISPCNT_OBJ_ON);
+        CreatePressStartBanner(START_BANNER_X, 134);
+        #else
         SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1
                                     | DISPCNT_OBJ_1D_MAP
                                     | DISPCNT_BG0_ON
@@ -757,6 +946,7 @@ static void Task_TitleScreenPhase2(u8 taskId)
                                     | DISPCNT_BG2_ON
                                     | DISPCNT_OBJ_ON);
         CreatePressStartBanner(START_BANNER_X, 108);
+        #endif
         CreateCopyrightBanner(START_BANNER_X, 148);
         gTasks[taskId].tBg1Y = 0;
         gTasks[taskId].func = Task_TitleScreenPhase3;
@@ -779,6 +969,26 @@ static void Task_TitleScreenPhase2(u8 taskId)
 // Show Rayquaza silhouette and process main title screen input
 static void Task_TitleScreenPhase3(u8 taskId)
 {
+    #ifdef NEW_TITLE_SCREEN_BETA
+    // Gradually fade in background after final shine
+    static u8 bgFadeCounter = 0;
+    if (bgFadeCounter < 32)  // Fade in over 32 frames
+    {
+        bgFadeCounter++;
+        u8 fadeAmount = (bgFadeCounter * 16) / 32;  // 0-16 range
+        
+        // Gradually restore background palette from black to full
+        for (int i = 0; i < 16; i++)
+        {
+            u16 originalColor = sOriginalBgPalette[i];
+            u8 r = (GET_R(originalColor) * fadeAmount) / 16;
+            u8 g = (GET_G(originalColor) * fadeAmount) / 16;
+            u8 b = (GET_B(originalColor) * fadeAmount) / 16;
+            
+            gPlttBufferFaded[BG_PLTT_ID(14) + i] = RGB(r, g, b);
+        }
+    }
+    #endif
     if (JOY_NEW(A_BUTTON) || JOY_NEW(START_BUTTON))
     {
         FadeOutBGM(4);
@@ -804,15 +1014,44 @@ static void Task_TitleScreenPhase3(u8 taskId)
     }
     else
     {
+ #ifdef NEW_TITLE_SCREEN
+if (gTasks[taskId].tFadeActive)
+{
+    if (++gTasks[taskId].tFadeStep > 32)
+    {
+        gTasks[taskId].tFadeActive = 0;
+        gTasks[taskId].tFadeStep = 0;
+        // Restore original clouds blend
+        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_BD);
+        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(6, 15));
+    }
+    else
+    {
+        u8 eva = gTasks[taskId].tFadeDir ? (32 - gTasks[taskId].tFadeStep) : gTasks[taskId].tFadeStep;
+        SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(eva / 2, 16 - (eva / 2)));
+    }
+}
+else if (++gTasks[taskId].tFadeTimer > 900)  // ~15s
+{
+    gTasks[taskId].tFadeTimer = 0;
+    gTasks[taskId].tFadeActive = 1;
+    gTasks[taskId].tFadeDir ^= 1;
+    // Override for BG3 ↔ BG0
+    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG3 | BLDCNT_TGT2_BG0);
+}
+#endif
         SetGpuReg(REG_OFFSET_BG2Y_L, 0);
         SetGpuReg(REG_OFFSET_BG2Y_H, 0);
+        #ifndef NEW_TITLE_SCREEN_BETA
         if (++gTasks[taskId].tCounter & 1)
         {
             gTasks[taskId].tBg1Y++;
             gBattle_BG1_Y = gTasks[taskId].tBg1Y / 2;
             gBattle_BG1_X = 0;
         }
+        
         UpdateLegendaryMarkingColor(gTasks[taskId].tCounter);
+        #endif
         if ((gMPlayInfo_BGM.status & 0xFFFF) == 0)
         {
             BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
@@ -854,6 +1093,7 @@ static void CB2_GoToBerryFixScreen(void)
     }
 }
 
+#ifndef NEW_TITLE_SCREEN_BETA
 static void UpdateLegendaryMarkingColor(u8 frameNum)
 {
     if ((frameNum % 4) == 0) // Change color every 4th frame
@@ -861,9 +1101,10 @@ static void UpdateLegendaryMarkingColor(u8 frameNum)
         s32 intensity = Cos(frameNum, 128) + 128;
         s32 r = 31 - ((intensity * 32 - intensity) / 256);
         s32 g = 31 - (intensity * 22 / 256);
-        s32 b = 12;
+        s32 b = 254;
 
         u16 color = RGB(r, g, b);
         LoadPalette(&color, BG_PLTT_ID(14) + 15, sizeof(color));
    }
 }
+#endif
