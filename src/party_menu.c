@@ -6166,19 +6166,58 @@ static void Task_SacredAshDisplayHPRestored(u8 taskId)
 
 void ItemUseCB_EvolutionStone(u8 taskId, TaskFunc task)
 {
+    u16 item = gSpecialVar_ItemId;
+    u8 partyMonId = gPartyMenu.slotId;
+    struct Pokemon *mon = &gPlayerParty[partyMonId];
+    
     PlaySE(SE_SELECT);
     gCB2_AfterEvolution = gPartyMenu.exitCallback;
-    if (ExecuteTableBasedItemEffect(&gPlayerParty[gPartyMenu.slotId], gSpecialVar_ItemId, gPartyMenu.slotId, 0))
+    
+    // Try evolution first via the standard table-based system
+    if (ExecuteTableBasedItemEffect(mon, item, partyMonId, 0))
     {
-        gPartyMenuUseExitCallback = FALSE;
-        DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
-        ScheduleBgCopyTilemapToVram(2);
-        gTasks[taskId].func = task;
+        // ExecuteTableBasedItemEffect returns TRUE if item had no effect
+        // Check if this is Burn Heal and we can use it as medicine instead
+        if (item == ITEM_BURN_HEAL)
+        {
+            u32 status = GetMonData(mon, MON_DATA_STATUS);
+            
+            if (status & STATUS1_BURN)
+            {
+                // Pokemon is burned - heal it as medicine
+                u32 newStatus = status & ~STATUS1_BURN;
+                SetMonData(mon, MON_DATA_STATUS, &newStatus);
+                RemoveBagItem(item, 1);
+                
+                gPartyMenuUseExitCallback = FALSE;
+                StringExpandPlaceholders(gStringVar4, gText_PkmnBurnHealed);
+                DisplayPartyMenuMessage(gStringVar4, TRUE);
+                ScheduleBgCopyTilemapToVram(2);
+                gTasks[taskId].func = task;
+            }
+            else
+            {
+                // Not burned and can't evolve - won't have effect
+                gPartyMenuUseExitCallback = FALSE;
+                DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
+                ScheduleBgCopyTilemapToVram(2);
+                gTasks[taskId].func = task;
+            }
+        }
+        else
+        {
+            // Regular evolution stone that had no effect
+            gPartyMenuUseExitCallback = FALSE;
+            DisplayPartyMenuMessage(gText_WontHaveEffect, TRUE);
+            ScheduleBgCopyTilemapToVram(2);
+            gTasks[taskId].func = task;
+        }
     }
     else
     {
-        if (GetItemPocket(gSpecialVar_ItemId) != POCKET_KEY_ITEMS)
-            RemoveBagItem(gSpecialVar_ItemId, 1);
+        // Evolution occurred successfully
+        if (GetItemPocket(item) != POCKET_KEY_ITEMS)
+            RemoveBagItem(item, 1);
         FreePartyPointers();
     }
 }

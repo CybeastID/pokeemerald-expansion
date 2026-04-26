@@ -77,6 +77,8 @@ static void AffineAnimCmd_end(u8 matrixNum, struct Sprite *sprite);
 static void AffineAnimCmd_frame(u8 matrixNum, struct Sprite *sprite);
 static void CopyOamMatrix(u8 destMatrixIndex, struct OamMatrix *srcMatrix);
 static u8 GetSpriteMatrixNum(struct Sprite *sprite);
+static struct Sprite *GetSpriteByAffineMatrixNum(u8 matrixNum);
+static void ApplyAffineMatrixFlips(struct Sprite *sprite, struct OamMatrix *matrix);
 static void AffineAnimStateRestartAnim(u8 matrixNum);
 static void AffineAnimStateStartAnim(u8 matrixNum, u8 animNum);
 static void AffineAnimStateReset(u8 matrixNum);
@@ -874,8 +876,7 @@ void BeginAnim(struct Sprite *sprite)
 
         sprite->animDelayCounter = duration;
 
-        if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
-            SetSpriteOamFlipBits(sprite, hFlip, vFlip);
+        SetSpriteOamFlipBits(sprite, hFlip, vFlip);
 
         if (sprite->usingSheet)
         {
@@ -902,8 +903,7 @@ void ContinueAnim(struct Sprite *sprite)
         DecrementAnimDelayCounter(sprite);
         hFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.hFlip;
         vFlip = sprite->anims[sprite->animNum][sprite->animCmdIndex].frame.vFlip;
-        if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
-            SetSpriteOamFlipBits(sprite, hFlip, vFlip);
+        SetSpriteOamFlipBits(sprite, hFlip, vFlip);
     }
     else if (!sprite->animPaused)
     {
@@ -935,8 +935,7 @@ void AnimCmd_frame(struct Sprite *sprite)
 
     sprite->animDelayCounter = duration;
 
-    if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
-        SetSpriteOamFlipBits(sprite, hFlip, vFlip);
+    SetSpriteOamFlipBits(sprite, hFlip, vFlip);
 
     if (sprite->usingSheet)
     {
@@ -978,8 +977,7 @@ void AnimCmd_jump(struct Sprite *sprite)
 
     sprite->animDelayCounter = duration;
 
-    if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
-        SetSpriteOamFlipBits(sprite, hFlip, vFlip);
+    SetSpriteOamFlipBits(sprite, hFlip, vFlip);
 
     if (sprite->usingSheet)
     {
@@ -1169,6 +1167,40 @@ u8 GetSpriteMatrixNum(struct Sprite *sprite)
     return matrixNum;
 }
 
+static struct Sprite *GetSpriteByAffineMatrixNum(u8 matrixNum)
+{
+    u32 i;
+
+    for (i = 0; i < MAX_SPRITES; i++)
+    {
+        struct Sprite *sprite = &gSprites[i];
+
+        if (sprite->inUse
+         && (sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK)
+         && sprite->oam.matrixNum == matrixNum)
+        {
+            return sprite;
+        }
+    }
+
+    return NULL;
+}
+
+static void ApplyAffineMatrixFlips(struct Sprite *sprite, struct OamMatrix *matrix)
+{
+    if (sprite->hFlip)
+    {
+        matrix->a = -matrix->a;
+        matrix->c = -matrix->c;
+    }
+
+    if (sprite->vFlip)
+    {
+        matrix->b = -matrix->b;
+        matrix->d = -matrix->d;
+    }
+}
+
 // Used to shift a sprite's position as it scales.
 // Only used by the minigame countdown, so that for instance the numbers don't slide up as they squish down before jumping.
 void SetSpriteMatrixAnchor(struct Sprite *sprite, s16 x, s16 y)
@@ -1213,9 +1245,15 @@ static void UpdateSpriteMatrixAnchorPos(struct Sprite *sprite, s32 x, s32 y)
 
 void SetSpriteOamFlipBits(struct Sprite *sprite, u8 hFlip, u8 vFlip)
 {
-    sprite->oam.matrixNum &= 0x7;
-    sprite->oam.matrixNum |= (((hFlip ^ sprite->hFlip) & 1) << 3);
-    sprite->oam.matrixNum |= (((vFlip ^ sprite->vFlip) & 1) << 4);
+    sprite->hFlip = hFlip;
+    sprite->vFlip = vFlip;
+
+    if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
+    {
+        sprite->oam.matrixNum &= 0x7;
+        sprite->oam.matrixNum |= ((hFlip & 1) << 3);
+        sprite->oam.matrixNum |= ((vFlip & 1) << 4);
+    }
 }
 
 void AffineAnimStateRestartAnim(u8 matrixNum)
@@ -1271,6 +1309,7 @@ void ApplyAffineAnimFrameRelativeAndUpdateMatrix(u8 matrixNum, struct AffineAnim
 {
     struct ObjAffineSrcData srcData;
     struct OamMatrix matrix;
+    struct Sprite *sprite;
     sAffineAnimStates[matrixNum].xScale += frameCmd->xScale;
     sAffineAnimStates[matrixNum].yScale += frameCmd->yScale;
     sAffineAnimStates[matrixNum].rotation = (sAffineAnimStates[matrixNum].rotation + (frameCmd->rotation << 8)) & ~0xFF;
@@ -1278,6 +1317,9 @@ void ApplyAffineAnimFrameRelativeAndUpdateMatrix(u8 matrixNum, struct AffineAnim
     srcData.yScale = ConvertScaleParam(sAffineAnimStates[matrixNum].yScale);
     srcData.rotation = sAffineAnimStates[matrixNum].rotation;
     ObjAffineSet(&srcData, &matrix, 1, 2);
+    sprite = GetSpriteByAffineMatrixNum(matrixNum);
+    if (sprite != NULL)
+        ApplyAffineMatrixFlips(sprite, &matrix);
     CopyOamMatrix(matrixNum, &matrix);
 }
 
@@ -1446,10 +1488,33 @@ void SetOamMatrixRotationScaling(u8 matrixNum, s16 xScale, s16 yScale, u16 rotat
 {
     struct ObjAffineSrcData srcData;
     struct OamMatrix matrix;
+    struct Sprite *sprite;
+
     srcData.xScale = ConvertScaleParam(xScale);
     srcData.yScale = ConvertScaleParam(yScale);
     srcData.rotation = rotation;
     ObjAffineSet(&srcData, &matrix, 1, 2);
+    sprite = GetSpriteByAffineMatrixNum(matrixNum);
+    if (sprite != NULL)
+        ApplyAffineMatrixFlips(sprite, &matrix);
+    CopyOamMatrix(matrixNum, &matrix);
+}
+
+void RefreshSpriteAffineMatrix(struct Sprite *sprite)
+{
+    u8 matrixNum;
+    struct OamMatrix matrix;
+    struct ObjAffineSrcData srcData;
+
+    if (sprite == NULL || !(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
+        return;
+
+    matrixNum = sprite->oam.matrixNum;
+    srcData.xScale = ConvertScaleParam(sAffineAnimStates[matrixNum].xScale);
+    srcData.yScale = ConvertScaleParam(sAffineAnimStates[matrixNum].yScale);
+    srcData.rotation = sAffineAnimStates[matrixNum].rotation;
+    ObjAffineSet(&srcData, &matrix, 1, 2);
+    ApplyAffineMatrixFlips(sprite, &matrix);
     CopyOamMatrix(matrixNum, &matrix);
 }
 
@@ -1728,8 +1793,13 @@ bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, struct OamData *destOam, u
 
         tileNum = oam->tileNum;
         subspriteCount = subspriteTable->subspriteCount;
-        hFlip = ((s32)oam->matrixNum >> 3) & 1;
-        vFlip = ((s32)oam->matrixNum >> 4) & 1;
+        hFlip = sprite->hFlip;
+        vFlip = sprite->vFlip;
+        if (!(sprite->oam.affineMode & ST_OAM_AFFINE_ON_MASK))
+        {
+            hFlip = ((s32)oam->matrixNum >> 3) & 1;
+            vFlip = ((s32)oam->matrixNum >> 4) & 1;
+        }
         baseX = oam->x - sprite->centerToCornerVecX;
         baseY = oam->y - sprite->centerToCornerVecY;
 

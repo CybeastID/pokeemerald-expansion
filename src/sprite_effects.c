@@ -52,42 +52,48 @@ const union AffineAnimCmd *const gAffineAnims_PlayerMonTiny[] = {
 };
 
 
-void PlayerStaysShrunk(struct ScriptContext *ctx)  // Add ctx parameter
+static void ApplyPlayerFacingAffineFlip(struct Sprite *sprite)
 {
-    (void)ctx;// Ignore ctx if unused
-    struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
-    u8 spriteId = playerObj->spriteId;
-    struct Sprite *sprite = &gSprites[spriteId];
+    u8 dir = gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;
+    u8 hFlip = (dir == DIR_EAST || dir == DIR_NORTHEAST || dir == DIR_SOUTHEAST);
 
-    // Keep the player shrunk by reapplying the shrunk affine animation
+    SetSpriteOamFlipBits(sprite, hFlip, sprite->vFlip);
+    RefreshSpriteAffineMatrix(sprite);
+}
+
+void PlayerStaysShrunk(struct ScriptContext *ctx)
+{
+    (void)ctx;
+    struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
+    struct Sprite *sprite = &gSprites[playerObj->spriteId];
+
     sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;
     sprite->affineAnims = gAffineAnims_ShrunkPlayer;
     StartSpriteAffineAnim(sprite, 0);
+    ApplyPlayerFacingAffineFlip(sprite);
 }
 
-void StartPlayerShrinkAnimation(struct ScriptContext *ctx)  // Add ctx parameter
+void StartPlayerShrinkAnimation(struct ScriptContext *ctx)
 {
-    // Ignore ctx if unused
+    (void)ctx;
     struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
-    u8 spriteId = playerObj->spriteId;
-    struct Sprite *sprite = &gSprites[spriteId];
+    struct Sprite *sprite = &gSprites[playerObj->spriteId];
+
     sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;
     sprite->affineAnims = gAffineAnims_Shrinking;
     StartSpriteAffineAnim(sprite, 0);
-
+    ApplyPlayerFacingAffineFlip(sprite);
 }
 
-void ResetPlayerSprite(struct ScriptContext *ctx)  // Add ctx parameter
+void ResetPlayerSprite(struct ScriptContext *ctx)
 {
-    // Ignore ctx if unused
     struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
-    u8 spriteId = playerObj->spriteId;
-    struct Sprite *sprite = &gSprites[spriteId];
+    struct Sprite *sprite = &gSprites[playerObj->spriteId];
 
-    sprite->oam.affineMode = ST_OAM_AFFINE_DOUBLE;
-    sprite->affineAnims = gAffineAnims_Reset;
-    StartSpriteAffineAnim(sprite, 0);
     sprite->oam.affineMode = ST_OAM_AFFINE_OFF;
+    sprite->affineAnims = gDummySpriteAffineAnimTable;
+    sprite->hFlip = FALSE;
+    sprite->vFlip = FALSE;
     InitSpriteAffineAnim(sprite);
     ScriptContext_ContinueScript(ctx);
-    }
+}

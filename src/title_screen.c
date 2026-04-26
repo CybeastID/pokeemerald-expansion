@@ -33,8 +33,6 @@ enum {
 #define VERSION_BANNER_LEFT_X 98
 #define VERSION_BANNER_RIGHT_X 162
 #define VERSION_BANNER_Y 2
-// #define NEW_TITLE_SCREEN
-#define NEW_TITLE_SCREEN_BETA
 #ifdef NEW_TITLE_SCREEN_BETA
 #define VERSION_BANNER_Y_GOAL 114
 #else
@@ -72,6 +70,7 @@ static void SpriteCB_VersionBannerLeft(struct Sprite *sprite);
 static void SpriteCB_VersionBannerRight(struct Sprite *sprite);
 static void SpriteCB_PressStartCopyrightBanner(struct Sprite *sprite);
 static void SpriteCB_PokemonLogoShine(struct Sprite *sprite);
+static bool8 sShinesCleared = FALSE;
 
 // const rom data
 static const u16 sUnusedUnknownPal[] = INCBIN_U16("graphics/title_screen/unused.gbapal");
@@ -648,10 +647,12 @@ void CB2_InitTitleScreen(void)
     {
     default:
     case 0:
+        
         SetVBlankCallback(NULL);
         #ifdef NEW_TITLE_SCREEN_BETA
     // Reset static variables for title screen loop
     sPaletteStored = FALSE;
+    sShinesCleared = FALSE;
     #endif
         SetGpuReg(REG_OFFSET_BLDCNT, 0);
         SetGpuReg(REG_OFFSET_BLDALPHA, 0);
@@ -927,6 +928,9 @@ SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2
         #endif
         CreateCopyrightBanner(START_BANNER_X, 148);
         gTasks[taskId].tBg1Y = 0;
+        #ifdef NEW_TITLE_SCREEN_BETA
+        gTasks[taskId].data[7] = 0;  // Reset background fade counter
+        #endif
         gTasks[taskId].func = Task_TitleScreenPhase3;
     }
 
@@ -948,6 +952,18 @@ SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2
 static void Task_TitleScreenPhase3(u8 taskId)
 {
     #ifdef NEW_TITLE_SCREEN_BETA
+    // Destroy any remaining shine sprites when entering Phase 3
+    if (!sShinesCleared)
+    {
+        for (int i = 0; i < MAX_SPRITES; i++)
+        {
+            if (gSprites[i].inUse && gSprites[i].template == &sPokemonLogoShineSpriteTemplate)
+            {
+                DestroySprite(&gSprites[i]);
+            }
+        }
+        sShinesCleared = TRUE;
+    }
     // Gradually fade in background after final shine
     // Use data[7] for fade counter (safe, unused by other phases)
     if (gTasks[taskId].data[7] < 32)  // Fade in over 32 frames
@@ -1004,7 +1020,7 @@ if (gTasks[taskId].tFadeActive == 1)
             // Load second background
             DecompressDataWithHeaderVram(sTitleScreenAltGfx, (void *)BG_CHAR_ADDR(2));
             DecompressDataWithHeaderVram(sTitleScreenAltTilemap, (void *)BG_SCREEN_ADDR(26));
-            LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+            LoadPalette(gTitleScreenAltPal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
             gTasks[taskId].tCurrentBg = 1;
         }
         else

@@ -225,8 +225,22 @@ u8 CheckIfItemIsTMHMOrEvolutionStone(u16 itemId)
         return 1;
     else if (GetItemFieldFunc(itemId) == ItemUseOutOfBattle_EvolutionStone)
         return 2;
+    else if (itemId == ITEM_BURN_HEAL)
+        return 2;
     else
         return 0;
+}
+
+void ItemUseOutOfBattle_BurnHeal(u8 taskId)
+{
+    // First check if this Pokemon can evolve with Burn Heal
+    // If it can, treat it as an evolution stone
+    // The CheckIfItemIsTMHMOrEvolutionStone already returns 2 for ITEM_BURN_HEAL
+    
+    // We need to check if evolution is possible BEFORE showing party menu
+    // For now, just pass to evolution stone handler which will check in party menu
+    gItemUseCB = ItemUseCB_EvolutionStone;
+    SetUpItemUseCallback(taskId);
 }
 
 // Mail in the bag menu can't have a message but it can be checked (view the mail background, no message)

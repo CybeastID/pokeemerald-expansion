@@ -281,6 +281,21 @@ $(TITLESCREENGFXDIR)/pokemon_logo.gbapal: %.gbapal: %.pal
 $(TITLESCREENGFXDIR)/emerald_version.8bpp: %.8bpp: %.png
 	$(GFX) $< $@ -mwidth 8 -mheight 4
 
+$(TITLESCREENGFXDIR)/faerie_version.8bpp: %.8bpp: %.png
+	$(GFX) $< $@ -mwidth 8 -mheight 4
+
+graphics/title_screen/titlebg_1.4bpp.smol: graphics/title_screen/titlebg_1.4bpp.lz
+	$(GFX) smol $< $@ --type gfx
+
+graphics/title_screen/titlebg_1.bin.smolTM: graphics/title_screen/titlebg_1.bin
+	$(GFX) smol $< $@ --type tilemap
+
+graphics/title_screen/titlebg_1.4bpp.lz: %.4bpp.lz: %.png
+	$(GFX) grit $< -gB4 -gzl -mzl -mRtf -mp1 -pn16 -ftb -fh! -o$@
+
+graphics/title_screen/titlebg_1.bin: %.bin: %.png
+	$(GFX) grit $< -gB4 -gzl -mzl -mRtf -mp1 -pn16 -ftb -fh! -o$@	
+
 graphics/pokemon_jump/bg.4bpp: %.4bpp: %.png
 	$(GFX) $< $@ -num_tiles 63 -Wnum_tiles
 

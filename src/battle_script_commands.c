@@ -13652,7 +13652,7 @@ static void Cmd_handleballthrow(void)
                 for (i = 0; evolutions[i].method != EVOLUTIONS_END; i++)
                 {
                     if (evolutions[i].method == EVO_ITEM
-                        && evolutions[i].param == ITEM_MOON_STONE)
+                        && (evolutions[i].param == ITEM_MOON_STONE || evolutions[i].param == ITEM_BURN_HEAL))
                         ballMultiplier = 400;
                 }
             }

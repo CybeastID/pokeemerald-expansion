@@ -373,7 +373,8 @@ const struct SpeciesInfo gSpeciesInfoGen3[] =
         .levelUpLearnset = sTorchicLevelUpLearnset,
         .teachableLearnset = sTorchicTeachableLearnset,
         .eggMoveLearnset = sTorchicEggMoveLearnset,
-        .evolutions = EVOLUTION({EVO_LEVEL, 16, SPECIES_COMBUSKEN}),
+        .evolutions = EVOLUTION({EVO_LEVEL, 16, SPECIES_COMBUSKEN}, 
+                                {EVO_ITEM, ITEM_BURN_HEAL, SPECIES_CYNDAQUIL})
     },
 
     [SPECIES_COMBUSKEN] =

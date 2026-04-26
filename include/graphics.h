@@ -1,3 +1,4 @@
+#include "title_screen.h"
 #ifndef GUARD_GRAPHICS_H
 #define GUARD_GRAPHICS_H
 
@@ -2055,7 +2056,9 @@ extern const u32 gTitleScreenEmeraldVersionGfx[];
 extern const u32 gTitleScreenPressStartGfx[];
 extern const u32 gTitleScreenPokemonLogoGfx[];
 extern const u32 gTitleScreenPokemonLogoTilemap[];
+#ifndef NEW_TITLE_SCREEN_BETA
 extern const u32 gTitleScreenCloudsTilemap[];
+#endif
 extern const u16 gTitleScreenBgPalettes[];
 extern const u16 gTitleScreenPressStartPal[];
 extern const u16 gTitleScreenEmeraldVersionPal[];

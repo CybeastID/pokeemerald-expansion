@@ -333,21 +333,33 @@ void MovementType_Player(struct Sprite *sprite)
 {
     if (sprite->oam.affineMode == ST_OAM_AFFINE_DOUBLE)
     {
-        sprite->x2 = -8; // Offset player
-        sprite->y2 = -16; // Offset player
-        u8 dir = gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;
-        s8 flip = (dir == DIR_EAST) ? -1 : 1;
+        sprite->x2 = -8;
+        sprite->y2 = -16;
         
+        u8 dir = gObjectEvents[gPlayerAvatar.objectEventId].facingDirection;
         struct OamMatrix *matrix = &gOamMatrices[sprite->oam.matrixNum];
         
-        s16 currentPA = matrix->a;
-        s16 magnitude = (currentPA < 0 ? -currentPA : currentPA);
-        matrix->a = flip * magnitude;
+        // Mirror the affine matrix horizontally for east-facing directions.
+        // The x-axis terms are 'a' and 'c' in the GBA affine matrix.
+        if (dir == DIR_EAST)
+        {
+            if (matrix->a > 0)
+                matrix->a = -matrix->a;
+            if (matrix->c > 0)
+                matrix->c = -matrix->c;
+        }
+        else
+        {
+            if (matrix->a < 0)
+                matrix->a = -matrix->a;
+            if (matrix->c < 0)
+                matrix->c = -matrix->c;
+        }
     }
     else
     {
         sprite->x2 = 0;
-        sprite->y2 = 0; // Reset offset
+        sprite->y2 = 0;
     }
     UpdateObjectEventCurrentMovement(&gObjectEvents[sprite->data[0]], sprite, (bool8 (*)(struct ObjectEvent *, struct Sprite *))ObjectEventCB2_NoMovement2);
 }
@@ -1069,10 +1081,10 @@ static void DoPlayerAvatarTransition(void)
         }
         gPlayerAvatar.transitionFlags = 0;
 
-/*    if (FlagGet(FLAG_PLAYER_SMOL)) {
+    if (FlagGet(FLAG_PLAYER_SMOL)) {
       PlayerStaysShrunk(NULL);
-}*/
-    }
+ } 
+   }
 }
 
 static void PlayerAvatarTransition_Dummy(struct ObjectEvent *objEvent)
