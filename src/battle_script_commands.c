@@ -1378,6 +1378,10 @@ static bool32 IsMoveBlockedByBugSpace(u32 move)
     if (!gBattleStruct->bugSpace.active)
         return FALSE;
     
+    // Only block moves from Kazuradrop's opponents (one-sided effect)
+    if (GetBattlerSide(gBattlerAttacker) == GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+        return FALSE;
+    
     // If threshold is 0 (floor reached), don't block (passive OHKO phase)
     // if (gBattleStruct->bugSpace.bpThreshold == 0)
        // return FALSE;
@@ -1969,10 +1973,11 @@ static void Cmd_adjustdamage(void)
             continue;
         }
 
-        // Bug Space OHKO tier: Minimize-seeking moves deal 9999 damage
+        // Bug Space OHKO tier: Minimize-seeking moves deal 9999 damage (only for Kazuradrop)
         if (gBattleStruct->bugSpace.active
             && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_OHKO
-            && MoveIncreasesPowerToMinimizedTargets(gCurrentMove))
+            && MoveIncreasesPowerToMinimizedTargets(gCurrentMove)
+            && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
         {
             gBattleStruct->moveDamage[battlerDef] = 9999;
             BattleScriptCall(BattleScript_OneHitKOMsg);
@@ -3907,9 +3912,10 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
     case MOVE_EFFECT_TRASH_CRUSH:
     {
         u8 ohko = FALSE;
-        // In Bug Space, Trash & Crush deals massive damage scaling with tier
+        // In Bug Space, Trash & Crush deals massive damage scaling with tier (only for Kazuradrop)
         if (gBattleStruct->bugSpace.active
-         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO)
+         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO
+         && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
         {
             // At OHKO tier or higher, Trash & Crush becomes a full OHKO
             gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
@@ -3921,7 +3927,8 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
             u32 ohkoChance = 20;
             if (gBattleMons[gBattlerTarget].volatiles.minimize
              || (gBattleStruct->bugSpace.active
-              && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE))
+              && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE
+              && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler)))
             {
                 ohkoChance = 40;
             }

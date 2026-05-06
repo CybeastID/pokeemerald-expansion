@@ -3025,6 +3025,9 @@ static void BattleStartClearSetData(void)
     {
         gBattleStruct->bugSpace.active = TRUE;
         gBattleStruct->bugSpace.thresholdPercent = 50;
+        gBattleStruct->bugSpace.bpThreshold = 150;
+        gBattleStruct->bugSpace.bpDecayRate = 10;
+        gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
     }
     memset(&gSpecialStatuses, 0, sizeof(gSpecialStatuses));
 
