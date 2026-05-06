@@ -52,6 +52,10 @@ enum EndTurnResolutionOrder
     ENDTURN_FORM_CHANGE_ABILITIES,
     ENDTURN_EJECT_PACK,
     ENDTURN_DYNAMAX,
+    ENDTURN_BUGSPACE_DECAY,      // Bug Space BP threshold decay
+    ENDTURN_BUGSPACE_PASSIVE,    // Bug Space passive OHKO at floor
+    ENDTURN_INFINITE_GROWTH,     // Infinite Growth stat boost + HP regen
+    ENDTURN_MELT_VIRUS,          // Melt Virus draining
     ENDTURN_COUNT,
 };
 

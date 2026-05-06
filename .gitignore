@@ -62,5 +62,5 @@ __pycache__
 .cocoindex_code/target_sqlite.db
 .cocoindex_code/cocoindex.db/mdb/data.mdb
 .cocoindex_code/cocoindex.db/mdb/lock.mdb
-.gitignore
 .cursor/mcp.json
+.clinerules/*

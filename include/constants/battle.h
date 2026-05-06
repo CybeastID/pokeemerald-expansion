@@ -219,9 +219,10 @@ enum VolatileFlags
     F(VOLATILE_VESSEL_OF_RUIN,              vesselOfRuin,                  (u32, 1)) \
     F(VOLATILE_SWORD_OF_RUIN,               swordOfRuin,                   (u32, 1)) \
     F(VOLATILE_TABLETS_OF_RUIN,             tabletsOfRuin,                 (u32, 1)) \
-    F(VOLATILE_BEADS_OF_RUIN,               beadsOfRuin,                   (u32, 1))
-
-
+    F(VOLATILE_BEADS_OF_RUIN,               beadsOfRuin,                   (u32, 1)) \
+    F(VOLATILE_MELT_VIRUS,                  meltVirus,                     (u32, 1)) \
+    F(VOLATILE_MELT_VIRUS_BY,               meltVirusBy,                   (enum BattlerId, MAX_BITS(4))) \
+    F(VOLATILE_INFINITE_GROWTH,             infiniteGrowth,                (u32, 1))
 /* Use within a macro to get the maximum allowed value for a volatile. Requires _typeMaxValue as input. */
 #define GET_VOLATILE_MAXIMUM(_typeMaxValue, ...) INVOKE_WITH_B(GET_VOLATILE_MAXIMUM_, _typeMaxValue)
 #define GET_VOLATILE_MAXIMUM_(_type, ...) FIRST(__VA_OPT__(FIRST(__VA_ARGS__),) MAX_BITS((sizeof(_type) * 8)))
@@ -465,6 +466,8 @@ enum __attribute__((packed)) MoveEffect
     MOVE_EFFECT_LIGHT_SCREEN,
     MOVE_EFFECT_SALT_CURE,
     MOVE_EFFECT_EERIE_SPELL,
+    MOVE_EFFECT_MELT_VIRUS,
+    MOVE_EFFECT_TRASH_CRUSH,
 
     // Max move effects happen earlier in the execution chain.
     // For example stealth rock from G-Max Stonesurge is set up before abilities but from Stone Axe after.

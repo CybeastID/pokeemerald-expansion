@@ -222,6 +222,7 @@ enum RandomTag
     RNG_MAGNITUDE,
     RNG_FISHING_BITE,
     RNG_FISHING_GEN3_STICKY,
+    RNG_TRASH_CRUSH_OHKO,
 };
 
 #define RandomWeighted(tag, ...) \

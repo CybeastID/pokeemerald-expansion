@@ -8207,7 +8207,10 @@ static inline uq4_12_t GetZMaxMoveAgainstProtectionModifier(struct DamageContext
 
 static inline uq4_12_t GetMinimizeModifier(u32 move, u32 battlerDef)
 {
-    if (MoveIncreasesPowerToMinimizedTargets(move) && gBattleMons[battlerDef].volatiles.minimize)
+    if (MoveIncreasesPowerToMinimizedTargets(move)
+        && (gBattleMons[battlerDef].volatiles.minimize
+            || (gBattleStruct->bugSpace.active
+                && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_MINIMIZE)))
         return UQ_4_12(2.0);
     return UQ_4_12(1.0);
 }
@@ -10836,6 +10839,12 @@ bool32 CanMoveSkipAccuracyCalc(u32 battlerAtk, u32 battlerDef, enum Ability abil
     {
         effect = TRUE;
     }
+    else if (gBattleStruct->bugSpace.active
+     && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_MINIMIZE
+     && MoveIncreasesPowerToMinimizedTargets(move))
+    {
+        effect = TRUE;
+    }
     else if (GetMoveAccuracy(move) == 0)
     {
         effect = TRUE;
@@ -11285,3 +11294,18 @@ bool32 IsMimikyuDisguised(u32 battler)
     return gBattleMons[battler].species == SPECIES_MIMIKYU_DISGUISED
         || gBattleMons[battler].species == SPECIES_MIMIKYU_TOTEM_DISGUISED;
 }
+
+// static void HandleSoulParasiteEffect(struct Pokemon *attacker, struct Pokemon *defender) {
+//     if (!IsAbilityActive(attacker, ABILITY_SOUL_PARASITE)) return;
+
+//     // Drain 1/8 of the opponent's HP
+//     u32 damage = defender->hpMax / 8;
+//     defender->hp = MAX(0, defender->hp - damage);
+//     attacker->hp = MIN(attacker->hpMax, attacker->hp + damage);
+
+//     // Display HP drain message
+//     BattleScriptPush("callasm HandleSoulParasiteEffect");
+//     BattleScriptPush("bufferstring STRINGID_SOURCE_DRAINED_HP");
+//     BattleScriptPush("bufferstring STRINGID_TARGET_LOST_HP");
+//     BattleScriptPush("playanimation ANIM_DRAIN");
+// }

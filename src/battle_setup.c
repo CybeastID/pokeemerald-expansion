@@ -795,7 +795,8 @@ enum BattleTransition GetTrainerBattleTransition(void)
         || trainerClass == TRAINER_CLASS_AQUA_ADMIN)
         return B_TRANSITION_AQUA;
 
-    if (trainerClass == TRAINER_CLASS_RAZELUXE)
+    if (trainerClass == TRAINER_CLASS_RAZELUXE
+        || trainerClass == TRAINER_CLASS_ALICE)
         return B_TRANSITION_BIG_POKEBALL;
 
     switch (GetTrainerBattleType(trainerId))

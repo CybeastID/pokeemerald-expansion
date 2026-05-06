@@ -369,8 +369,8 @@ const struct TrainerClass gTrainerClasses[TRAINER_CLASS_COUNT] =
     [TRAINER_CLASS_PIKE_QUEEN] = { _("PIKE QUEEN") },
     [TRAINER_CLASS_PYRAMID_KING] = { _("PYRAMID KING") },
     [TRAINER_CLASS_RS_PROTAG] = { _("{PKMN} TRAINER") },
-    [TRAINER_CLASS_RAZELUXE] = {_("True GM"),20, BALL_MASTER}
-    [TRAINER_CLASS_ALICE] = {_("LUDEN ENFORCER"),20, BALL_MASTER}
+    [TRAINER_CLASS_RAZELUXE] = {_("True GM"),20, BALL_MASTER},
+    [TRAINER_CLASS_ALICE] = {_("ENFORCER"),20, BALL_MASTER}
 };
 
 static void (*const sTurnActionsFuncsTable[])(void) =
@@ -3020,6 +3020,12 @@ static void BattleStartClearSetData(void)
     s32 i;
 
     TurnValuesCleanUp(FALSE);
+    memset(&gBattleStruct->bugSpace, 0, sizeof(gBattleStruct->bugSpace));
+    if (FlagGet(FLAG_PLAYER_SMOL))
+    {
+        gBattleStruct->bugSpace.active = TRUE;
+        gBattleStruct->bugSpace.thresholdPercent = 50;
+    }
     memset(&gSpecialStatuses, 0, sizeof(gSpecialStatuses));
 
     memset(&gDisableStructs, 0, sizeof(gDisableStructs));

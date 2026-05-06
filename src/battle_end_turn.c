@@ -1365,6 +1365,149 @@ static bool32 HandleEndTurnDynamax(u32 battler)
     return effect;
 }
 
+// Bug Space BP threshold decay - happens once per turn for the field
+static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
+{
+    bool32 effect = FALSE;
+
+    // Only process once per turn (not per battler)
+    if (battler != 0)
+    {
+        gBattleStruct->eventState.endTurnBattler++;
+        return effect;
+    }
+
+    gBattleStruct->eventState.endTurnBattler++;
+
+    if (!gBattleStruct->bugSpace.active)
+        return effect;
+
+    // Don't decay if already at floor
+    if (gBattleStruct->bugSpace.bpThreshold == 0)
+        return effect;
+
+    // Apply decay
+    if (gBattleStruct->bugSpace.bpThreshold > gBattleStruct->bugSpace.bpDecayRate)
+    {
+        gBattleStruct->bugSpace.bpThreshold -= gBattleStruct->bugSpace.bpDecayRate;
+    }
+    else
+    {
+        gBattleStruct->bugSpace.bpThreshold = 0;
+    }
+
+    // Update current tier based on new threshold
+    enum BugSpaceThresholdTier oldTier = gBattleStruct->bugSpace.currentTier;
+    if (gBattleStruct->bugSpace.bpThreshold == 0)
+        gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_PASSIVE_OHKO;
+    else if (gBattleStruct->bugSpace.bpThreshold <= 30)
+        gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_OHKO;
+    else if (gBattleStruct->bugSpace.bpThreshold <= 60)
+        gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_MINIMIZE;
+    else
+        gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_NORMAL;
+
+    // Check if tier changed (for potential announcements)
+    if (oldTier != gBattleStruct->bugSpace.currentTier)
+    {
+        // TODO: Add tier change announcement script
+        effect = TRUE;
+    }
+
+    return effect;
+}
+
+// Bug Space passive OHKO - triggers when threshold reaches floor
+static bool32 HandleEndTurnBugSpacePassiveOHKO(u32 battler)
+{
+    bool32 effect = FALSE;
+
+    gBattleStruct->eventState.endTurnBattler++;
+
+    if (!gBattleStruct->bugSpace.active)
+        return effect;
+
+    // Only trigger if at passive OHKO tier
+    if (gBattleStruct->bugSpace.currentTier != BUGSPACE_TIER_PASSIVE_OHKO)
+        return effect;
+
+    // Skip if battler is the source (Kazuradrop's side)
+    if (GetBattlerSide(battler) == GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+        return effect;
+
+    if (!IsBattlerAlive(battler))
+        return effect;
+
+    // Apply OHKO damage (bypasses type immunity)
+    SetPassiveDamageAmount(battler, gBattleMons[battler].hp);
+    BattleScriptExecute(BattleScript_PerishSongTakesLife);  // Reuse perish song script for OHKO
+    effect = TRUE;
+
+    return effect;
+}
+
+// Melt Virus: deal 1/8 (1/4 if Bug Space at MINIMIZE+ tier) max HP damage
+static bool32 HandleEndTurnMeltVirus(u32 battler)
+{
+    bool32 effect = FALSE;
+
+    gBattleStruct->eventState.endTurnBattler++;
+
+    if (gBattleMons[battler].volatiles.meltVirus
+     && IsBattlerAlive(battler)
+     && !IsAbilityAndRecord(battler, GetBattlerAbility(battler), ABILITY_MAGIC_GUARD))
+    {
+        s32 damage = GetNonDynamaxMaxHP(battler) / 8;
+        // Bug Space MINIMIZE tier or higher doubles the damage
+        if (gBattleStruct->bugSpace.active
+         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE)
+        {
+            damage = GetNonDynamaxMaxHP(battler) / 4;
+        }
+        SetPassiveDamageAmount(battler, damage);
+        BattleScriptExecute(BattleScript_MeltVirusTurnDmg);
+        effect = TRUE;
+    }
+
+    return effect;
+}
+
+// Infinite Growth: raise raw stats (ATK, DEF, SPATK, SPDEF, SPD) by 10%, increase max HP by 10%, heal 1/16 max HP
+static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
+{
+    bool32 effect = FALSE;
+
+    gBattleStruct->eventState.endTurnBattler++;
+
+    if (gBattleMons[battler].volatiles.infiniteGrowth
+     && IsBattlerAlive(battler))
+    {
+        // Increase raw stats by 10%
+        gBattleMons[battler].attack   += max(1, gBattleMons[battler].attack / 10);
+        gBattleMons[battler].defense  += max(1, gBattleMons[battler].defense / 10);
+        gBattleMons[battler].speed    += max(1, gBattleMons[battler].speed / 10);
+        gBattleMons[battler].spAttack += max(1, gBattleMons[battler].spAttack / 10);
+        gBattleMons[battler].spDefense += max(1, gBattleMons[battler].spDefense / 10);
+        
+        // Increase max HP by 10%
+        gBattleMons[battler].maxHP += max(1, gBattleMons[battler].maxHP / 10);
+        
+        // Heal 1/16 max HP
+        if (!gBattleMons[battler].volatiles.healBlock && !IsBattlerAtMaxHp(battler))
+        {
+            SetHealAmount(battler, GetNonDynamaxMaxHP(battler) / 16);
+            BattleScriptExecute(BattleScript_InfiniteGrowthHeal);
+        }
+        else
+        {
+            BattleScriptExecute(BattleScript_InfiniteGrowthStatUp);
+        }
+        effect = TRUE;
+    }
+
+    return effect;
+}
+
 /*
  * Various end turn effects that happen after all battlers moved.
  * Each Case will apply the effects for each battler. Moving to the next case when all battlers are done.
@@ -1427,6 +1570,10 @@ static bool32 (*const sEndTurnEffectHandlers[])(u32 battler) =
     [ENDTURN_FORM_CHANGE_ABILITIES] = HandleEndTurnFormChangeAbilities,
     [ENDTURN_EJECT_PACK] = HandleEndTurnEjectPack,
     [ENDTURN_DYNAMAX] = HandleEndTurnDynamax,
+    [ENDTURN_BUGSPACE_DECAY] = HandleEndTurnBugSpaceDecay,
+    [ENDTURN_BUGSPACE_PASSIVE] = HandleEndTurnBugSpacePassiveOHKO,
+    [ENDTURN_INFINITE_GROWTH] = HandleEndTurnInfiniteGrowth,
+    [ENDTURN_MELT_VIRUS] = HandleEndTurnMeltVirus,
 };
 
 u32 DoEndTurnEffects(void)

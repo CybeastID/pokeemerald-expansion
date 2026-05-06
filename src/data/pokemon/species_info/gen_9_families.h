@@ -8344,6 +8344,59 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
                             ),
     },
 
+    [SPECIES_KAZURADROP] =
+{
+    .baseHP        = 85,
+    .baseAttack    = 70,
+    .baseDefense   = 80,
+    .baseSpeed     = 65,
+    .baseSpAttack  = 95,
+    .baseSpDefense = 110,
+    .types = MON_TYPES(TYPE_DARK, TYPE_FAIRY),
+    .catchRate = 45,
+    .expYield = 30,
+    .evYield_SpAttack = 2,
+    .evYield_SpDefense = 1,
+    .genderRatio = MON_FEMALE,
+    .eggCycles = 20,
+    .friendship = 0,
+    .growthRate = GROWTH_SLOW,
+    .eggGroups = MON_EGG_GROUPS(EGG_GROUP_AMORPHOUS),
+    .abilities = { ABILITY_SOUL_PARASITE, ABILITY_NONE, ABILITY_NONE },
+    .bodyColor = BODY_COLOR_BLACK,
+    .speciesName = _("Kazuradrop"),
+    .cryId = CRY_NONE,
+    .natDexNum = NATIONAL_DEX_KAZURADROP,
+    .categoryName = _("Bug Space"),
+    .height = 150,
+    .weight = 450,
+.description = COMPOUND_STRING(
+        "A fairy that perceives all others as insects.\n"
+        "Those caught in its gaze find their strength\n"
+        "slowly draining away, until they are exactly\n"
+        "what it always believed them to be."),
+    .pokemonScale = 256,
+    .pokemonOffset = 0,
+    .trainerScale = 256,
+    .trainerOffset = 0,
+    .frontPic = gMonFrontPic_CircledQuestionMark,
+    .frontPicSize = MON_COORDS_SIZE(40, 40),
+    .frontPicYOffset = 12,
+    .frontAnimFrames = sAnims_TwoFramePlaceHolder,
+    .frontAnimId = ANIM_V_SQUISH_AND_BOUNCE,
+    .backPic = gMonBackPic_CircledQuestionMark,
+    .backPicSize = MON_COORDS_SIZE(40, 40),
+    .backPicYOffset = 12,
+    .backAnimId = BACK_ANIM_NONE,
+    .palette = gMonPalette_CircledQuestionMark,
+    .shinyPalette = gMonShinyPalette_CircledQuestionMark,
+    .iconSprite = gMonIcon_QuestionMark,
+    .iconPalIndex = 0,
+    .isMythical = TRUE,
+    .levelUpLearnset = sKazuradropLevelUpLearnset,
+    .teachableLearnset = sNoneTeachableLearnset,
+},
+
 #ifdef __INTELLISENSE__
 };
 #endif

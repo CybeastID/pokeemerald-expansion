@@ -1669,8 +1669,8 @@
 
 #define SPECIES_CASTORIA                                GEN_CUSTOM_START + 1
 #define SPECIES_RAZE_KIRLIA                             GEN_CUSTOM_START + 2
-
-#define SPECIES_EGG                                     (SPECIES_RAZE_KIRLIA + 1)
+#define SPECIES_KAZURADROP                              GEN_CUSTOM_START + 3
+#define SPECIES_EGG                                     GEN_CUSTOM_START + 4
 
 #define NUM_SPECIES SPECIES_EGG
 

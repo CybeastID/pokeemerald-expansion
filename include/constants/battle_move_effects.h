@@ -355,6 +355,7 @@ enum __attribute__((packed)) BattleMoveEffects
     EFFECT_CEASELESS_EDGE, // Same applies to spikes
     EFFECT_DMS_PREROGATIVE,
     EFFECT_REVIVAL_BLESSING_2,
+    EFFECT_INFINITE_GROWTH,
     NUM_BATTLE_MOVE_EFFECTS,
 };
 

@@ -21336,6 +21336,93 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .sketchBanned = (B_SKETCH_BANS >= GEN_9),
         .battleAnimScript = gBattleAnimMove_RevivalBlessing,
     },
+        [MOVE_MELT_VIRUS] =
+    {
+        .name = COMPOUND_STRING("Melt Virus"),
+        .description = COMPOUND_STRING(
+            "An icy virus attack that\n"
+            "drains the target's HP\n"
+            "each turn."),
+        .effect = EFFECT_HIT,
+        .power = 80,
+        .type = TYPE_ICE,
+        .accuracy = 100,
+        .pp = 10,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_SPECIAL,
+        .battleAnimScript = gBattleAnimMove_IceBeam,
+        .additionalEffects = ADDITIONAL_EFFECTS({
+            .moveEffect = MOVE_EFFECT_MELT_VIRUS,
+            .chance = 100,
+        }),
+    },
+
+    [MOVE_TRASH_CRUSH] =
+    {
+        .name = COMPOUND_STRING("Trash & Crush"),
+        .description = COMPOUND_STRING(
+            "A devastating crushing\n"
+            "attack. May OHKO the\n"
+            "target."),
+        .effect = EFFECT_HIT,
+        .power = 100,
+        .type = TYPE_FAIRY,
+        .accuracy = 85,
+        .pp = 5,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_PHYSICAL,
+        .makesContact = TRUE,
+        .battleAnimScript = gBattleAnimMove_PlayRough,
+        .minimizeDoubleDamage = TRUE,
+        .additionalEffects = ADDITIONAL_EFFECTS({
+            .moveEffect = MOVE_EFFECT_TRASH_CRUSH,
+        }),
+    },
+
+    [MOVE_INFINITE_GROWTH] =
+    {
+        .name = COMPOUND_STRING("Infinite Growth"),
+        .description = COMPOUND_STRING(
+            "The user grows endlessly,\n"
+            "boosting all stats and\n"
+            "restoring HP each turn."),
+        .effect = EFFECT_INFINITE_GROWTH,
+        .power = 0,
+        .type = TYPE_GRASS,
+        .accuracy = 0,
+        .pp = 5,
+        .target = MOVE_TARGET_USER,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_STATUS,
+        .snatchAffected = TRUE,
+        .battleAnimScript = gBattleAnimMove_Growth,
+    },
+
+    [MOVE_CRACK_ICE] =
+    {
+        .name = COMPOUND_STRING("Crack Ice"),
+        .description = COMPOUND_STRING(
+            "A lightning-fast slash\n"
+            "that may freeze the\n"
+            "target."),
+        .effect = EFFECT_HIT,
+        .power = 60,
+        .type = TYPE_FIGHTING,
+        .accuracy = 100,
+        .pp = 10,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 1,
+        .category = DAMAGE_CATEGORY_PHYSICAL,
+        .makesContact = TRUE,
+        .slicingMove = TRUE,
+        .battleAnimScript = gBattleAnimMove_NightSlash,
+        .additionalEffects = ADDITIONAL_EFFECTS({
+            .moveEffect = MOVE_EFFECT_FREEZE,
+            .chance = 50,
+        }),
+    },
     
 
     // Z-Moves
@@ -22954,4 +23041,5 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .ignoresProtect = TRUE,
         .battleAnimScript = gBattleAnimMove_GMaxRapidFlow,
     },
+
 };

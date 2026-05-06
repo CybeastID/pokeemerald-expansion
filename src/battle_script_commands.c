@@ -1336,6 +1336,63 @@ static void Cmd_attackcanceler(void)
     }
 }
 
+// Get the base power of a move for Bug Space threshold check
+static u16 GetMoveBasePowerForBugSpace(u32 move)
+{
+    // For status moves, use 0 (they should not be blocked by BP threshold)
+    if (GetMoveCategory(move) == DAMAGE_CATEGORY_STATUS)
+        return 0;
+    
+    // Get the move's base power
+    u16 power = GetMovePower(move);
+    
+    // Handle special cases where power is 0 but move is not status
+    if (power == 0)
+    {
+        // Moves with variable power - use a default threshold value
+        switch (move)
+        {
+        case MOVE_GYRO_BALL:
+        case MOVE_HEAT_CRASH:
+        case MOVE_HEAVY_SLAM:
+        case MOVE_LOW_KICK:
+        case MOVE_GRASS_KNOT:
+        case MOVE_FLAIL:
+        case MOVE_REVERSAL:
+        case MOVE_WRING_OUT:
+        case MOVE_HARD_PRESS:
+            // Variable power moves - use a moderate value
+            return 50;
+        default:
+            return 0;
+        }
+    }
+    
+    return power;
+}
+
+// Check if a move should fail due to Bug Space BP threshold
+static bool32 IsMoveBlockedByBugSpace(u32 move)
+{
+    // If Bug Space is not active, don't block
+    if (!gBattleStruct->bugSpace.active)
+        return FALSE;
+    
+    // If threshold is 0 (floor reached), don't block (passive OHKO phase)
+    // if (gBattleStruct->bugSpace.bpThreshold == 0)
+       // return FALSE;
+    
+    // Get move's base power
+    u16 moveBP = GetMoveBasePowerForBugSpace(move);
+    
+    // Status moves (BP = 0) are not blocked
+    if (moveBP == 0)
+        return FALSE;
+    
+    // Check if move's BP >= threshold
+    return moveBP >= gBattleStruct->bugSpace.bpThreshold;
+}
+
 static void JumpIfMoveFailed(u32 adder, u32 move, u32 moveType, const u8 *failInstr)
 {
     if (gBattleStruct->moveResultFlags[gBattlerTarget] & MOVE_RESULT_NO_EFFECT)
@@ -1345,16 +1402,22 @@ static void JumpIfMoveFailed(u32 adder, u32 move, u32 moveType, const u8 *failIn
         gBattlescriptCurrInstr = failInstr;
         return;
     }
-    else
+    
+    // Check Bug Space BP threshold
+    if (IsMoveBlockedByBugSpace(move))
     {
-        if (CanAbilityAbsorbMove(gBattlerAttacker,
-                                 gBattlerTarget,
-                                 GetBattlerAbility(gBattlerTarget),
-                                 move,
-                                 moveType,
-                                 RUN_SCRIPT))
-            return;
+        gBattleStruct->moveResultFlags[gBattlerTarget] |= MOVE_RESULT_NO_EFFECT;
+        gBattlescriptCurrInstr = failInstr;
+        return;
     }
+    
+    if (CanAbilityAbsorbMove(gBattlerAttacker,
+                             gBattlerTarget,
+                             GetBattlerAbility(gBattlerTarget),
+                             move,
+                             moveType,
+                             RUN_SCRIPT))
+        return;
 
     gBattlescriptCurrInstr += adder;
 }
@@ -1906,6 +1969,15 @@ static void Cmd_adjustdamage(void)
             continue;
         }
 
+        // Bug Space OHKO tier: Minimize-seeking moves deal 9999 damage
+        if (gBattleStruct->bugSpace.active
+            && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_OHKO
+            && MoveIncreasesPowerToMinimizedTargets(gCurrentMove))
+        {
+            gBattleStruct->moveDamage[battlerDef] = 9999;
+            BattleScriptCall(BattleScript_OneHitKOMsg);
+        }
+
         if (gBattleMons[battlerDef].hp > gBattleStruct->moveDamage[battlerDef])
             continue;
 
@@ -2356,6 +2428,65 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
     gBattlescriptCurrInstr = nextInstr;
 }
 
+// Kazuradrop transformation: clamp damage at 10% HP, then trigger full restore + double max HP + accelerate decay + swap to Sakura Five moves
+static bool32 TryTriggerKazuradropTransformation(u32 battler)
+{
+    u32 i;
+    u32 tenPercentHp;
+
+    // Only applies to Kazuradrop
+    if (gBattleMons[battler].species != SPECIES_KAZURADROP)
+        return FALSE;
+    // Must have Bug Space active
+    if (!gBattleStruct->bugSpace.active)
+        return FALSE;
+    // Must not have already transformed (moveSwapActive doubles as transformation flag)
+    if (gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
+        return FALSE;
+    // Must be taking damage
+    if (gBattleStruct->moveDamage[battler] <= 0)
+        return FALSE;
+
+    tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
+    if (tenPercentHp == 0)
+        tenPercentHp = 1;
+
+    // If this damage would drop below 10% HP, clamp it
+    if ((s32)gBattleMons[battler].hp - (s32)gBattleStruct->moveDamage[battler] >= (s32)tenPercentHp)
+        return FALSE;
+
+    // Clamp damage at 10% HP threshold
+    gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - tenPercentHp;
+    gBattleStruct->bugSpace.sourceBattler = battler;
+
+    return TRUE;
+}
+
+// Apply Kazuradrop transformation effects after damage is dealt
+static void ApplyKazuradropTransformation(u32 battler)
+{
+    u32 i;
+
+    // Full restore
+    gBattleMons[battler].hp = gBattleMons[battler].maxHP;
+    // Double max HP
+    gBattleMons[battler].maxHP *= 2;
+    // Accelerate Bug Space decay (use bpDecayRatePhase2 as the accelerated rate)
+    gBattleStruct->bugSpace.bpDecayRate = gBattleStruct->bugSpace.bpDecayRatePhase2;
+    // Mark as transformed (using moveSwapActive as the flag)
+    gBattleStruct->bugSpace.moveSwapActive |= (1u << battler);
+    // Save original moves
+    for (i = 0; i < MAX_MON_MOVES; i++)
+        gBattleStruct->bugSpace.originalMoves[battler][i] = gBattleMons[battler].moves[i];
+    // Swap to Sakura Five moves
+    gBattleMons[battler].moves[0] = MOVE_MELT_VIRUS;
+    gBattleMons[battler].moves[1] = MOVE_TRASH_CRUSH;
+    gBattleMons[battler].moves[2] = MOVE_INFINITE_GROWTH;
+    gBattleMons[battler].moves[3] = MOVE_CRACK_ICE;
+    for (i = 0; i < MAX_MON_MOVES; i++)
+        gBattleMons[battler].pp[i] = GetMovePP(gBattleMons[battler].moves[i]);
+}
+
 static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nextInstr)
 {
     if (gBattleStruct->moveResultFlags[gBattlerTarget] & MOVE_RESULT_NO_EFFECT)
@@ -2416,6 +2547,12 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
         }
         else
         {
+            bool32 kazuradropTransformed = FALSE;
+
+            // Check for Kazuradrop transformation before applying damage
+            if (TryTriggerKazuradropTransformation(battler))
+                kazuradropTransformed = TRUE;
+
             gBideDmg[battler] += gBattleStruct->moveDamage[battler];
             if (scriptBattler == BS_TARGET)
                 gBideTarget[battler] = gBattlerAttacker;
@@ -2432,6 +2569,15 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                 gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp;
                 gBattleMons[battler].hp = 0;
             }
+
+            // Apply Kazuradrop transformation effects after damage is dealt
+            if (kazuradropTransformed)
+            {
+                // Double current HP to match doubled max HP
+                gBattleMons[battler].hp *= 2;
+                ApplyKazuradropTransformation(battler);
+            }
+
             gProtectStructs[battler].assuranceDoubled = TRUE;
             gProtectStructs[battler].revengeDoubled |= 1u << gBattlerAttacker;
 
@@ -3749,6 +3895,48 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
             }
         }
         break;
+    case MOVE_EFFECT_MELT_VIRUS:
+        if (!gBattleMons[gBattlerTarget].volatiles.meltVirus)
+        {
+            gBattleMons[gBattlerTarget].volatiles.meltVirus = TRUE;
+            gBattleMons[gBattlerTarget].volatiles.meltVirusBy = gBattlerAttacker;
+            BattleScriptPush(battleScript);
+            gBattlescriptCurrInstr = BattleScript_MoveEffectMeltVirus;
+        }
+        break;
+    case MOVE_EFFECT_TRASH_CRUSH:
+    {
+        u8 ohko = FALSE;
+        // In Bug Space, Trash & Crush deals massive damage scaling with tier
+        if (gBattleStruct->bugSpace.active
+         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO)
+        {
+            // At OHKO tier or higher, Trash & Crush becomes a full OHKO
+            gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
+            ohko = TRUE;
+        }
+        else
+        {
+            // 20% base chance to OHKO, 40% if target is Minimized or Bug Space is at MINIMIZE+ tier
+            u32 ohkoChance = 20;
+            if (gBattleMons[gBattlerTarget].volatiles.minimize
+             || (gBattleStruct->bugSpace.active
+              && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE))
+            {
+                ohkoChance = 40;
+            }
+            if (RandomPercentage(RNG_TRASH_CRUSH_OHKO, ohkoChance))
+            {
+                gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp * 3;
+                ohko = TRUE;
+            }
+        }
+        if (ohko) {
+        BattleScriptPush(battleScript);
+        gBattlescriptCurrInstr = BattleScript_MoveEffectTrashCrush;
+        break;
+        }
+    }
     case MOVE_EFFECT_RAISE_TEAM_ATTACK:
         if (!NoAliveMonsForEitherParty())
         {
@@ -9632,6 +9820,13 @@ static void HandleScriptMegaPrimalBurst(u32 caseId, u32 battler, u32 type)
 
         BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_SPECIES_BATTLE, 1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].species), &gBattleMons[battler].species);
         MarkBattlerForControllerExec(battler);
+        if (gBattleMons[battler].species == SPECIES_KAZURADROP
+         && !GetBattlerPartyState(battler)->sentOut)
+        {
+            gBattleStruct->bugSpace.active = TRUE;
+            if (gBattleStruct->bugSpace.thresholdPercent == 0)
+                gBattleStruct->bugSpace.thresholdPercent = 50;
+        }
     }
     // Update healthbox and elevation and play cry.
     else
@@ -14484,6 +14679,8 @@ void BS_RestoreAttacker(void)
     }
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
+
+
 
 void BS_CalcMetalBurstDmg(void)
 {

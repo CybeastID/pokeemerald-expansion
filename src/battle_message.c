@@ -876,6 +876,11 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_AUTHORITYWEAKENTARGET]                = COMPOUND_STRING("The overwhelming divine presence weakens {B_DEF_NAME_WITH_PREFIX} immensely!"),
     [STRINGID_AUTHORITYSTRENGTHENUSER]              = COMPOUND_STRING("The overwhelming divine presence strengthens {B_ATK_NAME_WITH_PREFIX} immensely!"),
     [STRINGID_ABILITYSHIELDPROTECTS]                = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX}'s Ability is protected by the effects of its {B_LAST_ITEM}!"),
+    [STRINGID_TARGETINFECTEDBYMELTVIRUS]            = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} was infected by Melt Virus!"),
+    [STRINGID_PKMNHURTBYMELTVIRUS]                  = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} is hurt by Melt Virus!"),
+    [STRINGID_TRASHCRUSHHIT]                        = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} was crushed by Trash & Crush!"),
+    [STRINGID_PKMNINFINITEGROWTHHEAL]               = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX}'s Infinite Growth restored its health!"),
+    [STRINGID_PKMNINFINITEGROWTHSTATUP]              = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX}'s stats grew with Infinite Growth!"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

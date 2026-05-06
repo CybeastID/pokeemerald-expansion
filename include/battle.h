@@ -266,6 +266,29 @@ struct WishFutureKnock
     u8 knockedOffMons[NUM_BATTLE_SIDES]; // Each battler is represented by a bit.
 };
 
+// Bug Space BP threshold tiers - determines what effects are active
+enum BugSpaceThresholdTier
+{
+    BUGSPACE_TIER_NORMAL,         // Starting state - move swap A available
+    BUGSPACE_TIER_MINIMIZE,       // Lower threshold - swapped moves gain Minimize interaction
+    BUGSPACE_TIER_OHKO,           // Even lower - swapped moves become OHKO
+    BUGSPACE_TIER_PASSIVE_OHKO,   // Floor reached - end-of-turn passive OHKO active
+};
+
+struct BugSpaceData
+{
+    u8 active;                    // 0 = off, 1 = on
+    u8 thresholdPercent;          // X% HP trigger point, configurable at runtime
+    u8 sourceBattler;             // Battler that most recently triggered a phase
+    u16 bpThreshold;              // Current BP threshold - moves at or above this fail
+    u16 bpDecayRate;              // Current decay rate per turn
+    u16 bpDecayRateBase;          // Base decay rate
+    u16 bpDecayRatePhase2;        // Decay rate after first acceleration
+    enum BugSpaceThresholdTier currentTier;  // Current threshold tier for effects
+    u16 originalMoves[MAX_BATTLERS_COUNT][MAX_MON_MOVES]; // Original moves before Bug Space swapping
+    u8 moveSwapActive;            // Bitmask per battler: 1 if their moves have been swapped
+};
+
 struct AI_SavedBattleMon
 {
     enum Ability ability;
@@ -788,6 +811,7 @@ struct BattleStruct
     u8 incrementEchoedVoice:1;
     u8 echoedVoiceCounter:3;
     u8 padding3:4;
+    struct BugSpaceData bugSpace;
 };
 
 struct AiBattleData

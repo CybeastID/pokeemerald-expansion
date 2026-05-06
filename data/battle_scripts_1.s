@@ -8915,3 +8915,28 @@ BattleScript_SwapToSubstituteContinue:
 	waitanimation
 BattleScript_SwapToSubstituteReturn:
 	return
+
+BattleScript_MoveEffectMeltVirus::
+	printstring STRINGID_TARGETINFECTEDBYMELTVIRUS
+	waitmessage B_WAIT_TIME_LONG
+	return
+
+BattleScript_MoveEffectTrashCrush::
+	printstring STRINGID_TRASHCRUSHHIT
+	waitmessage B_WAIT_TIME_LONG
+	return
+
+BattleScript_MeltVirusTurnDmg::
+	printstring STRINGID_PKMNHURTBYMELTVIRUS
+	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_DoTurnDmg
+
+BattleScript_InfiniteGrowthHeal::
+	printstring STRINGID_PKMNINFINITEGROWTHHEAL
+	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_DoTurnDmg
+
+BattleScript_InfiniteGrowthStatUp::
+	printstring STRINGID_PKMNINFINITEGROWTHSTATUP
+	waitmessage B_WAIT_TIME_LONG
+	return

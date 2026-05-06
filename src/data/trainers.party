@@ -8207,7 +8207,7 @@ Level: 26
 IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
 
 === TRAINER_ALICE ===
-Name: ALICE
+Name: AIMEE
 Class: Swimmer F
 Pic: Swimmer F
 Gender: Female
@@ -16935,3 +16935,49 @@ Ball: Cherish Ball
 - Calm Mind
 - Earth Power  
 - Moonblast
+
+
+=== TRAINER_ALICE2 ===
+Name: ALICE
+Class: Alice
+Pic: Swimmer F
+Gender: Female
+Music: Elite Four
+Double Battle: No
+AI: Check Bad Move
+
+Espeon @ Life Orb  
+Ability: Magic Bounce  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+- Psychic  
+- Shadow Ball  
+- Dazzling Gleam  
+- Calm Mind  
+
+Umbreon @ Leftovers  
+Ability: Synchronize  
+EVs: 252 HP / 4 Def / 252 SpD  
+Careful Nature  
+- Foul Play  
+- Wish  
+- Protect  
+- Heal Bell  
+
+Palkia @ Lustrous Orb  
+Ability: Pressure  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Modest Nature  
+- Hydro Pump  
+- Spacial Rend  
+- Fire Blast  
+- Thunder Wave  
+
+Kazura (SPECIES_KAZURADROP) @ Black Glasses  
+Ability: Soul Parasite  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Modest Nature  
+- Moonblast  
+- Dark Pulse  
+- Toxic  
+- Shadow Ball  
