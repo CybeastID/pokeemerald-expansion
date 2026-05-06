@@ -4618,10 +4618,28 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                 effect++;
             }
             break;
+        case ABILITY_SOUL_PARASITE:
+            if (!gSpecialStatuses[battler].switchInAbilityDone)
+            {
+                gSpecialStatuses[battler].switchInAbilityDone = TRUE;
+                if (gBattleStruct->bugSpace.active != TRUE)
+                {   memset(&gBattleStruct->bugSpace, 0, sizeof(gBattleStruct->bugSpace));
+                    gBattleStruct->bugSpace.active = TRUE;
+                    gBattleStruct->bugSpace.sourceBattler = battler;
+                    gBattleStruct->bugSpace.thresholdPercent = 50;
+                    gBattleStruct->bugSpace.bpThreshold = 150;
+                    // gBattleStruct->bugSpace.bpThreshold = 10;
+                    gBattleStruct->bugSpace.bpDecayRate = 10;
+                    gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
+                    effect++;
+                }
+            }
+            break;
         default:
             break;
         }
         break;
+        
     case ABILITYEFFECT_ENDTURN:
         if (IsBattlerAlive(battler))
         {

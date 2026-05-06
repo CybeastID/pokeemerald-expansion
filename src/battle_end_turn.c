@@ -1457,16 +1457,21 @@ static bool32 HandleEndTurnMeltVirus(u32 battler)
      && IsBattlerAlive(battler)
      && !IsAbilityAndRecord(battler, GetBattlerAbility(battler), ABILITY_MAGIC_GUARD))
     {
-        s32 damage = GetNonDynamaxMaxHP(battler) / 8;
-        // Bug Space MINIMIZE tier or higher doubles the damage
-        if (gBattleStruct->bugSpace.active
-         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE)
+        u32 attacker = gBattleMons[battler].volatiles.meltVirusBy;
+        if (IsBattlerAlive(attacker))
         {
-            damage = GetNonDynamaxMaxHP(battler) / 4;
+            s32 damage = GetNonDynamaxMaxHP(battler) / 8;
+            if (gBattleStruct->bugSpace.active
+             && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE)
+            {
+                damage = GetNonDynamaxMaxHP(battler) / 4;
+            }
+            s32 healAmount = GetDrainedBigRootHp(attacker, damage);
+            SetPassiveDamageAmount(battler, damage);
+            SetHealAmount(attacker, healAmount);
+            BattleScriptExecute(BattleScript_MeltVirusTurnDmg);
+            effect = TRUE;
         }
-        SetPassiveDamageAmount(battler, damage);
-        BattleScriptExecute(BattleScript_MeltVirusTurnDmg);
-        effect = TRUE;
     }
 
     return effect;
@@ -1483,11 +1488,11 @@ static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
      && IsBattlerAlive(battler))
     {
         // Increase raw stats by 10%
-        gBattleMons[battler].attack   += max(1, gBattleMons[battler].attack / 10);
-        gBattleMons[battler].defense  += max(1, gBattleMons[battler].defense / 10);
-        gBattleMons[battler].speed    += max(1, gBattleMons[battler].speed / 10);
-        gBattleMons[battler].spAttack += max(1, gBattleMons[battler].spAttack / 10);
-        gBattleMons[battler].spDefense += max(1, gBattleMons[battler].spDefense / 10);
+        gBattleMons[battler].attack   += max(1, gBattleMons[battler].attack / 5);
+        gBattleMons[battler].defense  += max(1, gBattleMons[battler].defense / 5);
+        gBattleMons[battler].speed    += max(1, gBattleMons[battler].speed / 5);
+        gBattleMons[battler].spAttack += max(1, gBattleMons[battler].spAttack / 5);
+        gBattleMons[battler].spDefense += max(1, gBattleMons[battler].spDefense / 5);
         
         // Increase max HP by 10%
         gBattleMons[battler].maxHP += max(1, gBattleMons[battler].maxHP / 10);

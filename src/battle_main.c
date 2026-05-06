@@ -3021,14 +3021,6 @@ static void BattleStartClearSetData(void)
 
     TurnValuesCleanUp(FALSE);
     memset(&gBattleStruct->bugSpace, 0, sizeof(gBattleStruct->bugSpace));
-    if (FlagGet(FLAG_PLAYER_SMOL))
-    {
-        gBattleStruct->bugSpace.active = TRUE;
-        gBattleStruct->bugSpace.thresholdPercent = 50;
-        gBattleStruct->bugSpace.bpThreshold = 150;
-        gBattleStruct->bugSpace.bpDecayRate = 10;
-        gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
-    }
     memset(&gSpecialStatuses, 0, sizeof(gSpecialStatuses));
 
     memset(&gDisableStructs, 0, sizeof(gDisableStructs));

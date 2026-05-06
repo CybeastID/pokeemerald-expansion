@@ -2436,7 +2436,7 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
 // Kazuradrop transformation: clamp damage at 10% HP, then trigger full restore + double max HP + accelerate decay + swap to Sakura Five moves
 static bool32 TryTriggerKazuradropTransformation(u32 battler)
 {
-    u32 i;
+    // u32 i;
     u32 tenPercentHp;
 
     // Only applies to Kazuradrop
@@ -2472,10 +2472,10 @@ static void ApplyKazuradropTransformation(u32 battler)
 {
     u32 i;
 
-    // Full restore
-    gBattleMons[battler].hp = gBattleMons[battler].maxHP;
     // Double max HP
     gBattleMons[battler].maxHP *= 2;
+    // Full restore
+    gBattleMons[battler].hp = gBattleMons[battler].maxHP;
     // Accelerate Bug Space decay (use bpDecayRatePhase2 as the accelerated rate)
     gBattleStruct->bugSpace.bpDecayRate = gBattleStruct->bugSpace.bpDecayRatePhase2;
     // Mark as transformed (using moveSwapActive as the flag)
@@ -2578,9 +2578,15 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
             // Apply Kazuradrop transformation effects after damage is dealt
             if (kazuradropTransformed)
             {
-                // Double current HP to match doubled max HP
-                gBattleMons[battler].hp *= 2;
                 ApplyKazuradropTransformation(battler);
+                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
+                MarkBattlerForControllerExec(battler);
+                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
+                MarkBattlerForControllerExec(battler);
+                gBattlescriptCurrInstr = nextInstr;
+                BattleScriptPushCursor();
+                gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
+                return;
             }
 
             gProtectStructs[battler].assuranceDoubled = TRUE;
@@ -3909,41 +3915,7 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
             gBattlescriptCurrInstr = BattleScript_MoveEffectMeltVirus;
         }
         break;
-    case MOVE_EFFECT_TRASH_CRUSH:
-    {
-        u8 ohko = FALSE;
-        // In Bug Space, Trash & Crush deals massive damage scaling with tier (only for Kazuradrop)
-        if (gBattleStruct->bugSpace.active
-         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO
-         && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
-        {
-            // At OHKO tier or higher, Trash & Crush becomes a full OHKO
-            gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
-            ohko = TRUE;
-        }
-        else
-        {
-            // 20% base chance to OHKO, 40% if target is Minimized or Bug Space is at MINIMIZE+ tier
-            u32 ohkoChance = 20;
-            if (gBattleMons[gBattlerTarget].volatiles.minimize
-             || (gBattleStruct->bugSpace.active
-              && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE
-              && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler)))
-            {
-                ohkoChance = 40;
-            }
-            if (RandomPercentage(RNG_TRASH_CRUSH_OHKO, ohkoChance))
-            {
-                gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp * 3;
-                ohko = TRUE;
-            }
-        }
-        if (ohko) {
-        BattleScriptPush(battleScript);
-        gBattlescriptCurrInstr = BattleScript_MoveEffectTrashCrush;
-        break;
-        }
-    }
+    
     case MOVE_EFFECT_RAISE_TEAM_ATTACK:
         if (!NoAliveMonsForEitherParty())
         {
@@ -6218,12 +6190,63 @@ static bool32 HandleMoveEndMoveBlock(u32 moveEffect)
             }
         }
         break;
+    case EFFECT_INFINITE_GROWTH:
+        if (!gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth)
+        {
+            gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth = TRUE;
+            BattleScriptPushCursor();
+            gBattlescriptCurrInstr = BattleScript_InfiniteGrowthStatUp;
+            effect = TRUE;
+        }
+        break;
+    
+    case EFFECT_TRASH_CRUSH:
+    {
+        u8 ohko = FALSE;
+        // In Bug Space, Trash & Crush deals massive damage scaling with tier (only for Kazuradrop)
+        if (gBattleStruct->bugSpace.active
+         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO
+         && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+        {
+            // At OHKO tier or higher, Trash & Crush becomes a full OHKO
+            gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
+            ohko = TRUE;
+        }
+        else
+        {
+            // 20% base chance to OHKO, 40% if target is Minimized or Bug Space is at MINIMIZE+ tier
+            u32 ohkoChance = 20;
+            if (gBattleMons[gBattlerTarget].volatiles.minimize
+             || (gBattleStruct->bugSpace.active
+              && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE
+              && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler)))
+            {
+                ohkoChance = 40;
+            }
+            if (RandomPercentage(RNG_TRASH_CRUSH_OHKO, ohkoChance))
+            {
+                gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp * 3;
+                ohko = TRUE;
+            }
+        }
+        if (ohko) {
+            BattleScriptPushCursor();
+            gBattlescriptCurrInstr = BattleScript_MoveEffectTrashCrush;
+        }
+        else
+        {
+            BattleScriptPushCursor();
+            gBattlescriptCurrInstr = BattleScript_EffectHit;
+        }
+        effect = TRUE;
+        break;
+    }
     default:
         effect = FALSE;
         break;
-    }
-
+}    
     return effect;
+    
 }
 
 static void Cmd_moveend(void)

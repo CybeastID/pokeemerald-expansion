@@ -8924,12 +8924,23 @@ BattleScript_MoveEffectMeltVirus::
 BattleScript_MoveEffectTrashCrush::
 	printstring STRINGID_TRASHCRUSHHIT
 	waitmessage B_WAIT_TIME_LONG
+	healthbarupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
+	datahpupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
+	tryfaintmon BS_TARGET
 	return
 
 BattleScript_MeltVirusTurnDmg::
-	printstring STRINGID_PKMNHURTBYMELTVIRUS
+	call BattleScript_DoTurnDmg
+	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
+	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+	printstring STRINGID_PKMNHURTBYMELTVIRUS @ replace with a heal string
 	waitmessage B_WAIT_TIME_LONG
-	goto BattleScript_DoTurnDmg
+	end2
+
+BattleScript_InfiniteGrowthStatStart::
+	printstring STRINGID_PKMNINFINITEGROWTHSTART
+	waitmessage B_WAIT_TIME_LONG
+	return
 
 BattleScript_InfiniteGrowthHeal::
 	printstring STRINGID_PKMNINFINITEGROWTHHEAL
@@ -8937,6 +8948,12 @@ BattleScript_InfiniteGrowthHeal::
 	goto BattleScript_DoTurnDmg
 
 BattleScript_InfiniteGrowthStatUp::
-	printstring STRINGID_PKMNINFINITEGROWTHSTATUP
+	printstring STRINGID_PKMNINFINITEGROWTHHEAL
 	waitmessage B_WAIT_TIME_LONG
 	return
+
+BattleScript_KazuradropTransform::
+	playanimation BS_TARGET, B_ANIM_SIMPLE_HEAL
+    healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
+    datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+    return

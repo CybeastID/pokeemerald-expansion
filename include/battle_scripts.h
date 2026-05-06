@@ -849,7 +849,9 @@ extern const u8 BattleScript_PokemonCantUseTheMove[];
 extern const u8 BattleScript_MoveEffectMeltVirus[];
 extern const u8 BattleScript_MoveEffectTrashCrush[];
 extern const u8 BattleScript_MeltVirusTurnDmg[];
-extern const u8 BattleScript_InfiniteGrowthStatUp[];
 extern const u8 BattleScript_InfiniteGrowthHeal[];
+extern const u8 BattleScript_InfiniteGrowthStatStart[];
+extern const u8 BattleScript_InfiniteGrowthStatUp[];
+extern const u8 BattleScript_KazuradropTransform[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

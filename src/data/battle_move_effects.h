@@ -2157,7 +2157,7 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
     {
         .battleScript = BattleScript_EffectAuthority,
         .battleTvScore = 0, // TODO: Assign points
-        .encourageEncore = TRUE,
+        .encourageEncore = FALSE,
     },
    [EFFECT_REVIVAL_BLESSING_2] =
     {
@@ -2252,6 +2252,18 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
     },
 
     [EFFECT_CEASELESS_EDGE] =
+    {
+        .battleScript = BattleScript_EffectHit,
+        .battleTvScore = 0, // TODO: Assign points
+    },
+
+    [EFFECT_INFINITE_GROWTH] =
+    {
+        .battleScript = BattleScript_EffectHit,
+        .battleTvScore = 0, // TODO: Assign points
+    },
+
+    [EFFECT_TRASH_CRUSH] =
     {
         .battleScript = BattleScript_EffectHit,
         .battleTvScore = 0, // TODO: Assign points

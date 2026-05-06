@@ -467,7 +467,6 @@ enum __attribute__((packed)) MoveEffect
     MOVE_EFFECT_SALT_CURE,
     MOVE_EFFECT_EERIE_SPELL,
     MOVE_EFFECT_MELT_VIRUS,
-    MOVE_EFFECT_TRASH_CRUSH,
 
     // Max move effects happen earlier in the execution chain.
     // For example stealth rock from G-Max Stonesurge is set up before abilities but from Stone Axe after.

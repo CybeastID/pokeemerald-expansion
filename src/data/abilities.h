@@ -2412,4 +2412,16 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
         .cantBeSwapped = TRUE,
         .cantBeTraced = TRUE,
     },
+    [ABILITY_SOUL_PARASITE] =
+    {
+        .name = _("Bug Space"),
+        .description = COMPOUND_STRING("Kazuradrop's Bug Space."),
+        .aiRating = 8,
+        .cantBeCopied = TRUE,
+        .cantBeSwapped = TRUE,
+        .cantBeTraced = TRUE,
+        .cantBeSuppressed = TRUE,
+        .cantBeOverwritten = TRUE,
+        .failsOnImposter = TRUE,
+    },
 };

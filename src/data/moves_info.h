@@ -21365,7 +21365,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
             "A devastating crushing\n"
             "attack. May OHKO the\n"
             "target."),
-        .effect = EFFECT_HIT,
+        .effect = EFFECT_TRASH_CRUSH,
         .power = 100,
         .type = TYPE_FAIRY,
         .accuracy = 85,
@@ -21376,9 +21376,6 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .makesContact = TRUE,
         .battleAnimScript = gBattleAnimMove_PlayRough,
         .minimizeDoubleDamage = TRUE,
-        .additionalEffects = ADDITIONAL_EFFECTS({
-            .moveEffect = MOVE_EFFECT_TRASH_CRUSH,
-        }),
     },
 
     [MOVE_INFINITE_GROWTH] =
@@ -21392,7 +21389,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .power = 0,
         .type = TYPE_GRASS,
         .accuracy = 0,
-        .pp = 5,
+        .pp = 1,
         .target = MOVE_TARGET_USER,
         .priority = 0,
         .category = DAMAGE_CATEGORY_STATUS,
