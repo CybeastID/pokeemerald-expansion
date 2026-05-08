@@ -64,3 +64,5 @@ __pycache__
 .cocoindex_code/cocoindex.db/mdb/lock.mdb
 .cursor/mcp.json
 .clinerules/*
+temp_soul_parasite.txt
+taskplan.md

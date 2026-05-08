@@ -877,11 +877,19 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_AUTHORITYSTRENGTHENUSER]              = COMPOUND_STRING("The overwhelming divine presence strengthens {B_ATK_NAME_WITH_PREFIX} immensely!"),
     [STRINGID_ABILITYSHIELDPROTECTS]                = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX}'s Ability is protected by the effects of its {B_LAST_ITEM}!"),
     [STRINGID_TARGETINFECTEDBYMELTVIRUS]            = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} was infected by Melt Virus!"),
-    [STRINGID_PKMNHURTBYMELTVIRUS]                  = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} is drained by Melt Virus!"),
+    [STRINGID_PKMNHURTBYMELTVIRUS]                  = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX} is drained by Melt Virus!"),
     [STRINGID_TRASHCRUSHHIT]                        = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} was crushed by Trash & Crush!"),
-    [STRINGID_PKMNINFINITEGROWTHHEAL]               = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX}'s is growing!"),
-    [STRINGID_PKMNINFINITEGROWTHSTATUP]              = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX}'s stats grew with Infinite Growth!"),
+    [STRINGID_PKMNINFINITEGROWTHGROW]               = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX} is growing!"),
     [STRINGID_PKMNINFINITEGROWTHSTART]              = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} started to grow!"),
+    [STRINGID_BUGSPACESTART]                        = COMPOUND_STRING("You feel yourself getting weaker..."),
+    [STRINGID_BUGSPACEPASSIVEOHKO]                  = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX} purses her lips and exhales..."),
+    [STRINGID_BUGSPACEPASSIVEFAINT]                 = COMPOUND_STRING("Her breath blew your Pokémon away!"),
+    [STRINGID_KAZURASPOKE]                          = COMPOUND_STRING("Kazuradrop opened her mouth to speak..."),
+    [STRINGID_TAUNTEDBYKAZURA]                      = COMPOUND_STRING("“Did you really think it would be THAT easy?”"),
+    [STRINGID_TAUNTEDBYKAZURA2]                      = COMPOUND_STRING("“I've only just begun to play with you!”"),
+    [STRINGID_TAUNTEDBYKAZURAMINIMIZE]              = COMPOUND_STRING("“Gosh, you're getting quite small, arent you, little bugs?”"),
+    [STRINGID_TAUNTEDBYKAZURAOHKO]                  = COMPOUND_STRING("“I could just step on you~ Go squish!”"),
+    [STRINGID_TAUNTEDBYKAZURA_P_OHKO]               = COMPOUND_STRING("“Fwoooo~ ...my breath...it must feel like a hurricane to you, with how pathetically tiny you are!”"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

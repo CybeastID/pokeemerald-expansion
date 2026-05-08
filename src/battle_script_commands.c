@@ -2389,7 +2389,19 @@ static void Cmd_healthbarupdate(void)
         else if (!(gBattleStruct->moveResultFlags[gBattlerTarget] & MOVE_RESULT_NO_EFFECT)
               && !DoesDisguiseBlockMove(battler, gCurrentMove))
         {
-            s32 damage = min(gBattleStruct->moveDamage[battler], 10000);
+            s32 damage = gBattleStruct->moveDamage[battler];
+            // If this is a Kazuradrop transformation hit, clamp the visual damage
+            if (gBattleMons[battler].species == SPECIES_KAZURADROP
+            && gBattleStruct->bugSpace.active
+            && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
+            {
+                u32 tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
+                if (tenPercentHp == 0) tenPercentHp = 1;
+                if (gBattleMons[battler].hp > tenPercentHp
+                && (s32)gBattleMons[battler].hp - damage < (s32)tenPercentHp)
+                    damage = gBattleMons[battler].hp - tenPercentHp;
+            }
+            damage = min(damage, 10000);
             BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, damage);
             MarkBattlerForControllerExec(battler);
             if (IsOnPlayerSide(battler) && damage > 0)
@@ -2578,13 +2590,24 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
             // Apply Kazuradrop transformation effects after damage is dealt
             if (kazuradropTransformed)
             {
-                ApplyKazuradropTransformation(battler);
-                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
+                gBattleStruct->bugSpace.moveSwapActive |= (1u << battler);
+
+                // First, send the current HP (clamped at 10%) to the controller so the HP bar
+                // visually stops at the 10% threshold before the transformation restores it.
+                /* u32 hpBeforeTransform = gBattleMons[battler].hp;
+                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(hpBeforeTransform), &hpBeforeTransform);
                 MarkBattlerForControllerExec(battler);
-                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
+                // Now apply transformation effects
+                // ApplyKazuradropTransformation(battler);
+                
                 MarkBattlerForControllerExec(battler);
-                gBattlescriptCurrInstr = nextInstr;
-                BattleScriptPushCursor();
+                
+                 MarkBattlerForControllerExec(battler);
+                // gBattlescriptCurrInstr = nextInstr;
+                */ 
+               // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
+               // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
+                BattleScriptPush(BattleScript_KazuradropTransformReturn);
                 gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
                 return;
             }
@@ -6191,59 +6214,13 @@ static bool32 HandleMoveEndMoveBlock(u32 moveEffect)
         }
         break;
     case EFFECT_INFINITE_GROWTH:
-        if (!gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth)
-        {
-            gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth = TRUE;
-            BattleScriptPushCursor();
-            gBattlescriptCurrInstr = BattleScript_InfiniteGrowthStatUp;
-            effect = TRUE;
-        }
-        break;
-    
-    case EFFECT_TRASH_CRUSH:
+    if (!gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth)
     {
-        u8 ohko = FALSE;
-        // In Bug Space, Trash & Crush deals massive damage scaling with tier (only for Kazuradrop)
-        if (gBattleStruct->bugSpace.active
-         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO
-         && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
-        {
-            // At OHKO tier or higher, Trash & Crush becomes a full OHKO
-            gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
-            ohko = TRUE;
-        }
-        else
-        {
-            // 20% base chance to OHKO, 40% if target is Minimized or Bug Space is at MINIMIZE+ tier
-            u32 ohkoChance = 20;
-            if (gBattleMons[gBattlerTarget].volatiles.minimize
-             || (gBattleStruct->bugSpace.active
-              && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE
-              && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler)))
-            {
-                ohkoChance = 40;
-            }
-            if (RandomPercentage(RNG_TRASH_CRUSH_OHKO, ohkoChance))
-            {
-                gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp * 3;
-                ohko = TRUE;
-            }
-        }
-        if (ohko) {
-            BattleScriptPushCursor();
-            gBattlescriptCurrInstr = BattleScript_MoveEffectTrashCrush;
-        }
-        else
-        {
-            BattleScriptPushCursor();
-            gBattlescriptCurrInstr = BattleScript_EffectHit;
-        }
+        gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth = TRUE;
         effect = TRUE;
-        break;
     }
-    default:
-        effect = FALSE;
-        break;
+    break;
+    
 }    
     return effect;
     
@@ -14822,6 +14799,80 @@ void BS_TryRevivalBlessing2(void)
     return;
 } 
 
+void BS_TryInfiniteGrowth(void)
+{
+    static const u16 sInfiniteGrowthReplacements[] = {
+    MOVE_SPIRIT_BREAK,
+    MOVE_GIGA_DRAIN,
+    MOVE_MOONBLAST,
+    MOVE_BUG_BUZZ,
+};
+    NATIVE_ARGS();
+    if (gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth)
+    {
+        gBattlescriptCurrInstr = BattleScript_ButItFailed;
+    }
+    else
+    {
+        gBattleMons[gBattlerAttacker].volatiles.infiniteGrowth = TRUE;
+        // Replace Infinite Growth slot with random move
+        u32 roll = Random() % 4;
+        gBattleMons[gBattlerAttacker].moves[2] = sInfiniteGrowthReplacements[roll];
+        gBattleMons[gBattlerAttacker].pp[2] = GetMovePP(sInfiniteGrowthReplacements[roll]);
+        gBattlescriptCurrInstr = cmd->nextInstr;
+    }
+}
+
+void BS_ApplyKazuradropTransformation(void)
+{
+    NATIVE_ARGS();
+    gBattleScripting.battler = gBattlerTarget; // Kazuradrop is the target
+    u32 battler = gBattleScripting.battler;
+    u32 currentHP = gBattleMons[battler].hp;
+    ApplyKazuradropTransformation(gBattlerTarget);
+    BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
+    MarkBattlerForControllerExec(battler);
+    SetHealAmount(battler, gBattleMons[battler].maxHP - currentHP);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_SetTargetAsAttacker(void)
+{
+    NATIVE_ARGS();
+    gBattlerAttacker = gBattlerTarget;
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_TrashCrushOHKOCheck(void)
+{
+    NATIVE_ARGS(const u8 *failInstr);
+    u32 ohkoChance = 20;
+    
+    if (gBattleStruct->bugSpace.active
+     && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO
+     && GetBattlerSide(gBattlerTarget) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+    {
+        gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return;
+    }
+    
+    if (gBattleMons[gBattlerTarget].volatiles.minimize
+     || (gBattleStruct->bugSpace.active
+      && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE
+      && GetBattlerSide(gBattlerTarget) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler)))
+        ohkoChance = 40;
+    
+    if (RandomPercentage(RNG_TRASH_CRUSH_OHKO, ohkoChance))
+    {
+        gBattleStruct->moveDamage[gBattlerTarget] = gBattleMons[gBattlerTarget].hp;
+        gBattlescriptCurrInstr = cmd->nextInstr;
+    }
+    else
+    {
+        gBattlescriptCurrInstr = cmd->failInstr;
+    }
+}
 
 void BS_DoStockpileStatChangesWearOff(void)
 {

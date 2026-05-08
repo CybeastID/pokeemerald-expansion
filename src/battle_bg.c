@@ -651,6 +651,10 @@ static u8 GetBattleEnvironmentOverride(void)
 {
     u8 battleScene = GetCurrentMapBattleScene();
 
+    if (gBattleStruct->bugSpace.active
+     && gBattleStruct->bugSpace.moveSwapActive)
+        return BG_NEVERENDING_NIGHTMARE;
+
     if (TestRunner_Battle_GetForcedEnvironment()
      && gBattleEnvironmentInfo[gBattleEnvironment].background.tilemap
      && gBattleEnvironmentInfo[gBattleEnvironment].background.tileset)

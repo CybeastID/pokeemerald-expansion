@@ -571,4 +571,7 @@ void AnimIceBeamParticle(struct Sprite *sprite);
 // battle_anim_bug.c
 void AnimTranslateStinger(struct Sprite *sprite);
 
+// Kazuradrop fight
+void BS_FadeToNeverendingNightmare(void);
+
 #endif // GUARD_BATTLE_ANIM_H

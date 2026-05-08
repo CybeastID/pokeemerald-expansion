@@ -21374,7 +21374,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .priority = 0,
         .category = DAMAGE_CATEGORY_PHYSICAL,
         .makesContact = TRUE,
-        .battleAnimScript = gBattleAnimMove_PlayRough,
+        .battleAnimScript = gBattleAnimMove_TrashCrush,
         .minimizeDoubleDamage = TRUE,
     },
 

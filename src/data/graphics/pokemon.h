@@ -26794,3 +26794,10 @@ const u32 gObjectEventPic_Substitute[] = INCBIN_COMP("graphics/pokemon/question_
     const u32 gMonBackPic_Castoria[] = INCBIN_U32("graphics/pokemon/castoria/back.4bpp.smol");
     const u16 gMonShinyPalette_Castoria[] = INCBIN_U16("graphics/pokemon/castoria/shiny.gbapal");
     const u8 gMonIcon_Castoria[] = INCBIN_U8("graphics/pokemon/castoria/icon.4bpp");
+
+    
+    const u32 gMonFrontPic_Kazuradrop[] = INCBIN_U32("graphics/pokemon/kazuradrop/front.4bpp.smol");
+    const u16 gMonPalette_Kazuradrop[] = INCBIN_U16("graphics/pokemon/kazuradrop/normal.gbapal");
+    const u32 gMonBackPic_Kazuradrop[] = INCBIN_U32("graphics/pokemon/kazuradrop/back.4bpp.smol");
+    const u16 gMonShinyPalette_Kazuradrop[] = INCBIN_U16("graphics/pokemon/kazuradrop/normal.gbapal");
+    const u8 gMonIcon_Kazuradrop[] = INCBIN_U8("graphics/pokemon/kazuradrop/icon.4bpp");

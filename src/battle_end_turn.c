@@ -1371,9 +1371,9 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
     bool32 effect = FALSE;
 
     // Only process once per turn (not per battler)
-    if (battler != 0)
+    if (battler != gBattleStruct->bugSpace.sourceBattler)
     {
-        gBattleStruct->eventState.endTurnBattler++;
+         gBattleStruct->eventState.endTurnBattler++;
         return effect;
     }
 
@@ -1407,13 +1407,28 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
     else
         gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_NORMAL;
 
+
     // Check if tier changed (for potential announcements)
     if (oldTier != gBattleStruct->bugSpace.currentTier)
     {
-        // TODO: Add tier change announcement script
+        switch (gBattleStruct->bugSpace.currentTier)
+    {
+        case BUGSPACE_TIER_MINIMIZE:
+            BattleScriptExecute(BattleScript_BugSpaceMinimize);
+            break;
+        case BUGSPACE_TIER_OHKO:
+            BattleScriptExecute(BattleScript_BugSpaceOHKO);
+            break;
+        case BUGSPACE_TIER_PASSIVE_OHKO:
+            BattleScriptExecute(BattleScript_BugSpaceP_OHKOMessage);
+            break;
+        default:
+        break;
+    }
         effect = TRUE;
     }
-
+    // gBattleMons[0].maxHP = gBattleStruct->bugSpace.bpThreshold;
+    gBattleStruct->eventState.endTurnBattler = gBattlersCount;
     return effect;
 }
 
@@ -1440,18 +1455,22 @@ static bool32 HandleEndTurnBugSpacePassiveOHKO(u32 battler)
 
     // Apply OHKO damage (bypasses type immunity)
     SetPassiveDamageAmount(battler, gBattleMons[battler].hp);
-    BattleScriptExecute(BattleScript_PerishSongTakesLife);  // Reuse perish song script for OHKO
+    gBattlerAttacker = gBattleStruct->bugSpace.sourceBattler;
+    gBattlerTarget = battler;
+    BattleScriptExecute(BattleScript_BugSpacePassiveOHKO);
     effect = TRUE;
 
     return effect;
 }
 
-// Melt Virus: deal 1/8 (1/4 if Bug Space at MINIMIZE+ tier) max HP damage
+// Melt Virus: deal 1/8 (1/4 if Bug Space at MINIMIZE+ tier) max HP damage and heal the attacker
 static bool32 HandleEndTurnMeltVirus(u32 battler)
 {
     bool32 effect = FALSE;
-
-    gBattleStruct->eventState.endTurnBattler++;
+    // u32 i;
+    
+    
+     gBattleStruct->eventState.endTurnBattler++;
 
     if (gBattleMons[battler].volatiles.meltVirus
      && IsBattlerAlive(battler)
@@ -1469,6 +1488,8 @@ static bool32 HandleEndTurnMeltVirus(u32 battler)
             s32 healAmount = GetDrainedBigRootHp(attacker, damage);
             SetPassiveDamageAmount(battler, damage);
             SetHealAmount(attacker, healAmount);
+            // Set up script battler references: BS_ATTACKER = damaged mon, BS_TARGET = healer
+            gBattlerTarget = attacker;
             BattleScriptExecute(BattleScript_MeltVirusTurnDmg);
             effect = TRUE;
         }
@@ -1496,7 +1517,8 @@ static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
         
         // Increase max HP by 10%
         gBattleMons[battler].maxHP += max(1, gBattleMons[battler].maxHP / 10);
-        
+        BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
+        MarkBattlerForControllerExec(battler);
         // Heal 1/16 max HP
         if (!gBattleMons[battler].volatiles.healBlock && !IsBattlerAtMaxHp(battler))
         {

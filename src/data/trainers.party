@@ -16944,7 +16944,7 @@ Pic: Swimmer F
 Gender: Female
 Music: Elite Four
 Double Battle: No
-AI: Check Bad Move
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
 
 Espeon @ Life Orb  
 Ability: Magic Bounce  
@@ -16962,7 +16962,16 @@ Careful Nature
 - Foul Play  
 - Wish  
 - Protect  
-- Heal Bell  
+- Toxic  
+
+Gothitelle @ Leftovers
+Ability: Shadow Tag
+Nature: Calm
+EVs: 252 HP / 4 Def / 252 SpD
+- Psychic
+- Thunderbolt
+- Shadow Ball
+- Rest
 
 Palkia @ Lustrous Orb  
 Ability: Pressure  
@@ -16970,14 +16979,24 @@ EVs: 252 SpA / 4 SpD / 252 Spe
 Modest Nature  
 - Hydro Pump  
 - Spacial Rend  
-- Fire Blast  
-- Thunder Wave  
+- Draco Meteor  
+- Thunder  
 
-Kazura (SPECIES_KAZURADROP) @ Black Glasses  
+Klefki @ Light Clay
+Ability: Prankster
+Nature: Bold
+EVs: 252 HP / 252 Def / 4 SpD
+- Spikes
+- Thunder Wave
+- Reflect
+- Foul Play
+
+Kazura (SPECIES_KAZURADROP) @ Black Glasses 
+Level: 105 
 Ability: Soul Parasite  
-EVs: 252 SpA / 4 SpD / 252 Spe  
+EVs: 252 SpA / 4 HP / 252 Spe  
 Modest Nature  
 - Moonblast  
-- Dark Pulse  
-- Toxic  
-- Shadow Ball  
+- Bug Buzz
+- Quiver Dance  
+- Draining Kiss

@@ -2259,13 +2259,13 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
 
     [EFFECT_INFINITE_GROWTH] =
     {
-        .battleScript = BattleScript_EffectHit,
+        .battleScript = BattleScript_InfiniteGrowthStatStart,
         .battleTvScore = 0, // TODO: Assign points
     },
 
     [EFFECT_TRASH_CRUSH] =
     {
-        .battleScript = BattleScript_EffectHit,
+        .battleScript = BattleScript_TrashCrush,
         .battleTvScore = 0, // TODO: Assign points
     },
 };

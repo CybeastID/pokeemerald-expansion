@@ -1589,6 +1589,12 @@ void LoadMoveBg(u16 bgId)
 
 static void LoadDefaultBg(void)
 {
+    if (gBattleStruct->bugSpace.active
+     && gBattleStruct->bugSpace.moveSwapActive)
+    {
+        LoadMoveBg(BG_NEVERENDING_NIGHTMARE);
+        return;
+    }
     if (IsContest())
         LoadContestBgAfterMoveAnim();
     else if (B_TERRAIN_BG_CHANGE == TRUE && gFieldStatuses & STATUS_FIELD_TERRAIN_ANY)
@@ -2289,4 +2295,13 @@ static void Cmd_createdragondartsprite(void)
         GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET),
         subpriority) != MAX_SPRITES) // Don't increment the task count if the sprite couldn't be created(i.e. there are too many created sprites atm).
          gAnimVisualTaskCount++;
+}
+
+void BS_FadeToNeverendingNightmare(void)
+{
+    NATIVE_ARGS();
+    u8 taskId = CreateTask(Task_FadeToBg, 5);
+    gTasks[taskId].data[0] = BG_NEVERENDING_NIGHTMARE;
+    sAnimBackgroundFadeState = 1;
+    gBattlescriptCurrInstr = cmd->nextInstr;
 }

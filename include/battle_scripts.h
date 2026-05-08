@@ -847,11 +847,17 @@ extern const u8 BattleScript_SleepTalkAttackstring[];
 extern const u8 BattleScript_NaturePowerAttackstring[];
 extern const u8 BattleScript_PokemonCantUseTheMove[];
 extern const u8 BattleScript_MoveEffectMeltVirus[];
-extern const u8 BattleScript_MoveEffectTrashCrush[];
+extern const u8 BattleScript_BugSpaceStart[];
+extern const u8 BattleScript_BugSpacePassiveOHKO[];
+extern const u8 BattleScript_TrashCrush[];
 extern const u8 BattleScript_MeltVirusTurnDmg[];
 extern const u8 BattleScript_InfiniteGrowthHeal[];
 extern const u8 BattleScript_InfiniteGrowthStatStart[];
 extern const u8 BattleScript_InfiniteGrowthStatUp[];
 extern const u8 BattleScript_KazuradropTransform[];
+extern const u8 BattleScript_BugSpaceMinimize[];
+extern const u8 BattleScript_BugSpaceOHKO[];
+extern const u8 BattleScript_BugSpaceP_OHKOMessage[];
+extern const u8 BattleScript_KazuradropTransformReturn[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

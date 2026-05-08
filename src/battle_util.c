@@ -4631,6 +4631,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     // gBattleStruct->bugSpace.bpThreshold = 10;
                     gBattleStruct->bugSpace.bpDecayRate = 10;
                     gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
+                    BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);
                     effect++;
                 }
             }

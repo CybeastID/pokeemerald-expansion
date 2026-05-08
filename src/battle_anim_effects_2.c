@@ -101,6 +101,8 @@ static void AnimTask_FakeOut_Step2(u8);
 static void AnimTask_HeartsBackground_Step(u8);
 static void AnimTask_ScaryFace_Step(u8);
 static void AnimTask_UproarDistortion_Step(u8);
+static void AnimTask_TrashCrush_Step1(u8);
+static void AnimTask_TrashCrush_Step2(u8);
 
 // Unused
 static const struct SpriteTemplate sCirclingFingerSpriteTemplate =
@@ -3179,6 +3181,59 @@ static void AnimTask_FakeOut_Step1(u8 taskId)
 }
 
 static void AnimTask_FakeOut_Step2(u8 taskId)
+{
+    if (++gTasks[taskId].data[10] == 5)
+    {
+        gTasks[taskId].data[11] = 0x88;
+        SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_LIGHTEN);
+        BlendPalettes(GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), 16, RGB_WHITE);
+    }
+    else if (gTasks[taskId].data[10] > 4)
+    {
+        gBattle_WIN0H = 0;
+        gBattle_WIN0V = 0;
+        SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR | WININ_WIN1_BG_ALL | WININ_WIN1_OBJ | WININ_WIN1_CLR);
+        SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_BG_ALL | WINOUT_WIN01_OBJ | WINOUT_WIN01_CLR | WINOUT_WINOBJ_BG_ALL | WINOUT_WINOBJ_OBJ | WINOUT_WINOBJ_CLR);
+        SetGpuReg(REG_OFFSET_BLDCNT, 0);
+        SetGpuReg(REG_OFFSET_BLDY, 0);
+        DestroyAnimVisualTask(taskId);
+    }
+}
+
+void AnimTask_TrashCrush(u8 taskId)
+{
+    u16 win0h = IsContest() ? 152 : DISPLAY_WIDTH;
+    u16 win0v = 0;
+
+    gBattle_WIN0H = win0h;
+    gBattle_WIN0V = DISPLAY_HEIGHT;
+    SetGpuReg(REG_OFFSET_WIN0H, gBattle_WIN0H);
+    SetGpuReg(REG_OFFSET_WIN0V, gBattle_WIN0V);
+    SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN1_ALL);
+    SetGpuReg(REG_OFFSET_WINOUT, WINOUT_WIN01_ALL | WINOUT_WINOBJ_ALL);
+    SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_DARKEN);
+    SetGpuReg(REG_OFFSET_BLDY, 16);
+    gTasks[taskId].data[0] = win0v;
+    gTasks[taskId].data[1] = win0h;
+    gTasks[taskId].func = AnimTask_TrashCrush_Step1;
+}
+
+static void AnimTask_TrashCrush_Step1(u8 taskId)
+{
+    gTasks[taskId].data[0] += 4;
+    gTasks[taskId].data[1] -= 13;
+    if (gTasks[taskId].data[0] >= gTasks[taskId].data[1])
+    {
+        gBattle_WIN0H = 0;
+        gTasks[taskId].func = AnimTask_TrashCrush_Step2;
+    }
+    else
+    {
+        gBattle_WIN0H = WIN_RANGE(gTasks[taskId].data[0], gTasks[taskId].data[1]);
+    }
+}
+
+static void AnimTask_TrashCrush_Step2(u8 taskId)
 {
     if (++gTasks[taskId].data[10] == 5)
     {

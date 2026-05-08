@@ -38038,3 +38038,19 @@ gBattleAnimGeneral_DynamaxGrowth:: @ PORTED FROM CFRU
 	createvisualtask AnimTask_DynamaxGrowth, 0x5, 0x1, 0x0
 	waitforvisualfinish
 	end
+
+gBattleAnim_BugSpacePassiveOHKO::
+	fadetobg BG_HURRICANE
+	end
+
+gBattleAnimMove_TrashCrush::
+	fadetobg BG_TRICK_ROOM
+	playsewithpan SE_M_VICEGRIP, 0
+	createvisualtask AnimTask_TrashCrush, 5
+	waitforvisualfinish
+	playsewithpan SE_M_MEGA_KICK2, SOUND_PAN_TARGET
+	createvisualtask AnimTask_ShakeMon2, 2, ANIM_TARGET, 6, 0, 8, 1
+	createvisualtask AnimTask_StretchTargetUp, 3
+	waitforvisualfinish
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 16, 0, RGB_WHITE
+	end

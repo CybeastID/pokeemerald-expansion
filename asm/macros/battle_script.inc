@@ -2479,3 +2479,13 @@
 	.macro tryabsorbtoxicspikesonfaint
 	callnative BS_TryAbsorbToxicSpikesOnFaint
 	.endm
+
+	.macro tryinfinitegrowth
+	callnative BS_TryInfiniteGrowth
+	.endm
+
+	.macro trashcrushohkocheck failInstr:req
+	callnative BS_TrashCrushOHKOCheck
+	.4byte \failInstr
+	.endm
+	

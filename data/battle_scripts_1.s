@@ -8917,6 +8917,7 @@ BattleScript_SwapToSubstituteReturn:
 	return
 
 BattleScript_MoveEffectMeltVirus::
+	setmoveeffect MOVE_EFFECT_MELT_VIRUS
 	printstring STRINGID_TARGETINFECTEDBYMELTVIRUS
 	waitmessage B_WAIT_TIME_LONG
 	return
@@ -8927,33 +8928,123 @@ BattleScript_MoveEffectTrashCrush::
 	healthbarupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
 	datahpupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
 	tryfaintmon BS_TARGET
-	return
+	end2
+
+BattleScript_TrashCrush::
+	attackcanceler
+	accuracycheck BattleScript_MoveMissedPause, ACC_CURR_MOVE
+	critcalc
+	damagecalc
+	adjustdamage
+	attackanimation
+	waitanimation
+	effectivenesssound
+	hitanimation BS_TARGET
+	waitstate
+	trashcrushohkocheck BattleScript_TrashCrushNormalHit
+	@ OHKO path
+	healthbarupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
+	datahpupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
+	printstring STRINGID_TRASHCRUSHHIT
+	waitmessage B_WAIT_TIME_LONG
+	tryfaintmon BS_TARGET
+	goto BattleScript_TrashCrushEnd
+BattleScript_TrashCrushNormalHit:
+	healthbarupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
+	datahpupdate BS_TARGET, MOVE_DAMAGE_HP_UPDATE
+	critmessage
+	waitmessage B_WAIT_TIME_LONG
+	resultmessage
+	waitmessage B_WAIT_TIME_LONG
+BattleScript_TrashCrushEnd:
+	setadditionaleffects
+	moveendall
+	end
 
 BattleScript_MeltVirusTurnDmg::
-	call BattleScript_DoTurnDmg
+	playanimation BS_TARGET, B_ANIM_SIMPLE_HEAL
+	healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+	datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+	tryfaintmon BS_ATTACKER
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
-	printstring STRINGID_PKMNHURTBYMELTVIRUS @ replace with a heal string
+	printstring STRINGID_PKMNHURTBYMELTVIRUS
 	waitmessage B_WAIT_TIME_LONG
 	end2
 
 BattleScript_InfiniteGrowthStatStart::
+	attackcanceler
+	accuracycheck BattleScript_MoveMissedPause, ACC_CURR_MOVE
+	tryinfinitegrowth 
+	attackanimation
+	waitanimation
 	printstring STRINGID_PKMNINFINITEGROWTHSTART
 	waitmessage B_WAIT_TIME_LONG
-	return
+	moveendall
+	end
 
 BattleScript_InfiniteGrowthHeal::
-	printstring STRINGID_PKMNINFINITEGROWTHHEAL
-	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_PKMNINFINITEGROWTHGROW
+	playmoveanimation MOVE_GROWTH
 	goto BattleScript_DoTurnDmg
 
 BattleScript_InfiniteGrowthStatUp::
-	printstring STRINGID_PKMNINFINITEGROWTHHEAL
-	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_PKMNINFINITEGROWTHGROW
+	playmoveanimation MOVE_GROWTH
 	return
 
 BattleScript_KazuradropTransform::
-	playanimation BS_TARGET, B_ANIM_SIMPLE_HEAL
-    healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
-    datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
-    return
+	printstring STRINGID_KAZURASPOKE
+	waitmessage B_WAIT_TIME_SHORT
+	printstring STRINGID_TAUNTEDBYKAZURA
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_ApplyKazuradropTransformation
+	callnative BS_SaveAttacker
+	callnative BS_SetTargetAsAttacker
+	printstring STRINGID_TAUNTEDBYKAZURA2
+	playmoveanimation MOVE_LUNAR_DANCE
+	callnative BS_FadeToNeverendingNightmare
+	waitanimation
+	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
+	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+	callnative BS_RestoreAttacker
+	return
+
+BattleScript_KazuradropTransformReturn::
+	critmessage
+	waitmessage B_WAIT_TIME_LONG
+	resultmessage
+	waitmessage B_WAIT_TIME_LONG
+	setadditionaleffects
+	return
+
+BattleScript_BugSpaceStart::
+	printstring STRINGID_BUGSPACESTART
+	waitmessage B_WAIT_TIME_LONG
+	end3
+
+BattleScript_BugSpacePassiveOHKO::
+	printstring STRINGID_BUGSPACEPASSIVEOHKO
+	playmoveanimation MOVE_HURRICANE
+	waitmessage B_WAIT_TIME_LONG
+	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
+	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+	printstring STRINGID_BUGSPACEPASSIVEFAINT
+	tryfaintmon BS_TARGET
+	end2
+
+BattleScript_BugSpaceMinimize::
+	printstring STRINGID_TAUNTEDBYKAZURAMINIMIZE
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+BattleScript_BugSpaceOHKO::
+	printstring STRINGID_TAUNTEDBYKAZURAOHKO
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+BattleScript_BugSpaceP_OHKOMessage::
+	playanimation BS_TARGET_SIDE B_ANIM_STRONG_WINDS
+	printstring STRINGID_TAUNTEDBYKAZURA_P_OHKO
+	waitmessage B_WAIT_TIME_LONG
+	end2
