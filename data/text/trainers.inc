@@ -4806,3 +4806,12 @@ Test_Text_RazeluxeDefeated::
 Test_Text_RazeluxePostBattle::
 	.string "Well played.\n"
 	.string "...No Castoria you cant keep them.$"
+
+Text_Alice_Intro::
+	.string "Hi, I'm Astra!\l"
+	.string "Alice doesnt have graphics yet.\n"
+	.string "So here I am, saying hi in a message box!\l"
+	.string "And forcing you to battle her. Now.$"
+
+Text_Alice_Defeated::
+	.string "Defeated? Me...?"

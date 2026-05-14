@@ -16944,7 +16944,7 @@ Pic: Swimmer F
 Gender: Female
 Music: Elite Four
 Double Battle: No
-AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT / AI_FLAG_DYNAMIC_FUNC
 
 Espeon @ Life Orb  
 Ability: Magic Bounce  
@@ -16982,14 +16982,14 @@ Modest Nature
 - Draco Meteor  
 - Thunder  
 
-Klefki @ Light Clay
-Ability: Prankster
-Nature: Bold
-EVs: 252 HP / 252 Def / 4 SpD
-- Spikes
-- Thunder Wave
-- Reflect
-- Foul Play
+Hoopa @ Life Orb  
+Ability: Magician  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature
+- Hyperspace Hole  
+- Psychic  
+- Thunderbolt  
+- Nasty Plot  
 
 Kazura (SPECIES_KAZURADROP) @ Black Glasses 
 Level: 105 

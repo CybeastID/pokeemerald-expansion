@@ -53,6 +53,7 @@
 #include "constants/trainer_hill.h"
 #include "constants/weather.h"
 #include "fishing.h"
+#include "kazuradrop_gameover.h"
 
 enum TransitionType
 {
@@ -594,7 +595,7 @@ static void CB2_EndWildBattle(void)
 
     if (IsPlayerDefeated(gBattleOutcome) == TRUE && CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InBattlePike())
     {
-        SetMainCallback2(CB2_WhiteOut);
+        TrySetKazGameOverWhiteOut();
     }
     else
     {
@@ -614,7 +615,7 @@ static void CB2_EndScriptedWildBattle(void)
         if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
             SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
         else
-            SetMainCallback2(CB2_WhiteOut);
+            TrySetKazGameOverWhiteOut();
     }
     else
     {
@@ -1330,11 +1331,11 @@ static void CB2_EndTrainerBattle(void)
         if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge() || (!NoAliveMonsForPlayer()) || FlagGet(B_FLAG_NO_WHITEOUT))
             SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
         else
-            SetMainCallback2(CB2_WhiteOut);
+            TrySetKazGameOverWhiteOut();
     }
     else if (DidPlayerForfeitNormalTrainerBattle())
     {
-            SetMainCallback2(CB2_WhiteOut);
+            TrySetKazGameOverWhiteOut();
     }
     else
     {
@@ -1357,7 +1358,7 @@ static void CB2_EndRematchBattle(void)
     }
     else if (IsPlayerDefeated(gBattleOutcome) == TRUE)
     {
-        SetMainCallback2(CB2_WhiteOut);
+        TrySetKazGameOverWhiteOut();
     }
     else
     {

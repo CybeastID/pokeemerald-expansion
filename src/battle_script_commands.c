@@ -2607,6 +2607,7 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                 */ 
                // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
                // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
+                BattleScriptPush(nextInstr);
                 BattleScriptPush(BattleScript_KazuradropTransformReturn);
                 gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
                 return;
@@ -9831,6 +9832,8 @@ static void HandleScriptMegaPrimalBurst(u32 caseId, u32 battler, u32 type)
          && !GetBattlerPartyState(battler)->sentOut)
         {
             gBattleStruct->bugSpace.active = TRUE;
+            FlagSet(FLAG_KAZURADROP_ENTERED_BATTLE);
+            VarSet(VAR_TEMP_0, gBattleResults.battleTurnCounter);
             if (gBattleStruct->bugSpace.thresholdPercent == 0)
                 gBattleStruct->bugSpace.thresholdPercent = 50;
         }

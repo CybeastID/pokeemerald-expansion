@@ -1592,7 +1592,7 @@ static void LoadDefaultBg(void)
     if (gBattleStruct->bugSpace.active
      && gBattleStruct->bugSpace.moveSwapActive)
     {
-        LoadMoveBg(BG_NEVERENDING_NIGHTMARE);
+        LoadMoveBg(BG_TRICK_ROOM);
         return;
     }
     if (IsContest())
@@ -2297,11 +2297,11 @@ static void Cmd_createdragondartsprite(void)
          gAnimVisualTaskCount++;
 }
 
-void BS_FadeToNeverendingNightmare(void)
+void BS_FadeToSeraph(void)
 {
     NATIVE_ARGS();
     u8 taskId = CreateTask(Task_FadeToBg, 5);
-    gTasks[taskId].data[0] = BG_NEVERENDING_NIGHTMARE;
+    gTasks[taskId].data[0] = BG_TRICK_ROOM;
     sAnimBackgroundFadeState = 1;
     gBattlescriptCurrInstr = cmd->nextInstr;
 }

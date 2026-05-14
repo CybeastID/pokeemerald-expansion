@@ -626,7 +626,7 @@ static u8 GetBattleEnvironmentByMapScene(u8 mapBattleScene)
 }
 
 // Loads the initial battle terrain.
-static void LoadBattleEnvironmentGfx(u16 terrain)
+static void LoadBattleEnvironmentGfx (u16 terrain)
 {
     if (terrain >= NELEMS(gBattleEnvironmentInfo))
         terrain = BATTLE_ENVIRONMENT_PLAIN;  // If higher than the number of entries in gBattleEnvironmentInfo, use the default.
@@ -651,9 +651,9 @@ static u8 GetBattleEnvironmentOverride(void)
 {
     u8 battleScene = GetCurrentMapBattleScene();
 
-    if (gBattleStruct->bugSpace.active
+    /* if (gBattleStruct->bugSpace.active
      && gBattleStruct->bugSpace.moveSwapActive)
-        return BG_NEVERENDING_NIGHTMARE;
+        return BG_TRICK_ROOM; */
 
     if (TestRunner_Battle_GetForcedEnvironment()
      && gBattleEnvironmentInfo[gBattleEnvironment].background.tilemap
@@ -741,6 +741,12 @@ void LoadBattleMenuWindowGfx(void)
 
 void DrawMainBattleBackground(void)
 {
+    if (gBattleStruct->bugSpace.active
+     && gBattleStruct->bugSpace.moveSwapActive)
+    {
+        LoadMoveBg(BG_TRICK_ROOM);
+        return;
+    }
     LoadBattleEnvironmentGfx(GetBattleEnvironmentOverride());
 }
 
@@ -751,10 +757,15 @@ void LoadBattleTextboxAndBackground(void)
     CopyBgTilemapBufferToVram(0);
     LoadPalette(gBattleTextboxPalette, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
     LoadBattleMenuWindowGfx();
-    if (B_TERRAIN_BG_CHANGE == TRUE)
-        DrawTerrainTypeBattleBackground();
+    if (gBattleStruct->bugSpace.active
+ && gBattleStruct->bugSpace.moveSwapActive)
+        {
+        LoadMoveBg(BG_TRICK_ROOM);
+        }
+    else if (B_TERRAIN_BG_CHANGE == TRUE)
+    DrawTerrainTypeBattleBackground();
     else
-        DrawMainBattleBackground();
+    DrawMainBattleBackground();
 }
 
 static void DrawLinkBattleParticipantPokeballs(u8 taskId, u8 multiplayerId, u8 bgId, u8 destX, u8 destY)

@@ -6,7 +6,7 @@
 // temporary vars
 // The first 0x10 vars are temporary--they are cleared every time a map is loaded.
 #define TEMP_VARS_START            0x4000
-#define VAR_TEMP_0                 (TEMP_VARS_START + 0x0)
+#define VAR_TEMP_0                 (TEMP_VARS_START + 0x0) // Borrowing this one to mark which turn Kazuradrop entered Phase 2.
 #define VAR_TEMP_1                 (TEMP_VARS_START + 0x1)
 #define VAR_TEMP_2                 (TEMP_VARS_START + 0x2)
 #define VAR_TEMP_3                 (TEMP_VARS_START + 0x3) // Note: Used when the player checks a TV

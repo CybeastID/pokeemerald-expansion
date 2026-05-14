@@ -9003,7 +9003,7 @@ BattleScript_KazuradropTransform::
 	callnative BS_SetTargetAsAttacker
 	printstring STRINGID_TAUNTEDBYKAZURA2
 	playmoveanimation MOVE_LUNAR_DANCE
-	callnative BS_FadeToNeverendingNightmare
+	callnative BS_FadeToSeraph
 	waitanimation
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE

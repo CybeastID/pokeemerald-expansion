@@ -1086,3 +1086,17 @@ LittlerootTown_Warning_Text:
 LittlerootTown_Text_TeamDelivered:
 	.string "Your team was replaced by\n"
 	.string "6 POKéMON from the item ball!$"
+
+LittlerootTown_Alice_Fight::
+	setdynamicaifunc AI_AliceTrainer
+	trainerbattle_single TRAINER_ALICE2, Text_Alice_Intro, Text_Alice_Defeated
+
+LittlerootTown_Not_In_Demo::
+	msgbox LittleRootTownAreaSealedText, MSGBOX_DEFAULT
+
+LittleRootTownAreaSealedText::
+	.string "A sign is on the doorway.\n"
+	.string "It reads:\p"
+	.string "“Sorry, I'm not taking challengers\n"
+	.string "at the current time. \p"
+	.string "Razeluxe”$"

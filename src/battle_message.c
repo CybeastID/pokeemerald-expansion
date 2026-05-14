@@ -888,8 +888,8 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_TAUNTEDBYKAZURA]                      = COMPOUND_STRING("“Did you really think it would be THAT easy?”"),
     [STRINGID_TAUNTEDBYKAZURA2]                      = COMPOUND_STRING("“I've only just begun to play with you!”"),
     [STRINGID_TAUNTEDBYKAZURAMINIMIZE]              = COMPOUND_STRING("“Gosh, you're getting quite small, arent you, little bugs?”"),
-    [STRINGID_TAUNTEDBYKAZURAOHKO]                  = COMPOUND_STRING("“I could just step on you~ Go squish!”"),
-    [STRINGID_TAUNTEDBYKAZURA_P_OHKO]               = COMPOUND_STRING("“Fwoooo~ ...my breath...it must feel like a hurricane to you, with how pathetically tiny you are!”"),
+    [STRINGID_TAUNTEDBYKAZURAOHKO]                  = COMPOUND_STRING("“I could just step on you. Go squish!”"),
+    [STRINGID_TAUNTEDBYKAZURA_P_OHKO]               = COMPOUND_STRING("“Fwoooo ...my breath...it must feel like a hurricane to you, with how pathetically tiny you are!”"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

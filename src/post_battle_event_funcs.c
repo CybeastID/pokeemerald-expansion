@@ -3,11 +3,13 @@
 #include "credits.h"
 #include "event_data.h"
 #include "hall_of_fame.h"
+#include "kazuradrop_gameover.h"
 #include "load_save.h"
 #include "overworld.h"
 #include "script_pokemon_util.h"
 #include "tv.h"
 #include "constants/heal_locations.h"
+#include "battle.h"
 
 int GameClear(void)
 {
@@ -87,6 +89,5 @@ int GameClear(void)
 
 bool8 SetCB2WhiteOut(void)
 {
-    SetMainCallback2(CB2_WhiteOut);
-    return FALSE;
+    return TrySetKazGameOverWhiteOut();
 }
