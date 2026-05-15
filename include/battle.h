@@ -282,7 +282,7 @@ struct BugSpaceData
     u8 sourceBattler;             // Battler that most recently triggered a phase
     u16 bpThreshold;              // Current BP threshold - moves at or above this fail
     u16 bpDecayRate;              // Current decay rate per turn
-    u16 bpDecayRateBase;          // Base decay rate. Currently unused, bpDecayRate is set directly to the desired value in practice.
+    u16 hasBlocked;          // Base decay rate. Currently unused, bpDecayRate is set directly to the desired value in practice.
     u16 bpDecayRatePhase2;        // Decay rate after first acceleration
     enum BugSpaceThresholdTier currentTier;  // Current threshold tier for effects
     u16 originalMoves[MAX_BATTLERS_COUNT][MAX_MON_MOVES]; // Original moves before Bug Space swapping

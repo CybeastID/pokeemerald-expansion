@@ -23,6 +23,7 @@ extern const u8 BattleScript_AlreadyAtFullHp[];
 extern const u8 BattleScript_PresentHealTarget[];
 extern const u8 BattleScript_MoveUsedMustRecharge[];
 extern const u8 BattleScript_FaintBattler[];
+extern const u8 BattleScript_BugSpacePassiveFaintBattler[];
 extern const u8 BattleScript_GiveExp[];
 extern const u8 BattleScript_HandleFaintedMon[];
 extern const u8 BattleScript_LocalTrainerBattleWon[];
@@ -859,5 +860,10 @@ extern const u8 BattleScript_BugSpaceMinimize[];
 extern const u8 BattleScript_BugSpaceOHKO[];
 extern const u8 BattleScript_BugSpaceP_OHKOMessage[];
 extern const u8 BattleScript_KazuradropTransformReturn[];
+extern const u8 BattleScript_BugSpaceBlocked_First[];
+extern const u8 BattleScript_BugSpaceBlocked_Repeat[];
+extern const u8 BattleScript_BugSpaceBlocked_POHKO[];
+extern const u8 BattleScript_BugSpaceStatDecay[];
+extern const u8 BattleScript_BugSpaceStatDecayFirst[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

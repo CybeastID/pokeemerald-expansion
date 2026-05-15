@@ -545,6 +545,7 @@ extern const u8 gBattleAnimMove_NightDaze[];
 extern const u8 gBattleAnimMove_Psystrike[];
 extern const u8 gBattleAnimMove_TailSlap[];
 extern const u8 gBattleAnimMove_Hurricane[];
+extern const u8 gBattleAnimMove_HurricaneThrowOut[];
 extern const u8 gBattleAnimMove_HeadCharge[];
 extern const u8 gBattleAnimMove_GearGrind[];
 extern const u8 gBattleAnimMove_SearingShot[];

@@ -4628,7 +4628,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     FlagSet(FLAG_KAZURADROP_ENTERED_BATTLE);
                     VarSet(VAR_TEMP_0, gBattleResults.battleTurnCounter);
                     gBattleStruct->bugSpace.sourceBattler = battler;
-                    gBattleStruct->bugSpace.thresholdPercent = 50;
+                    // gBattleStruct->bugSpace.thresholdPercent = 50;
                     gBattleStruct->bugSpace.bpThreshold = 150;
                     // gBattleStruct->bugSpace.bpThreshold = 10;
                     gBattleStruct->bugSpace.bpDecayRate = 10;

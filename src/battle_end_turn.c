@@ -11,6 +11,7 @@
 #include "constants/abilities.h"
 #include "constants/items.h"
 #include "constants/moves.h"
+#include "event_data.h"
 
 static u32 GetBattlerSideForMessage(u32 side)
 {
@@ -1428,6 +1429,46 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
         effect = TRUE;
     }
     // gBattleMons[0].maxHP = gBattleStruct->bugSpace.bpThreshold;
+    // Halve positive stat stages for all battlers opposing Kazuradrop
+    {
+        bool32 statsLowered = FALSE;
+        u32 firstAffected = MAX_BATTLERS_COUNT;
+        for (u32 i = 0; i < gBattlersCount; i++)
+        {
+            // Skip battlers on Kazuradrop's side
+            if (GetBattlerSide(i) == GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+                continue;
+
+            // Halve each positive stat boost (round down, floor at 0)
+            for (u32 j = 0; j < NUM_BATTLE_STATS; j++)
+            {
+                if (gBattleMons[i].statStages[j] > DEFAULT_STAT_STAGE)
+                {
+                    s32 boost = gBattleMons[i].statStages[j] - DEFAULT_STAT_STAGE;
+                    boost /= 2; // halve, round down (boost is positive here)
+                    gBattleMons[i].statStages[j] = DEFAULT_STAT_STAGE + boost;
+                    statsLowered = TRUE;
+                    if (firstAffected == MAX_BATTLERS_COUNT)
+                        firstAffected = i;
+                }
+            }
+        }
+        // Show animation and message if any stats were lowered
+        if (statsLowered)
+        {
+            gBattlerTarget = firstAffected;
+            gBattleScripting.battler = firstAffected;
+            if (!FlagGet(FLAG_TEMP_1))
+            {
+                BattleScriptExecute(BattleScript_BugSpaceStatDecayFirst);
+                FlagSet(FLAG_TEMP_1);
+            }
+            else 
+                BattleScriptExecute(BattleScript_BugSpaceStatDecay);
+            effect = TRUE;
+        }
+    }
+
     gBattleStruct->eventState.endTurnBattler = gBattlersCount;
     return effect;
 }

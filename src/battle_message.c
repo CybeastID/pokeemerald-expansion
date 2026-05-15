@@ -882,7 +882,7 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_PKMNINFINITEGROWTHGROW]               = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX} is growing!"),
     [STRINGID_PKMNINFINITEGROWTHSTART]              = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX} started to grow!"),
     [STRINGID_BUGSPACESTART]                        = COMPOUND_STRING("You feel yourself getting weaker..."),
-    [STRINGID_BUGSPACEPASSIVEOHKO]                  = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX} purses her lips and exhales..."),
+    [STRINGID_BUGSPACEPASSIVEOHKO]                  = COMPOUND_STRING("Kazuradrop purses her lips and exhales..."),
     [STRINGID_BUGSPACEPASSIVEFAINT]                 = COMPOUND_STRING("Her breath blew your Pokémon away!"),
     [STRINGID_KAZURASPOKE]                          = COMPOUND_STRING("Kazuradrop opened her mouth to speak..."),
     [STRINGID_TAUNTEDBYKAZURA]                      = COMPOUND_STRING("“Did you really think it would be THAT easy?”"),
@@ -890,6 +890,13 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_TAUNTEDBYKAZURAMINIMIZE]              = COMPOUND_STRING("“Gosh, you're getting quite small, arent you, little bugs?”"),
     [STRINGID_TAUNTEDBYKAZURAOHKO]                  = COMPOUND_STRING("“I could just step on you. Go squish!”"),
     [STRINGID_TAUNTEDBYKAZURA_P_OHKO]               = COMPOUND_STRING("“Fwoooo ...my breath...it must feel like a hurricane to you, with how pathetically tiny you are!”"),
+    [STRINGID_BUGSPACEKAZURAGRAB]                    = COMPOUND_STRING("The flesh-colored sky of Kazuradrop's hand reaches down for you..."),
+    [STRINGID_BUGSPACEMOVEBLOCKED]                 = COMPOUND_STRING("You can't use that move anymore!"),
+    [STRINGID_BUGSPACEKAZURABLOCKEDFIRST]            = COMPOUND_STRING("“Too powerful for my world? Don't worry. You'll shrink to fit soon enough.”"),
+    [STRINGID_BUGSPACEKAZURABLOCKEDREPEAT]           = COMPOUND_STRING("“Still trying moves like that? How adorable.”"),
+    [STRINGID_BUGSPACEKAZURABLOCKEDPOHKO]            = COMPOUND_STRING("“At that size, you couldn't hurt a thing even if I let you. Ufufu.”"),
+    [STRINGID_BUGSPACESTATDECAY]                     = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}'s raised stats were lowered!"),
+    [STRINGID_BUGSPACEKAZURABOOSTDECAY]            = COMPOUND_STRING("“Insects like you actually think you have POWER in this world?”"),
 };
 
 const u16 gTrainerUsedItemStringIds[] =

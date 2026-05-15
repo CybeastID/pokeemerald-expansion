@@ -24,6 +24,7 @@
 #include "test/battle.h"
 #include "constants/battle_anim.h"
 #include "constants/moves.h"
+#include "constants/songs.h"
 
 /*
     This file handles the commands for the macros defined in
@@ -402,7 +403,12 @@ void LaunchBattleAnimation(u32 animType, u32 animId)
         sBattleAnimScriptPtr = sBattleAnims_General[animId];
         break;
     case ANIM_TYPE_MOVE:
-        sBattleAnimScriptPtr = GetMoveAnimationScript(animId);
+        if (animId == MOVE_HURRICANE
+         && gBattleStruct->bugSpace.active
+         && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+            sBattleAnimScriptPtr = gBattleAnimMove_HurricaneThrowOut;
+        else
+            sBattleAnimScriptPtr = GetMoveAnimationScript(animId);
         break;
     case ANIM_TYPE_STATUS:
         sBattleAnimScriptPtr = sBattleAnims_StatusConditions[animId];

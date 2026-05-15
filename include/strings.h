@@ -270,6 +270,7 @@ extern const u8 gText_ConfirmStarterChoice[];
 extern const u8 gText_EventSafelyLoaded[];
 extern const u8 gText_LoadErrorEndingSession[];
 extern const u8 gText_PressAToLoadEvent[];
+extern const u8 gText_PleasePressAButton[];
 extern const u8 gText_LoadingEvent[];
 extern const u8 gText_DontRemoveCableTurnOff[];
 extern const u8 gText_LinkStandby2[];
@@ -2414,5 +2415,8 @@ extern const u8 MoveRelearner_Text_TutorMoveLWR[];
 extern const u8 gText_CannotSendMonToBoxHM[];
 extern const u8 gText_CannotSendMonToBoxActive[];
 extern const u8 gText_CannotSendMonToBoxPartner[];
+
+// Custom game over string
+extern const u8 gText_PlayerWasNeverSeenAgain[];
 
 #endif // GUARD_STRINGS_H

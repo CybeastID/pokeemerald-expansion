@@ -42,6 +42,13 @@
 #include "trainer_hill.h"
 #include "fldeff.h"
 #include "battle.h"
+#include "kazuradrop_gameover.h"
+
+extern const u8 gText_PlayerWasNeverSeenAgain[];
+extern const u8 gText_PlayerRegroupHome[];
+extern const u8 gText_PlayerRegroupCenter[];
+extern const u8 gText_PlayerScurriedBackHome[];
+extern const u8 gText_PlayerScurriedToCenter[];
 
 static void Task_ExitNonAnimDoor(u8);
 static void Task_ExitNonDoor(u8);
@@ -1360,6 +1367,7 @@ static const u8 sWhiteoutTextColors[] = { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHI
 #define tWindowId      data[1]
 #define tPrintState    data[2]
 #define tIsPlayerHouse data[3]
+#define tIsKazuradropGameOver data[4]
 
 static bool32 PrintWhiteOutRecoveryMessage(u8 taskId, const u8 *text, u32 x, u32 y)
 {
@@ -1426,16 +1434,16 @@ static void Task_RushInjuredPokemonToCenter(u8 taskId)
         gTasks[taskId].tState = WHITEOUT_CUTSCENE_PRINT_MSG;
         break;
     case WHITEOUT_CUTSCENE_PRINT_MSG:
-    {
-        const u8 *recoveryMessage = GenerateRecoveryMessage(taskId);
+{
+    const u8 *recoveryMessage = GenerateRecoveryMessage(taskId);
 
-        if (PrintWhiteOutRecoveryMessage(taskId, recoveryMessage, 2, 8))
-        {
-            ObjectEventTurn(&gObjectEvents[gPlayerAvatar.objectEventId], DIR_NORTH);
-            gTasks[taskId].tState = WHITEOUT_CUTSCENE_LEAVE_MSG_SCREEN;
-        }
-        break;
+    if (PrintWhiteOutRecoveryMessage(taskId, recoveryMessage, 2, 8))
+    {
+        ObjectEventTurn(&gObjectEvents[gPlayerAvatar.objectEventId], DIR_NORTH);
+        gTasks[taskId].tState = WHITEOUT_CUTSCENE_LEAVE_MSG_SCREEN;
     }
+    break;
+}
     case WHITEOUT_CUTSCENE_LEAVE_MSG_SCREEN:
         windowId = gTasks[taskId].tWindowId;
         ClearWindowTilemap(windowId);

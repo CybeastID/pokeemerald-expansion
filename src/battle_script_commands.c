@@ -71,6 +71,7 @@
 #include "follower_npc.h"
 #include "load_save.h"
 #include "test/test_runner_battle.h"
+#include "kazuradrop_gameover.h"
 
 // table to avoid ugly powing on gba (courtesy of doesnt)
 // this returns (i^2.5)/4
@@ -1411,8 +1412,16 @@ static void JumpIfMoveFailed(u32 adder, u32 move, u32 moveType, const u8 *failIn
     if (IsMoveBlockedByBugSpace(move))
     {
         gBattleStruct->moveResultFlags[gBattlerTarget] |= MOVE_RESULT_NO_EFFECT;
-        gBattlescriptCurrInstr = failInstr;
-        return;
+    if (gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+        gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_POHKO;
+    else if (!gBattleStruct->bugSpace.hasBlocked)
+    {
+        gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_First;
+        gBattleStruct->bugSpace.hasBlocked = 1;
+    }
+    else
+        gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_Repeat;
+    return;
     }
     
     if (CanAbilityAbsorbMove(gBattlerAttacker,
@@ -2459,6 +2468,9 @@ static bool32 TryTriggerKazuradropTransformation(u32 battler)
         return FALSE;
     // Must not have already transformed (moveSwapActive doubles as transformation flag)
     if (gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
+        return FALSE;
+    // Must not BE transformed INTO Kazuradrop.
+    if (gBattleMons[battler].volatiles.transformed == TRUE)
         return FALSE;
     // Must be taking damage
     if (gBattleStruct->moveDamage[battler] <= 0)
@@ -4479,7 +4491,10 @@ static void Cmd_tryfaintmon(void)
             TryUpdateEvolutionTracker(IF_DEFEAT_X_WITH_ITEMS, 1, MOVE_NONE);
 
         gBattlerFainted = battler;
-        faintScript = BattleScript_FaintBattler;
+        if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+            faintScript = BattleScript_BugSpacePassiveFaintBattler;
+        else
+            faintScript = BattleScript_FaintBattler;
         if (!(gAbsentBattlerFlags & (1u << battler))
          && !IsBattlerAlive(battler))
         {
@@ -4533,6 +4548,15 @@ static void Cmd_dofaintanimation(void)
         return;
     }
 
+    // Bug Space passive OHKO faint flow can get stuck waiting for controller exec to finish.
+    // Skip controller faint animation requests in this specific flow to prevent the hang.
+    if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+    {
+        gBattleControllerExecFlags = 0;
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return;
+    }
+
     BtlController_EmitFaintAnimation(battler, B_COMM_TO_CONTROLLER);
     MarkBattlerForControllerExec(battler);
     gBattlescriptCurrInstr = cmd->nextInstr;
@@ -4549,8 +4573,16 @@ static void Cmd_cleareffectsonfaint(void)
         if (!(gBattleTypeFlags & BATTLE_TYPE_ARENA) || !IsBattlerAlive(battler))
         {
             gBattleMons[battler].status1 = 0;
-            BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, sizeof(gBattleMons[battler].status1), &gBattleMons[battler].status1);
-            MarkBattlerForControllerExec(battler);
+
+            // Bug Space passive OHKO faint sequences can get stuck at the next
+            // battle-script command boundary if we emit controller requests here.
+            // In that specific flow, skip the controller request and rely on
+            // FaintClearSetData for other cleanup.
+            if (!(gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO))
+            {
+                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, sizeof(gBattleMons[battler].status1), &gBattleMons[battler].status1);
+                MarkBattlerForControllerExec(battler);
+            }
         }
 
         clearDataResult = FaintClearSetData(battler); // Effects like attractions, trapping, etc.
@@ -5161,7 +5193,23 @@ static void Cmd_checkteamslost(void)
         return;
 
     if (NoAliveMonsForPlayer())
-        gBattleOutcome |= B_OUTCOME_LOST;
+    {
+        if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+        {
+            // Important: don't set B_OUTCOME_LOST here.
+            // Setting the battle outcome early can interrupt the controller exec flow
+            // started by dofaintanimation, leaving gBattleControllerExecFlags stuck and
+            // causing the battle script to hang at the next post-faint command boundary.
+            //
+            // Instead, BattleScript_BugSpacePassiveOHKO will callnative
+            // TrySetKazGameOverFromBattle() after the "blow away" so we can set outcome
+            // + flag at a safe point.
+        }
+        else
+        {
+            gBattleOutcome |= B_OUTCOME_LOST;
+        }
+    }
     if (NoAliveMonsForOpponent())
         gBattleOutcome |= B_OUTCOME_WON;
 
@@ -9828,7 +9876,7 @@ static void HandleScriptMegaPrimalBurst(u32 caseId, u32 battler, u32 type)
 
         BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_SPECIES_BATTLE, 1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].species), &gBattleMons[battler].species);
         MarkBattlerForControllerExec(battler);
-        if (gBattleMons[battler].species == SPECIES_KAZURADROP
+        /* if (gBattleMons[battler].species == SPECIES_KAZURADROP
          && !GetBattlerPartyState(battler)->sentOut)
         {
             gBattleStruct->bugSpace.active = TRUE;
@@ -9836,7 +9884,7 @@ static void HandleScriptMegaPrimalBurst(u32 caseId, u32 battler, u32 type)
             VarSet(VAR_TEMP_0, gBattleResults.battleTurnCounter);
             if (gBattleStruct->bugSpace.thresholdPercent == 0)
                 gBattleStruct->bugSpace.thresholdPercent = 50;
-        }
+        } */
     }
     // Update healthbox and elevation and play cry.
     else
@@ -14836,6 +14884,7 @@ void BS_ApplyKazuradropTransformation(void)
     BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
     MarkBattlerForControllerExec(battler);
     SetHealAmount(battler, gBattleMons[battler].maxHP - currentHP);
+    FadeOutAndFadeInNewMapMusic(MUS_BB_CHANNEL, 2, 4);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -14843,6 +14892,13 @@ void BS_SetTargetAsAttacker(void)
 {
     NATIVE_ARGS();
     gBattlerAttacker = gBattlerTarget;
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_TrySetKazGameOverFromBattle(void)
+{
+    NATIVE_ARGS();
+    TrySetKazGameOverFromBattle();
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -16770,6 +16826,64 @@ void BS_JumpIfNoWhiteOut(void)
         gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
+void BS_LocalBattleLostPrintWhiteOutStep1(void)
+{
+    NATIVE_ARGS();
+
+    if (FlagGet(FLAG_KAZURADROP_ENTERED_BATTLE))
+    {
+        PlaySE(SE_M_EARTHQUAKE);
+        gBattleAnimArgs[0] = MAX_BATTLERS_COUNT + 1;  // target
+        gBattleAnimArgs[1] = 10;                       // intensity
+        gBattleAnimArgs[2] = 50;                       // duration
+        CreateTask(AnimTask_HorizontalShake, 5);
+        PrepareStringBattle(STRINGID_BUGSPACEKAZURAGRAB, gBattlerAttacker);
+    }
+    else
+    {
+        PrepareStringBattle(STRINGID_PLAYERWHITEOUT, gBattlerAttacker);
+    }
+    gBattlescriptCurrInstr = cmd->nextInstr;
+    gBattleCommunication[MSG_DISPLAY] = 1;
+}
+
+void BS_LocalBattleLostPrintWhiteOutStep2(void)
+{
+    NATIVE_ARGS();
+
+    if (FlagGet(FLAG_KAZURADROP_ENTERED_BATTLE))
+{
+    BeginNormalPaletteFade(PALETTES_ALL, 2, 0, 16, RGB_BLACK);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+    return;
+}
+
+#if B_WHITEOUT_MONEY >= GEN_4
+    if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+        PrepareStringBattle(STRINGID_PLAYERWHITEOUT2_TRAINER, gBattlerAttacker);
+    else
+        PrepareStringBattle(STRINGID_PLAYERWHITEOUT2_WILD, gBattlerAttacker);
+
+    gBattleCommunication[MSG_DISPLAY] = 1;
+#endif
+
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_LocalBattleLostPrintWhiteOutStep3(void)
+{
+    NATIVE_ARGS();
+
+    if (FlagGet(FLAG_KAZURADROP_ENTERED_BATTLE))
+    {
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return;
+    }
+
+    PrepareStringBattle(STRINGID_PLAYERWHITEOUT3, gBattlerAttacker);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+    gBattleCommunication[MSG_DISPLAY] = 1;
+}
 void BS_TryBoosterEnergy(void)
 {
     NATIVE_ARGS(u8 onFieldStatus);

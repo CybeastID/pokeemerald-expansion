@@ -6904,6 +6904,13 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
             }
             // Otherwise let standard AI handle it
             return score;
+            if (gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO)
+            {
+                if (move == MOVE_STOMP)
+                    score += 100;
+                else
+                    score -= 100;
+            }
         }
 
         // Post-transformation behavior

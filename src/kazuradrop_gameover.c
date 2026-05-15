@@ -7,6 +7,7 @@
 #include "main.h"
 #include "bg.h"
 #include "gpu_regs.h"
+#include "io_reg.h"
 #include "palette.h"
 #include "sprite.h"
 #include "task.h"
@@ -22,6 +23,17 @@
 #include "battle.h"
 #include "overworld.h"
 #include "save.h"
+#include "battle_setup.h"
+#include "battle_scripts.h"
+#include "constants/battle.h"
+#include "window.h"
+#include "strings.h"
+#include "menu.h"
+#include "string_util.h"
+#include "text.h"
+#include "field_screen_effect.h"
+#include "constants/songs.h"
+
 
 // ---------------------------------------------------------------------------
 // Asset INCBINs
@@ -32,9 +44,9 @@ static const u16 sKazGameOver_Map[]   = INCBIN_U16("graphics/special/kazgameover
 static const u16 sKazGameOver_Pal[]   = INCBIN_U16("graphics/special/kazgameover.pal.bin");
 
 // GAME OVER text sprite assets (to be created separately)
-// static const u32 sGameOverText_Tiles[] = INCBIN_U32("graphics/kazuradrop/gameover/gameover_text.4bpp");
-// static const u16 sGameOverText_Pal[]   = INCBIN_U16("graphics/kazuradrop/gameover/gameover_text.gbapal");
-
+static const u32 sGameOverText_TilesL[] = INCBIN_U32("graphics/special/gameover_text_l.img.bin");
+static const u32 sGameOverText_TilesR[] = INCBIN_U32("graphics/special/gameover_text_r.img.bin");
+static const u16 sGameOverText_Pal[]    = INCBIN_U16("graphics/special/gameover_text.pal.bin");
 // ---------------------------------------------------------------------------
 // BG Configuration
 // ---------------------------------------------------------------------------
@@ -63,6 +75,17 @@ static const struct BgTemplate sKazGameOver_BgTemplates[] =
     },
 };
 
+static const struct WindowTemplate sKazGameOver_MsgWindowTemplate =
+{
+    .bg = 0,
+    .tilemapLeft = 0,
+    .tilemapTop = 5,
+    .width = 30,
+    .height = 11,
+    .paletteNum = 15,
+    .baseBlock = 1,
+};
+
 // ---------------------------------------------------------------------------
 // EWRAM state
 // ---------------------------------------------------------------------------
@@ -77,7 +100,7 @@ static EWRAM_DATA u16 sKazGameOver_Tilemap[0x800] = {0};
 // ---------------------------------------------------------------------------
 
 #define BLEND_START_DELAY   60      // frames to show artwork before darkening begins
-#define BLEND_DURATION      20      // frames to animate the dark overlay
+#define BLEND_DURATION      36      // frames to animate the dark overlay
 #define TEXT_FADE_DELAY     10      // frames after blend completes before text appears
 #define HOLD_DURATION       180     // frames to hold the screen (3 seconds) before exit
 #define BLEND_EVA_START     16
@@ -93,6 +116,14 @@ static EWRAM_DATA u16 sKazGameOver_Tilemap[0x800] = {0};
 #define tTimer          data[1]
 #define tBlendEVA       data[2]
 #define tBlendEVB       data[3]
+#define tWindowId data[4]
+
+// ---------------------------------------------------------------------------
+// Tag Defines
+// ---------------------------------------------------------------------------
+#define TAG_GAMEOVER_TEXT_L     0x5000
+#define TAG_GAMEOVER_TEXT_R     0x5001
+#define TAG_GAMEOVER_TEXT_PAL   0x5002
 
 // ---------------------------------------------------------------------------
 // Forward declarations
@@ -106,17 +137,149 @@ static void  Task_KazGameOver_BlendOverlay(u8 taskId);
 static void  Task_KazGameOver_FadeInText(u8 taskId);
 static void  Task_KazGameOver_Hold(u8 taskId);
 static void  Task_KazGameOver_FadeOut(u8 taskId);
+static void SpriteCB_GameOverText(struct Sprite *sprite);
+static void CB2_KazGameOver_MessageInit (void);
+static void Task_KazGameOver_Message(u8 taskId);
 
+// ---------------------------------------------------------------------------
+// OAM configuration for GAME OVER text sprites
+// ---------------------------------------------------------------------------
+static const struct OamData sGameOverText_OamData =
+{
+    .shape = SPRITE_SHAPE(64x64),
+    .size  = SPRITE_SIZE(64x64),
+    .priority = 0,
+};
+
+static const union AnimCmd sGameOverText_Anim[] =
+{
+    ANIMCMD_FRAME(0, 0),
+    ANIMCMD_END,
+};
+
+static const union AnimCmd *const sGameOverText_AnimTable[] =
+{
+    sGameOverText_Anim,
+};
+
+static const struct SpriteTemplate sGameOverTextL_Template =
+{
+    .tileTag     = TAG_GAMEOVER_TEXT_L,
+    .paletteTag  = TAG_GAMEOVER_TEXT_PAL,
+    .oam         = &sGameOverText_OamData,
+    .anims       = sGameOverText_AnimTable,
+    .images      = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCB_GameOverText, // custom callback to handle fade-in animation
+};
+
+static const struct SpriteTemplate sGameOverTextR_Template =
+{
+    .tileTag     = TAG_GAMEOVER_TEXT_R,
+    .paletteTag  = TAG_GAMEOVER_TEXT_PAL,
+    .oam         = &sGameOverText_OamData,
+    .anims       = sGameOverText_AnimTable,
+    .images      = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCB_GameOverText, // same callback for both halves of the text
+};
+static const u8 sKazGameOver_TextColors[] = { TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY };
+static u16 sFadeDelay;
 // ---------------------------------------------------------------------------
 // Entry point — call this from the battle loss handler
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Kaz Game Over message screen — runs before the artwork screen
+// ---------------------------------------------------------------------------
+
+
+
+static void CB2_KazGameOver_Message(void)
+{
+    RunTasks();
+    UpdatePaletteFade();
+}
+
+static void VBlankCB_KazGameOver_Message(void)
+{
+    LoadOam();
+    ProcessSpriteCopyRequests();
+    TransferPlttBuffer();
+}
+
+static void CB2_KazGameOver_MessageInit(void)
+{
+    SetVBlankCallback(NULL);
+    DmaFill16(3, 0, VRAM, VRAM_SIZE);
+    DmaFill32(3, 0, OAM, OAM_SIZE);
+    DmaFill16(3, 0, PLTT, PLTT_SIZE);
+    ScanlineEffect_Stop();
+    ResetSpriteData();
+    FreeAllSpritePalettes();
+    ResetTasks();
+    PlayBGM(MUS_BB_GAMEOVER);
+    ResetBgsAndClearDma3BusyFlags(0);
+    InitBgsFromTemplates(0, sKazGameOver_BgTemplates, ARRAY_COUNT(sKazGameOver_BgTemplates));
+    ShowBg(0);
+    SetVBlankCallback(VBlankCB_KazGameOver_Message);
+    CreateTask(Task_KazGameOver_Message, 0);
+    SetMainCallback2(CB2_KazGameOver_Message);
+}
+
+static void Task_KazGameOver_Message(u8 taskId)
+{
+    u32 windowId = 0;
+
+    switch (gTasks[taskId].tState)
+    {
+    case 0:
+        windowId = AddWindow(&sKazGameOver_MsgWindowTemplate);
+        gTasks[taskId].tWindowId = windowId;
+        Menu_LoadStdPalAt(BG_PLTT_ID(15));
+        FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
+        PutWindowTilemap(windowId);
+        CopyWindowToVram(windowId, COPYWIN_FULL);
+        gTasks[taskId].tState++;
+        break;
+
+    case 1:
+        windowId = gTasks[taskId].tWindowId;
+        StringExpandPlaceholders(gStringVar4, gText_PlayerWasNeverSeenAgain);
+        AddTextPrinterParameterized4(windowId, FONT_NORMAL, 2, 8, 1, 0, sKazGameOver_TextColors, 1, gStringVar4);
+        gTextFlags.canABSpeedUpPrint = FALSE;
+        gTasks[taskId].tState++;
+        break;
+
+    case 2:
+        RunTextPrinters();
+        if (!IsTextPrinterActive(gTasks[taskId].tWindowId))
+            gTasks[taskId].tState++;
+        break;
+
+    case 3:
+        windowId = gTasks[taskId].tWindowId;
+        ClearWindowTilemap(windowId);
+        CopyWindowToVram(windowId, COPYWIN_MAP);
+        RemoveWindow(windowId);
+        gTasks[taskId].tState++;
+        break;
+
+    case 4:
+        // One frame gap after window cleanup before handing off
+        gMain.state = 0;
+        SetMainCallback2(CB2_DoKazGameOverScreen);
+        DestroyTask(taskId);
+        break;
+    }
+}
 
 bool8 TrySetKazGameOverWhiteOut(void)
 {
     if (FlagGet(FLAG_KAZURADROP_ENTERED_BATTLE))
     {
         FlagClear(FLAG_KAZURADROP_ENTERED_BATTLE);
-        SetMainCallback2(CB2_DoKazGameOverScreen);
+        SetMainCallback2(CB2_KazGameOver_MessageInit);
         return TRUE;
     }
     else
@@ -126,26 +289,21 @@ bool8 TrySetKazGameOverWhiteOut(void)
     }
 }
 
-static bool8 sKazInitStarted = FALSE;
+
 
 void CB2_DoKazGameOverScreen(void)
 {
-    if (!sKazInitStarted)
-    {
-        gMain.state = 0;
-        sKazInitStarted = TRUE;
-    }
-    if (!InitKazGameOverScreen())
-    {
-        CreateTask(Task_KazGameOver_FadeIn, 0);
-    }
+    if (InitKazGameOverScreen())
+        return;
+    CreateTask(Task_KazGameOver_FadeIn, 0);
 }
 
 // ---------------------------------------------------------------------------
 // Screen initialiser — runs as a state machine across frames
 // Returns TRUE while still initialising, FALSE when done
 // ---------------------------------------------------------------------------
-static u16 sFadeDelay;
+
+
 static bool8 InitKazGameOverScreen(void)
 {
     switch (gMain.state)
@@ -163,7 +321,6 @@ static bool8 InitKazGameOverScreen(void)
         break;
 
     case 1:
-        // Initialise BGs
         ResetBgsAndClearDma3BusyFlags(0);
         InitBgsFromTemplates(0, sKazGameOver_BgTemplates, ARRAY_COUNT(sKazGameOver_BgTemplates));
         SetBgTilemapBuffer(2, sKazGameOver_Tilemap);
@@ -174,47 +331,31 @@ static bool8 InitKazGameOverScreen(void)
         gMain.state++;
         break;
 
-    /* case 2:
-        // Load Kazuradrop artwork tiles and palette into VRAM/palette RAM
-        // BG palette bank 0 = our 256-color palette for BG2
-        LoadBgTiles(2, sKazGameOver_Tiles, sizeof(sKazGameOver_Tiles), 0);
-    while (IsDma3ManagerBusyWithBgCopy());
-    CopyToBgTilemapBuffer(2, sKazGameOver_Map, 0, 0);
-    LoadPalette(sKazGameOver_Pal, BG_PLTT_ID(0), sizeof(u16) * 256);
-    CopyBgTilemapBufferToVram(2);
-    gMain.state++;
-    break;
-
-    */ 
-
     case 2:
-    // Direct DMA to VRAM - bypass BG system
-    CpuFastSet(sKazGameOver_Tiles, (void *)(BG_VRAM + 0x8000), sizeof(sKazGameOver_Tiles) / 4);
-    DmaCopy16(3, sKazGameOver_Map, (void *)(BG_VRAM + 0xF800), sizeof(sKazGameOver_Map));
-    LoadPalette(sKazGameOver_Pal, BG_PLTT_ID(0), sizeof(u16) * 256);
-    gMain.state++;
-    break;
+        CpuFastSet(sKazGameOver_Tiles, (void *)(BG_VRAM + 0x8000), sizeof(sKazGameOver_Tiles) / 4);
+        DmaCopy16(3, sKazGameOver_Map, (void *)(BG_VRAM + 0xF800), sizeof(sKazGameOver_Map));
+        while (REG_DMA3CNT & DMA_ENABLE) { }
+        LoadPalette(sKazGameOver_Pal, BG_PLTT_ID(0), sizeof(u16) * 256);
+        gMain.state++;
+        break;
 
     case 3:
-        // Set up hardware blending:
-        // BG2 blends against the backdrop (black) — starts fully unblended
         SetGpuReg(REG_OFFSET_BLDCNT,   BLDCNT_TGT1_BG2 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BD);
         SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(BLEND_EVA_START, BLEND_EVB_START));
         SetGpuReg(REG_OFFSET_BLDY,     0);
-
-        // BG0 hidden initially (text layer) — shown after blend completes
         HideBg(0);
         ShowBg(2);
         sFadeDelay = 0;
         gMain.state++;
         break;
+
     case 4:
         sFadeDelay++;
-        if (sFadeDelay >= 30)  // wait 30 frames before fade
+        if (sFadeDelay >= 30)
             gMain.state++;
         break;
+
     case 5:
-        // Fade in from black
         SetVBlankCallback(VBlankCB_KazGameOver);
         BeginNormalPaletteFade(PALETTES_ALL, 5, 16, 0, RGB_BLACK);
         gMain.state++;
@@ -225,8 +366,6 @@ static bool8 InitKazGameOverScreen(void)
         if (!gPaletteFade.active)
         {
             SetMainCallback2(CB2_KazGameOver);
-            // Optionally stop music here and play a sting/silence
-            // PlayBGM(MUS_KAZURADROP_GAME_OVER);
             return FALSE;
         }
         break;
@@ -304,17 +443,59 @@ static void Task_KazGameOver_BlendOverlay(u8 taskId)
 // TODO: Load GAME OVER sprite/tilemap assets here once created
 // ---------------------------------------------------------------------------
 
+// Sprite data indices
+#define sTimer      data[0]
+#define sFadeStep   data[1]
+
+static void SpriteCB_GameOverText(struct Sprite *sprite)
+{
+    if (sprite->sTimer < 90)
+        sprite->sTimer++;
+    else
+    {
+        sprite->callback = SpriteCallbackDummy;
+        return;
+    }
+
+    // fade
+    if (sprite->sTimer <= 45)
+    {
+        u8 slot = IndexOfSpritePaletteTag(TAG_GAMEOVER_TEXT_PAL);
+        u8 coeff = 16 - ((sprite->sTimer * 16) / 45);
+        BlendPalettes(1 << (16 + slot), coeff, RGB_BLACK);
+    }
+
+    // drift
+    if (sprite->sTimer <= 90)
+    {
+        sprite->data[2] += (32 * 256) / 90;
+        sprite->y = sprite->data[3] + (sprite->data[2] >> 8);
+    }
+}
+
+static void LoadGameOverTextSprites(void)
+{
+    struct SpriteSheet sheetL = { sGameOverText_TilesL, sizeof(sGameOverText_TilesL), TAG_GAMEOVER_TEXT_L };
+    struct SpriteSheet sheetR = { sGameOverText_TilesR, sizeof(sGameOverText_TilesR), TAG_GAMEOVER_TEXT_R };
+    struct SpritePalette pal  = { sGameOverText_Pal,    TAG_GAMEOVER_TEXT_PAL };
+
+    LoadSpriteSheet(&sheetL);
+    LoadSpriteSheet(&sheetR);
+    LoadSpritePalette(&pal);
+
+    // Center the two 64×64 sprites on the 240×160 screen
+    // Left half:  x = 56, Right half: x = 120, y = 48 centers 64px tall graphic vertically
+    u8 spriteL = CreateSprite(&sGameOverTextL_Template, 88,  56, 0);
+    u8 spriteR = CreateSprite(&sGameOverTextR_Template, 152, 56, 0);
+    gSprites[spriteL].data[3] = 56;
+    gSprites[spriteR].data[3] = 56;
+}
 static void Task_KazGameOver_FadeInText(u8 taskId)
 {
-    // For now, simply show BG0 immediately
-    // Once GAME OVER text tiles are ready, load them here and fade in
-    // via a per-palette fade on BG_PLTT_ID(15) or similar
-    ShowBg(0);
-
+    LoadGameOverTextSprites();
     gTasks[taskId].tTimer = 0;
     gTasks[taskId].func   = Task_KazGameOver_Hold;
 }
-
 // ---------------------------------------------------------------------------
 // Task: Hold the screen, wait for button press or timer
 // ---------------------------------------------------------------------------
@@ -345,7 +526,7 @@ static void Task_KazGameOver_FadeOut(u8 taskId)
 
     if (!gPaletteFade.active)
     {
-        // Clear the flag so a future run doesn't re-trigger this
+        // Clear the flag so a future run doesn’t re-trigger this
         FlagClear(FLAG_KAZURADROP_ENTERED_BATTLE);
 
         // Return to title screen
@@ -353,4 +534,12 @@ static void Task_KazGameOver_FadeOut(u8 taskId)
         SetMainCallback2(CB2_InitTitleScreen);
         DestroyTask(taskId);
     }
+}
+
+// callnative: Called from BattleScript_BugSpacePassiveOHKO
+// Sets the game to end and jumps to Kazuradrop game over screen
+void TrySetKazGameOverFromBattle(void)
+{
+    FlagSet(FLAG_KAZURADROP_ENTERED_BATTLE);
+    gBattleOutcome |= B_OUTCOME_LOST;
 }

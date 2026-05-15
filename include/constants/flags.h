@@ -46,7 +46,7 @@
 #define FLAG_PLAYER_SMOL     0x20 // Unused Flag
 #define FLAG_LR_DEBUG_TEAM   0x21 // Unused Flag
 #define FLAG_KAZURADROP_ENTERED_BATTLE  0x22 // Used to check for alt GameOver.
-#define FLAG_UNUSED_0x023    0x23 // Unused Flag
+#define B_FLAG_TERA_ORB_CHARGED    0x23 // Unused Flag
 #define FLAG_UNUSED_0x024    0x24 // Unused Flag
 #define FLAG_UNUSED_0x025    0x25 // Unused Flag
 #define FLAG_UNUSED_0x026    0x26 // Unused Flag

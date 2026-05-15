@@ -4436,6 +4436,22 @@ BattleScript_FaintBattler::
 	trytrainerslidemsgfirstoff BS_FAINTED
 	return
 
+BattleScript_BugSpacePassiveFaintBattler::
+	tryillusionoff BS_FAINTED
+	tryactivategulpmissile
+	playfaintcry BS_FAINTED
+	pause B_WAIT_TIME_LONG
+	dofaintanimation BS_FAINTED
+	cleareffectsonfaint BS_FAINTED
+	trytoclearprimalweather
+	tryrevertweatherform
+	flushtextbox
+	waitanimation
+	tryactivatereceiver BS_FAINTED
+	tryactivatesoulheart
+	trytrainerslidemsgfirstoff BS_FAINTED
+	return
+
 BattleScript_GiveExp::
 	setbyte sGIVEEXP_STATE, 0
 	getexp BS_TARGET
@@ -4583,27 +4599,16 @@ BattleScript_LocalBattleLost::
 	jumpifbattletype BATTLE_TYPE_INGAME_PARTNER, BattleScript_LocalBattleLostPrintWhiteOut
 BattleScript_LocalBattleLostPrintWhiteOut::
 	getmoneyreward
-	printstring STRINGID_PLAYERWHITEOUT
+	callnative BS_LocalBattleLostPrintWhiteOutStep1
 	waitmessage B_WAIT_TIME_LONG
-.if B_WHITEOUT_MONEY >= GEN_4
-	jumpifbattletype BATTLE_TYPE_TRAINER, BattleScript_LocalBattleLostEnd
-	printstring STRINGID_PLAYERWHITEOUT2_WILD
+	callnative BS_LocalBattleLostPrintWhiteOutStep2
 	waitmessage B_WAIT_TIME_LONG
-	printstring STRINGID_PLAYERWHITEOUT3
+	callnative BS_LocalBattleLostPrintWhiteOutStep3
 	waitmessage B_WAIT_TIME_LONG
 	end2
-BattleScript_LocalBattleLostEnd::
-	printstring STRINGID_PLAYERWHITEOUT2_TRAINER
-	waitmessage B_WAIT_TIME_LONG
-	printstring STRINGID_PLAYERWHITEOUT3
-	waitmessage B_WAIT_TIME_LONG
-	end2
-.else
-	printstring STRINGID_PLAYERWHITEOUT3
-	waitmessage B_WAIT_TIME_LONG
+
 BattleScript_LocalBattleLostEnd::
 	end2
-.endif
 
 BattleScript_CheckDomeDrew::
 	jumpifbyte CMP_EQUAL, gBattleOutcome, B_OUTCOME_DREW, BattleScript_LocalBattleLostEnd_
@@ -9019,6 +9024,7 @@ BattleScript_KazuradropTransformReturn::
 	return
 
 BattleScript_BugSpaceStart::
+	call BattleScript_AbilityPopUp
 	printstring STRINGID_BUGSPACESTART
 	waitmessage B_WAIT_TIME_LONG
 	end3
@@ -9026,11 +9032,18 @@ BattleScript_BugSpaceStart::
 BattleScript_BugSpacePassiveOHKO::
 	printstring STRINGID_BUGSPACEPASSIVEOHKO
 	playmoveanimation MOVE_HURRICANE
-	waitmessage B_WAIT_TIME_LONG
+	
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
-	printstring STRINGID_BUGSPACEPASSIVEFAINT
+	waitmessage B_WAIT_TIME_LONG
 	tryfaintmon BS_TARGET
+@	makevisible BS_PLAYER1
+@	trainerslideout BS_PLAYER1
+@	waitstate
+@	playmoveanimation MOVE_HURRICANE
+@	printstring STRINGID_BUGSPACEPLAYERBLOWNAWAY
+@	waitmessage B_WAIT_TIME_LONG
+	callnative BS_TrySetKazGameOverFromBattle
 	end2
 
 BattleScript_BugSpaceMinimize::
@@ -9046,5 +9059,38 @@ BattleScript_BugSpaceOHKO::
 BattleScript_BugSpaceP_OHKOMessage::
 	playanimation BS_TARGET_SIDE B_ANIM_STRONG_WINDS
 	printstring STRINGID_TAUNTEDBYKAZURA_P_OHKO
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+BattleScript_BugSpaceBlocked_First::
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_BUGSPACEMOVEBLOCKED
+	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_BUGSPACEKAZURABLOCKEDFIRST
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+BattleScript_BugSpaceBlocked_Repeat::
+	call BattleScript_AbilityPopUp
+	printstring STRINGID_BUGSPACEMOVEBLOCKED
+	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_BUGSPACEKAZURABLOCKEDREPEAT
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+BattleScript_BugSpaceBlocked_POHKO::
+	printstring STRINGID_BUGSPACEKAZURABLOCKEDPOHKO
+	waitmessage B_WAIT_TIME_LONG
+	end2
+
+BattleScript_BugSpaceStatDecayFirst::
+	printstring STRINGID_BUGSPACEKAZURABOOSTDECAY
+	waitmessage B_WAIT_TIME_LONG
+
+BattleScript_BugSpaceStatDecay::
+	call BattleScript_AbilityPopUp
+	playanimation BS_TARGET, B_ANIM_STATS_CHANGE
+	waitanimation
+	printstring STRINGID_BUGSPACESTATDECAY
 	waitmessage B_WAIT_TIME_LONG
 	end2

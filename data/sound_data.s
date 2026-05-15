@@ -13,5 +13,7 @@
 	.include "sound/music_player_table.inc"
 	.include "sound/song_table.inc"
 	.include "sound/direct_sound_data.inc"
+	@.include "sound/songs/mus_bb_channel_fixed.s"
+	@.include "sound/songs/midi/mus_bb_channelGO.s"
 
 	.align 2

@@ -8375,14 +8375,14 @@ const struct SpeciesInfo gSpeciesInfoGen9[] =
         "Those caught in its gaze find their strength\n"
         "slowly draining away, until they are exactly\n"
         "what it always believed them to be."),
-    .pokemonScale = 256,
+    .pokemonScale = 7,
     .pokemonOffset = 0,
     .trainerScale = 256,
     .trainerOffset = 0,
     .frontPic = gMonFrontPic_Kazuradrop,
     .frontPicSize = MON_COORDS_SIZE(40, 40),
-    .frontPicYOffset = 30,
-    .frontAnimFrames = sAnims_TwoFramePlaceHolder,
+    .frontPicYOffset = -5,
+    .frontAnimFrames = sAnims_SingleFramePlaceHolder,
     .frontAnimId = ANIM_GROW_IN_STAGES,
     .backPic = gMonBackPic_Kazuradrop,
     .backPicSize = MON_COORDS_SIZE(40, 40),
