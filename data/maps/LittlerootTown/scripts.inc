@@ -1065,7 +1065,8 @@ givemon species=SPECIES_SHIFTRY, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_B
 givemon species=SPECIES_STARMIE, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_BALL, nature=NATURE_TIMID, abilityNum=2, gender=MON_GENDERLESS, spAtkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=0, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_HYDRO_PUMP, move2=MOVE_PSYSHOCK, move3=MOVE_ICE_BEAM, move4=MOVE_RAPID_SPIN, teraType=TYPE_WATER
 givemon species=SPECIES_DUSCLOPS, level=100, item=ITEM_EVIOLITE, ball=ITEM_POKE_BALL, nature=NATURE_RELAXED, abilityNum=0, gender=MON_MALE, hpEv=252, defEv=252, spDefEv=4, hpIv=31, atkIv=0, defIv=31, speedIv=0, spAtkIv=31, spDefIv=31, move1=MOVE_NIGHT_SHADE, move2=MOVE_WILL_O_WISP, move3=MOVE_PAIN_SPLIT, move4=MOVE_TRICK_ROOM, teraType=TYPE_GHOST
 givemon species=SPECIES_AGGRON, level=100, item=ITEM_CHOICE_BAND, ball=ITEM_POKE_BALL, nature=NATURE_ADAMANT, abilityNum=1, gender=MON_MALE, hpEv=252, atkEv=252, spDefEv=4, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_HEAD_SMASH, move2=MOVE_HEAVY_SLAM, move3=MOVE_EARTHQUAKE, move4=MOVE_FIRE_PUNCH, teraType=TYPE_ROCK
-givemon species=SPECIES_FLYGON, level=100, item=ITEM_CHOICE_SCARF, ball=ITEM_POKE_BALL, nature=NATURE_JOLLY, abilityNum=0, gender=MON_MALE, atkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_EARTHQUAKE, move2=MOVE_OUTRAGE, move3=MOVE_U_TURN, move4=MOVE_STONE_EDGE, teraType=TYPE_GROUND	giveitem ITEM_REVIVE, 5
+givemon species=SPECIES_FLYGON, level=100, item=ITEM_CHOICE_SCARF, ball=ITEM_POKE_BALL, nature=NATURE_JOLLY, abilityNum=0, gender=MON_MALE, atkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_EARTHQUAKE, move2=MOVE_OUTRAGE, move3=MOVE_U_TURN, move4=MOVE_STONE_EDGE, teraType=TYPE_GROUND	
+	giveitem ITEM_REVIVE, 5
 	giveitem ITEM_FULL_RESTORE, 3
 	giveitem ITEM_MOOMOO_MILK, 4
 	giveitem ITEM_SUPER_POTION, 10
