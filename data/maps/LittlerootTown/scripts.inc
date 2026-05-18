@@ -1060,13 +1060,17 @@ ShrinkPlayerScript_Text_Shrunk:
 	giveitem ITEM_MEGA_RING, 1
 	giveitem ITEM_TERA_ORB, 1
 	setflag FLAG_SYS_POKEMON_GET
-givemon species=SPECIES_BLAZIKEN, level=100, item=ITEM_BLAZIKENITE, ball=ITEM_POKE_BALL, nature=NATURE_ADAMANT, abilityNum=2, gender=MON_MALE, atkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_FLARE_BLITZ, move2=MOVE_CLOSE_COMBAT, move3=MOVE_SWORDS_DANCE, move4=MOVE_PROTECT, teraType=TYPE_FIRE
-givemon species=SPECIES_SHIFTRY, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_BALL, nature=NATURE_LONELY, abilityNum=0, gender=MON_MALE, atkEv=252, spAtkEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_LEAF_STORM, move2=MOVE_KNOCK_OFF, move3=MOVE_SUCKER_PUNCH, move4=MOVE_GROWTH, teraType=TYPE_DARK
-givemon species=SPECIES_STARMIE, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_BALL, nature=NATURE_TIMID, abilityNum=2, gender=MON_GENDERLESS, spAtkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=0, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_HYDRO_PUMP, move2=MOVE_PSYSHOCK, move3=MOVE_ICE_BEAM, move4=MOVE_RAPID_SPIN, teraType=TYPE_WATER
-givemon species=SPECIES_DUSCLOPS, level=100, item=ITEM_EVIOLITE, ball=ITEM_POKE_BALL, nature=NATURE_RELAXED, abilityNum=0, gender=MON_MALE, hpEv=252, defEv=252, spDefEv=4, hpIv=31, atkIv=0, defIv=31, speedIv=0, spAtkIv=31, spDefIv=31, move1=MOVE_NIGHT_SHADE, move2=MOVE_WILL_O_WISP, move3=MOVE_PAIN_SPLIT, move4=MOVE_TRICK_ROOM, teraType=TYPE_GHOST
-givemon species=SPECIES_AGGRON, level=100, item=ITEM_CHOICE_BAND, ball=ITEM_POKE_BALL, nature=NATURE_ADAMANT, abilityNum=1, gender=MON_MALE, hpEv=252, atkEv=252, spDefEv=4, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_HEAD_SMASH, move2=MOVE_HEAVY_SLAM, move3=MOVE_EARTHQUAKE, move4=MOVE_FIRE_PUNCH, teraType=TYPE_ROCK
-givemon species=SPECIES_FLYGON, level=100, item=ITEM_CHOICE_SCARF, ball=ITEM_POKE_BALL, nature=NATURE_JOLLY, abilityNum=0, gender=MON_MALE, atkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_EARTHQUAKE, move2=MOVE_OUTRAGE, move3=MOVE_U_TURN, move4=MOVE_STONE_EDGE, teraType=TYPE_GROUND	
-	giveitem ITEM_REVIVE, 5
+givemon species=SPECIES_TINKATON, level=100, item=ITEM_METAL_COAT, ball=ITEM_POKE_BALL, nature=NATURE_JOLLY, abilityNum=0, gender=MON_GENDERLESS, hpEv=0, atkEv=252, defEv=0, speedEv=252, spAtkEv=0, spDefEv=4, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_GIGATON_HAMMER, move2=MOVE_KNOCK_OFF, move3=MOVE_FAKE_OUT, move4=MOVE_PROTECT, shinyMode=1
+
+givemon species=SPECIES_GRIMMSNARL, level=100, item=ITEM_LEFTOVERS, ball=ITEM_POKE_BALL, nature=NATURE_ADAMANT, abilityNum=0, gender=MON_MALE, hpEv=164, atkEv=252, defEv=0, speedEv=0, spAtkEv=0, spDefEv=92, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_SPIRIT_BREAK, move2=MOVE_THUNDER_WAVE, move3=MOVE_SUCKER_PUNCH, move4=MOVE_SWAGGER, shinyMode=0
+
+givemon species=SPECIES_SALAMENCE, level=100, item=ITEM_LUM_BERRY, ball=ITEM_POKE_BALL, nature=NATURE_TIMID, abilityNum=0, gender=MON_MALE, hpEv=4, atkEv=0, defEv=0, speedEv=252, spAtkEv=252, spDefEv=0, hpIv=31, atkIv=0, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_DRACO_METEOR, move2=MOVE_FLAMETHROWER, move3=MOVE_TAILWIND, move4=MOVE_PROTECT, shinyMode=0
+
+givemon species=SPECIES_GYARADOS, level=100, item=ITEM_ASSAULT_VEST, ball=ITEM_POKE_BALL, nature=NATURE_HASTY, abilityNum=0, gender=MON_MALE, hpEv=0, atkEv=252, defEv=0, speedEv=252, spAtkEv=4, spDefEv=0, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_DRAGON_TAIL, move2=MOVE_EARTHQUAKE, move3=MOVE_HYDRO_PUMP, move4=MOVE_ICY_WIND, shinyMode=0
+
+givemon species=SPECIES_ANNIHILAPE, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_BALL, nature=NATURE_JOLLY, abilityNum=0, gender=MON_MALE, hpEv=0, atkEv=252, defEv=0, speedEv=252, spAtkEv=0, spDefEv=4, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_RAGE_FIST, move2=MOVE_FINAL_GAMBIT, move3=MOVE_U_TURN, move4=MOVE_GUNK_SHOT, shinyMode=0
+
+givemon species=SPECIES_AMOONGUSS, level=100, item=ITEM_FOCUS_SASH, ball=ITEM_POKE_BALL, nature=NATURE_CALM, abilityNum=0, gender=MON_MALE, hpEv=252, atkEv=0, defEv=0, speedEv=0, spAtkEv=4, spDefEv=252, hpIv=31, atkIv=0, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_SPORE, move2=MOVE_RAGE_POWDER, move3=MOVE_POLLEN_PUFF, move4=MOVE_PROTECT, shinyMode=0
 	giveitem ITEM_FULL_RESTORE, 3
 	giveitem ITEM_MOOMOO_MILK, 4
 	giveitem ITEM_SUPER_POTION, 10

@@ -1,0 +1,26 @@
+// ==============================================================
+// AliceRoom.pory
+// Selector map — hidden trigger sends player to giant room,
+// normal warp sends to regular room.
+// ==============================================================
+
+mapscripts AliceRoom_MapScripts {
+    onresume {
+        // If giant room flag is set, intercept and redirect warp
+    }
+    ontransition {
+        if (var(VAR_ALICE_ROOM_GIANT) == 1) {
+            warp(MAP_ALICE_ROOM_REAL, WARP_ID_NONE, -1, -1)
+        }
+    }
+}
+
+// ==============================================================
+// HIDDEN WALL TRIGGER
+// Place coord event inside the wall tile
+// ==============================================================
+
+script AliceRoom_GiantTrigger {
+    setvar(VAR_ALICE_ROOM_GIANT, 1)
+    end
+}

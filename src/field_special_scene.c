@@ -18,6 +18,7 @@
 #include "constants/field_specials.h"
 #include "constants/songs.h"
 #include "constants/metatile_labels.h"
+#include "constants/vars.h"
 
 // Most of the boxes in the moving truck are map tiles, with the
 // exception of three boxes that are map events that jostle around
@@ -259,6 +260,12 @@ static void Task_HandleTruckSequence(u8 taskId)
 
 void ExecuteTruckSequence(void)
 {
+    // If we're forcing the player into the post-clock intro state,
+    // skip the truck intro sequence to avoid re-spawning duplicate
+    // outside objects/NPCs.
+    if (VarGet(VAR_LITTLEROOT_INTRO_STATE) >= 7)
+        return;
+
     MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Top);
     MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
     MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Bottom);
