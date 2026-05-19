@@ -13,13 +13,49 @@
   "show_map_name": true,
   "battle_scene": "MAP_BATTLE_SCENE_GYM",
   "connections": null,
-  "object_events": [],
+  "object_events": [
+    {
+      "local_id": "LOCALID_DEBUG_MONS",
+      "graphics_id": "OBJ_EVENT_GFX_POKE_BALL",
+      "x": 3,
+      "y": 2,
+      "elevation": 0,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "AliceRoom_DebugMons_Proceed",
+      "flag": "FLAG_LR_DEBUG_TEAM"
+    },
+    {
+      "local_id": "LOCALID_ALICE",
+      "graphics_id": "OBJ_EVENT_GFX_ASTRA",
+      "x": 7,
+      "y": 2,
+      "elevation": 0,
+      "movement_type": "MOVEMENT_TYPE_NONE",
+      "movement_range_x": 0,
+      "movement_range_y": 0,
+      "trainer_type": "TRAINER_TYPE_NONE",
+      "trainer_sight_or_berry_tree_id": "0",
+      "script": "AliceRoom_Alice_Fight",
+      "flag": "0"
+    }
+  ],
   "warp_events": [
     {
       "x": 4,
       "y": 1,
       "elevation": 0,
       "dest_map": "MAP_ALICES_ROOM",
+      "dest_warp_id": "0"
+    },
+    {
+      "x": 4,
+      "y": 8,
+      "elevation": 0,
+      "dest_map": "MAP_ALICE_ROOM",
       "dest_warp_id": "0"
     }
   ],

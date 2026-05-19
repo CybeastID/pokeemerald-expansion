@@ -200,6 +200,12 @@
       "map": "MAP_ALICES_ROOM",
       "x": 2,
       "y": 6
+    },
+    {
+      "id": "HEAL_LOCATION_ALICE_ROOM",
+      "map": "MAP_ALICE_ROOM",
+      "x": 0,
+      "y": 8
     }
   ]
 }

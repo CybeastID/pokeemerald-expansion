@@ -9068,6 +9068,7 @@ BattleScript_BugSpaceBlocked_First::
 	waitmessage B_WAIT_TIME_LONG
 	printstring STRINGID_BUGSPACEKAZURABLOCKEDFIRST
 	waitmessage B_WAIT_TIME_LONG
+	tryfaintmon BS_ATTACKER
 	end2
 
 BattleScript_BugSpaceBlocked_Repeat::
@@ -9076,11 +9077,13 @@ BattleScript_BugSpaceBlocked_Repeat::
 	waitmessage B_WAIT_TIME_LONG
 	printstring STRINGID_BUGSPACEKAZURABLOCKEDREPEAT
 	waitmessage B_WAIT_TIME_LONG
+	tryfaintmon BS_ATTACKER
 	end2
 
 BattleScript_BugSpaceBlocked_POHKO::
 	printstring STRINGID_BUGSPACEKAZURABLOCKEDPOHKO
 	waitmessage B_WAIT_TIME_LONG
+	tryfaintmon BS_ATTACKER
 	end2
 
 BattleScript_BugSpaceStatDecayFirst::

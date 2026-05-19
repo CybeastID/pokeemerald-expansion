@@ -4814,4 +4814,4 @@ Text_Alice_Intro::
 	.string "And forcing you to battle her. Now.$"
 
 Text_Alice_Defeated::
-	.string "Defeated? Me...?"
+	.string "Defeated? Me...?$"

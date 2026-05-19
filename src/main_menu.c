@@ -1078,7 +1078,7 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
             case ACTION_NEW_GAME:
             default:
                 {
-                    const u8 *name = COMPOUND_STRING("CY"); // "STU"
+                    const u8 *name = COMPOUND_STRING("Peter"); // "STU"
                     gSaveBlock2Ptr->playerGender = MALE;
                     StringCopyN(gSaveBlock2Ptr->playerName, name, PLAYER_NAME_LENGTH);
                     gSaveBlock2Ptr->playerName[PLAYER_NAME_LENGTH] = EOS;
