@@ -4618,7 +4618,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                 effect++;
             }
             break;
-        case ABILITY_SOUL_PARASITE:
+        case ABILITY_BUG_SPACE:
             if (!gSpecialStatuses[battler].switchInAbilityDone)
             {
                 gSpecialStatuses[battler].switchInAbilityDone = TRUE;
@@ -11319,7 +11319,7 @@ bool32 IsMimikyuDisguised(u32 battler)
 }
 
 // static void HandleSoulParasiteEffect(struct Pokemon *attacker, struct Pokemon *defender) {
-//     if (!IsAbilityActive(attacker, ABILITY_SOUL_PARASITE)) return;
+//     if (!IsAbilityActive(attacker, ABILITY_BUG_SPACE)) return;
 
 //     // Drain 1/8 of the opponent's HP
 //     u32 damage = defender->hpMax / 8;

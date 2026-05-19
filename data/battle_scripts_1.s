@@ -9037,12 +9037,6 @@ BattleScript_BugSpacePassiveOHKO::
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
 	waitmessage B_WAIT_TIME_LONG
 	tryfaintmon BS_TARGET
-@	makevisible BS_PLAYER1
-@	trainerslideout BS_PLAYER1
-@	waitstate
-@	playmoveanimation MOVE_HURRICANE
-@	printstring STRINGID_BUGSPACEPLAYERBLOWNAWAY
-@	waitmessage B_WAIT_TIME_LONG
 	callnative BS_TrySetKazGameOverFromBattle
 	end2
 

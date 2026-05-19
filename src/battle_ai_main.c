@@ -6973,7 +6973,6 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                 uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_PSYCHIC, battlerAtk, battlerDef);
                 if (effectiveness >= UQ_4_12(1.0))
                 {
-                    u32 bestDmgMove = GetBestDmgMoveFromBattler(battlerDef, battlerAtk, AI_DEFENDING);
                     if (!CanIndexMoveFaintTarget(battlerDef, battlerAtk, bestDmgMove, AI_DEFENDING))
                         ADJUST_SCORE(15);
                 }

@@ -6,7 +6,7 @@ SINGLE_BATTLE_TEST("Bug Space blocks Explosion but still causes user to faint wi
     GIVEN {
         PLAYER(SPECIES_REGISTEEL) { Moves(MOVE_EXPLOSION); }
         PLAYER(SPECIES_WYNAUT);
-        OPPONENT(SPECIES_KAZURADROP) { Level(105); Ability(ABILITY_SOUL_PARASITE); }
+        OPPONENT(SPECIES_KAZURADROP) { Level(105); Ability(ABILITY_BUG_SPACE); }
         OPPONENT(SPECIES_GOTHITELLE) { HP(0); }
     } WHEN {
         TURN { MOVE(player, MOVE_EXPLOSION); SEND_OUT(player, 1); }
@@ -27,7 +27,7 @@ SINGLE_BATTLE_TEST("Bug Space blocks Explosion but still causes the user to fain
     GIVEN {
         PLAYER(SPECIES_WOBBUFFET) { Moves(MOVE_EXPLOSION); }
         PLAYER(SPECIES_WYNAUT);
-        OPPONENT(SPECIES_KAZURADROP) { Ability(ABILITY_SOUL_PARASITE); }
+        OPPONENT(SPECIES_KAZURADROP) { Ability(ABILITY_BUG_SPACE); }
     } WHEN {
         TURN { MOVE(player, MOVE_EXPLOSION); SEND_OUT(player, 1); }
     } SCENE {
