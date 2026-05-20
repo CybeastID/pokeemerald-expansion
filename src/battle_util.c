@@ -52,6 +52,7 @@
 #include "constants/trainers.h"
 #include "constants/weather.h"
 #include "constants/pokemon.h"
+#include "kazuradrop_battle_ui.h"
 
 /*
 NOTE: The data and functions in this file up until (but not including) sSoundMovesTable
@@ -4629,10 +4630,12 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     VarSet(VAR_TEMP_0, gBattleResults.battleTurnCounter);
                     gBattleStruct->bugSpace.sourceBattler = battler;
                     // gBattleStruct->bugSpace.thresholdPercent = 50;
-                    gBattleStruct->bugSpace.bpThreshold = 140;
+                    gBattleStruct->bugSpace.bpThreshold = 150;
                     // gBattleStruct->bugSpace.bpThreshold = 10;
                     gBattleStruct->bugSpace.bpDecayRate = 10;
                     gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
+                    gBattleStruct->bugSpace.entryDefenseTimer = 2;
+                    CreateBugSpacePanel(battler);
                     BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);
                     effect++;
                 }

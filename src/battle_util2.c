@@ -11,9 +11,11 @@
 #include "random.h"
 #include "battle_scripts.h"
 #include "constants/battle_string_ids.h"
+#include "kazuradrop_battle_ui.h"
 
 void AllocateBattleResources(void)
 {
+    InitKazuradropBattleIcons();
     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
         InitTrainerHillBattleStruct();
 
@@ -53,6 +55,7 @@ void FreeBattleResources(void)
         FreeTrainerHillBattleStruct();
 
     gFieldStatuses = 0;
+    DestroyAllKazuradropBuffIcons();
     if (gBattleResources != NULL)
     {
         FREE_AND_SET_NULL(gBattleStruct);

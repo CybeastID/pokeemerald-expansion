@@ -8999,6 +8999,7 @@ BattleScript_InfiniteGrowthStatUp::
 	return
 
 BattleScript_KazuradropTransform::
+	callnative BS_BugSpacePanelSlideOut
 	printstring STRINGID_KAZURASPOKE
 	waitmessage B_WAIT_TIME_SHORT
 	printstring STRINGID_TAUNTEDBYKAZURA
@@ -9012,7 +9013,11 @@ BattleScript_KazuradropTransform::
 	waitanimation
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+	callnative BS_BugSpacePanelSlideIn
 	callnative BS_RestoreAttacker
+@	printstring STRINGID_PKMNINFINITEGROWTHSTART
+	waitmessage B_WAIT_TIME_LONG
+	
 	return
 
 BattleScript_KazuradropTransformReturn::

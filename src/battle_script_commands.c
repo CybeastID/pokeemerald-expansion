@@ -72,6 +72,7 @@
 #include "load_save.h"
 #include "test/test_runner_battle.h"
 #include "kazuradrop_gameover.h"
+#include "kazuradrop_battle_ui.h"
 
 // table to avoid ugly powing on gba (courtesy of doesnt)
 // this returns (i^2.5)/4
@@ -1412,6 +1413,9 @@ static void JumpIfMoveFailed(u32 adder, u32 move, u32 moveType, const u8 *failIn
     if (IsMoveBlockedByBugSpace(move))
     {
         gBattleStruct->moveResultFlags[gBattlerTarget] |= MOVE_RESULT_NO_EFFECT;
+        // Show Invincible icon for explosive moves (Explosion, Self-Destruct, Misty Explosion)
+        if (GetMoveEffect(move) == EFFECT_EXPLOSION || GetMoveEffect(move) == EFFECT_MISTY_EXPLOSION)
+            CreateKazuradropBuffIcon(gBattlerTarget, KA_BUFF_INVINCIBLE);
     if (gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
         gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_POHKO;
     else if (!gBattleStruct->bugSpace.hasBlocked)
@@ -2487,7 +2491,7 @@ static bool32 TryTriggerKazuradropTransformation(u32 battler)
     // Clamp damage at 10% HP threshold
     gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - tenPercentHp;
     gBattleStruct->bugSpace.sourceBattler = battler;
-
+    
     return TRUE;
 }
 
@@ -2507,13 +2511,31 @@ static void ApplyKazuradropTransformation(u32 battler)
     // Save original moves
     for (i = 0; i < MAX_MON_MOVES; i++)
         gBattleStruct->bugSpace.originalMoves[battler][i] = gBattleMons[battler].moves[i];
-    // Swap to Sakura Five moves
+    // Swap to Sakura Five moves (Infinite Growth in slot 2 is auto-triggered)
     gBattleMons[battler].moves[0] = MOVE_MELT_VIRUS;
     gBattleMons[battler].moves[1] = MOVE_TRASH_CRUSH;
     gBattleMons[battler].moves[2] = MOVE_INFINITE_GROWTH;
     gBattleMons[battler].moves[3] = MOVE_CRACK_ICE;
     for (i = 0; i < MAX_MON_MOVES; i++)
         gBattleMons[battler].pp[i] = GetMovePP(gBattleMons[battler].moves[i]);
+    // Activate Guts (one-turn cheat death) and show icon
+    gBattleStruct->bugSpace.gutsActive |= (1u << battler);
+    CreateKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+    // Auto-trigger Infinite Growth: set the volatile and replace the move slot immediately. Currently commented out so I can decide how best to implement visual feedback.
+    /* gBattleMons[battler].volatiles.infiniteGrowth = TRUE;
+    // Replace Infinite Growth slot with a random move (same as BS_TryInfiniteGrowth)
+    {
+        static const u16 sInfiniteGrowthReplacements[] = {
+            MOVE_SPIRIT_BREAK,
+            MOVE_GIGA_DRAIN,
+            MOVE_MOONBLAST,
+            MOVE_BUG_BUZZ,
+        };
+        u32 roll = Random() % 4;
+        gBattleMons[battler].moves[2] = sInfiniteGrowthReplacements[roll];
+        gBattleMons[battler].pp[2] = GetMovePP(sInfiniteGrowthReplacements[roll]);
+        
+    }*/
 }
 
 static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nextInstr)
@@ -2595,8 +2617,25 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
             }
             else
             {
-                gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp;
-                gBattleMons[battler].hp = 0;
+                // Check for Guts (cheat death) - Kazuradrop snaps to 50% HP instead
+                if ((gBattleStruct->bugSpace.gutsActive & (1u << battler))
+                    && gBattleMons[battler].species == SPECIES_KAZURADROP)
+                {
+                    // Clear Guts flag
+                    gBattleStruct->bugSpace.gutsActive &= ~(1u << battler);
+                    // Destroy Guts icon
+                    DestroyKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+                    // Snap HP to 50% of max instantly
+                    gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - (gBattleMons[battler].maxHP / 2);
+                    if (gBattleStruct->moveDamage[battler] < 1)
+                        gBattleStruct->moveDamage[battler] = 1;
+                    gBattleMons[battler].hp = gBattleMons[battler].maxHP / 2;
+                }
+                else
+                {
+                    gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp;
+                    gBattleMons[battler].hp = 0;
+                }
             }
 
             // Apply Kazuradrop transformation effects after damage is dealt

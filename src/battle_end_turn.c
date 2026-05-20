@@ -6,6 +6,7 @@
 #include "battle_ai_util.h"
 #include "battle_gimmick.h"
 #include "battle_scripts.h"
+#include "kazuradrop_battle_ui.h"
 #include "constants/battle.h"
 #include "constants/battle_string_ids.h"
 #include "constants/abilities.h"
@@ -1396,6 +1397,8 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
     {
         gBattleStruct->bugSpace.bpThreshold = 0;
     }
+
+    RefreshBugSpaceNumber(battler);
 
     // Update current tier based on new threshold
     enum BugSpaceThresholdTier oldTier = gBattleStruct->bugSpace.currentTier;

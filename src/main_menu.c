@@ -1075,19 +1075,12 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
         ChangeBgY(1, 0, BG_COORD_SET);
         switch (action)
         {
+            // AFTER:
             case ACTION_NEW_GAME:
             default:
-                {
-                    const u8 *name = COMPOUND_STRING("Peter"); // "STU"
-                    gSaveBlock2Ptr->playerGender = MALE;
-                    StringCopyN(gSaveBlock2Ptr->playerName, name, PLAYER_NAME_LENGTH);
-                    gSaveBlock2Ptr->playerName[PLAYER_NAME_LENGTH] = EOS;
-
-                    gPlttBufferUnfaded[0] = RGB_BLACK;
-                    gPlttBufferFaded[0] = RGB_BLACK;
-                    SetMainCallback2(CB2_NewGame);
-                    DestroyTask(taskId);
-                }
+                gPlttBufferUnfaded[0] = RGB_BLACK;
+                gPlttBufferFaded[0] = RGB_BLACK;
+                gTasks[taskId].func = Task_NewGameGenderSelect_Init;
                 break;
             case ACTION_CONTINUE:
                 gPlttBufferUnfaded[0] = RGB_BLACK;

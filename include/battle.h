@@ -287,6 +287,9 @@ struct BugSpaceData
     enum BugSpaceThresholdTier currentTier;  // Current threshold tier for effects
     u16 originalMoves[MAX_BATTLERS_COUNT][MAX_MON_MOVES]; // Original moves before Bug Space swapping
     u8 moveSwapActive;            // Bitmask per battler: 1 if their moves have been swapped
+    u8 entryDefenseTimer;         // Turns remaining for the entry defensive buff
+    u8 gutsActive;                // Bitmask per battler: 1 if Guts (Endure) is active
+    u8 invincibleActive;          // Bitmask per battler: 1 if Kazuradrop invincible icon should be shown
 };
 
 struct AI_SavedBattleMon

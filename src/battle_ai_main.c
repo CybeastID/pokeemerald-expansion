@@ -7015,7 +7015,14 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         else if (move == MOVE_TOXIC)
         {
             // Umbreon is a Toxic staller - boost if opponent isn't already statused
-            if (!(gBattleMons[battlerDef].status1 & STATUS1_ANY))
+            // and target is not immune to Toxic
+            enum Ability defAbility = GetBattlerAbility(battlerDef);
+            if (!(gBattleMons[battlerDef].status1 & STATUS1_ANY)
+             && !IS_BATTLER_ANY_TYPE(battlerDef, TYPE_POISON, TYPE_STEEL)
+             && defAbility != ABILITY_IMMUNITY
+             && defAbility != ABILITY_MAGIC_BOUNCE
+             && defAbility != ABILITY_GOOD_AS_GOLD
+             && defAbility != ABILITY_PURIFYING_SALT)
                 ADJUST_SCORE(12);
         }
         else if (move == MOVE_FOUL_PLAY)
