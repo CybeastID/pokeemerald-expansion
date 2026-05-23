@@ -245,6 +245,11 @@ static void MainMenu_FormatSavegameTime(void);
 static void MainMenu_FormatSavegameBadges(void);
 static void NewGameBirchSpeech_CreateDialogueWindowBorder(u8, u8, u8, u8, u8, u8);
 
+static void Task_NewGameGenderSelect_Init(u8);
+// static void Task_NewGameGenderSelect_WaitForText(u8);
+static void Task_NewGameGenderSelect_ChooseGender(u8);
+static void Task_NewGameGenderSelect_StartNaming(u8);
+
 // .rodata
 
 static const u16 sBirchSpeechBgPals[][16] = {
@@ -421,6 +426,33 @@ static const struct WindowTemplate sNewGameBirchSpeechTextWindows[] =
         .baseBlock = 0x85
     },
     DUMMY_WIN_TEMPLATE
+};
+
+static const u8 sText_BoyOrGirl[] = _("Are you a boy or a girl?");
+
+static const struct MenuAction sMenuActions_GenderSelect[] = {
+    {COMPOUND_STRING("BOY"),  {NULL}},
+    {COMPOUND_STRING("GIRL"), {NULL}}
+};
+
+static const struct WindowTemplate sWindowTemplate_GenderPrompt = {
+    .bg = 0,
+    .tilemapLeft = 2,
+    .tilemapTop = 15,
+    .width = 27,
+    .height = 4,
+    .paletteNum = 15,
+    .baseBlock = 1
+};
+
+static const struct WindowTemplate sWindowTemplate_GenderMenu = {
+    .bg = 0,
+    .tilemapLeft = 2,
+    .tilemapTop = 10,
+    .width = 6,
+    .height = 4,
+    .paletteNum = 15,
+    .baseBlock = 0x70
 };
 
 static const u16 sMainMenuBgPal[] = INCBIN_U16("graphics/interface/main_menu_bg.gbapal");
@@ -1127,6 +1159,66 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
     }
 }
 
+static u8 sGenderPromptWinId;
+static u8 sGenderMenuWinId;
+
+static void Task_NewGameGenderSelect_Init(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        sGenderPromptWinId = AddWindow(&sWindowTemplate_GenderPrompt);
+        sGenderMenuWinId   = AddWindow(&sWindowTemplate_GenderMenu);
+
+        FillWindowPixelBuffer(sGenderPromptWinId, PIXEL_FILL(1));
+        AddTextPrinterParameterized(sGenderPromptWinId, FONT_NORMAL, sText_BoyOrGirl, 0, 1, 0, NULL);
+        PutWindowTilemap(sGenderPromptWinId);
+        DrawMainMenuWindowBorder(&sWindowTemplate_GenderPrompt, MAIN_MENU_BORDER_TILE);
+        CopyWindowToVram(sGenderPromptWinId, COPYWIN_FULL);
+
+        FillWindowPixelBuffer(sGenderMenuWinId, PIXEL_FILL(1));
+        PrintMenuTable(sGenderMenuWinId, ARRAY_COUNT(sMenuActions_GenderSelect), sMenuActions_GenderSelect);
+        InitMenuInUpperLeftCornerNormal(sGenderMenuWinId, ARRAY_COUNT(sMenuActions_GenderSelect), 0);
+        PutWindowTilemap(sGenderMenuWinId);
+        DrawMainMenuWindowBorder(&sWindowTemplate_GenderMenu, MAIN_MENU_BORDER_TILE);
+        CopyWindowToVram(sGenderMenuWinId, COPYWIN_FULL);
+        BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK); // fade in from black
+        gTasks[taskId].func = Task_NewGameGenderSelect_ChooseGender;
+    }
+}
+
+static void Task_NewGameGenderSelect_ChooseGender(u8 taskId)
+{
+ 
+    if (gPaletteFade.active)
+        return;
+
+    int gender = NewGameBirchSpeech_ProcessGenderMenuInput();
+
+    switch (gender)
+    {
+        case MALE:
+        case FEMALE:
+            PlaySE(SE_SELECT);
+            gSaveBlock2Ptr->playerGender = gender;
+            RemoveWindow(sGenderPromptWinId);
+            RemoveWindow(sGenderMenuWinId);
+            FreeAllWindowBuffers();
+            BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+            gTasks[taskId].func = Task_NewGameGenderSelect_StartNaming;
+            break;
+    }
+}
+
+static void Task_NewGameGenderSelect_StartNaming(u8 taskId)
+{
+    if (!gPaletteFade.active)
+    {
+        NewGameBirchSpeech_SetDefaultPlayerName(Random() % NUM_PRESET_NAMES);
+        DestroyTask(taskId);
+        DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr->playerName,
+                       gSaveBlock2Ptr->playerGender, 0, 0, CB2_NewGame);
+    }
+}
 static void Task_HandleMainMenuBPressed(u8 taskId)
 {
     if (!gPaletteFade.active)

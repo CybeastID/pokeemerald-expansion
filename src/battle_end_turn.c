@@ -68,6 +68,13 @@ static bool32 HandleEndTurnVarious(u32 battler)
         if (B_CHARGE < GEN_9 && gBattleMons[i].volatiles.chargeTimer > 0)
             gBattleMons[i].volatiles.chargeTimer--;
 
+        // Kazuradrop Guts: 1-turn cheat-death window after transformation (timer volatile)
+        if (gBattleMons[i].volatiles.kazuradropGuts > 0)
+        {
+            if (--gBattleMons[i].volatiles.kazuradropGuts == 0)
+                DestroyKazuradropBuffIcon(i, KA_BUFF_GUTS);
+        }
+
         if (gDisableStructs[i].laserFocusTimer > 0 && --gDisableStructs[i].laserFocusTimer == 0)
             gBattleMons[i].volatiles.laserFocus = FALSE;
 

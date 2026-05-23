@@ -171,6 +171,8 @@ enum {
 };
 
 #define INSTANT_HP_BAR_DROP     0x7FFF
+#define INSTANT_HP_BAR_SNAP  0x7FFE
+
 
 #define PARTY_SUMM_SKIP_DRAW_DELAY (1 << 7)
 
