@@ -312,8 +312,8 @@ static void LoadKazuBuffIconGfx(void)
 static void WriteThresholdIntoPanel(u32 panelSpriteId)
 {
     u8 numberSpriteId = sNumberSpriteId[gSprites[panelSpriteId].tBattler];
-    // if (numberSpriteId == MAX_SPRITES)
-    //    return;
+    if (numberSpriteId == MAX_SPRITES)
+        return;
 
     u8 text[8];
     u32 windowId;
@@ -480,6 +480,9 @@ void TriggerBugSpacePanelSlideIn(u32 battler)
     gSprites[spriteId].invisible  = FALSE;
     gSprites[spriteId].x          = -(s16)BUGSPACE_PANEL_WIDTH;
     gSprites[spriteId].tState     = PANEL_SLIDING_IN;
+
+    // Snap the number immediately on activation (do not wait for slide-in to finish).
+    WriteThresholdIntoPanel(spriteId);
 }
 
 void DestroyBugSpacePanel(u32 battler)
@@ -523,7 +526,7 @@ void ReshowKazuradropBattleUI(void)
     // Recreate icons.
     for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
     {
-        if (gBattleStruct->bugSpace.gutsActive & (1u << battler))
+        if (gBattleMons[battler].volatiles.kazuradropGuts)
             CreateKazuradropBuffIcon(battler, KA_BUFF_GUTS);
 
         if (gBattleStruct->bugSpace.invincibleActive & (1u << battler))
@@ -546,8 +549,6 @@ void CreateKazuradropBuffIcon(u32 battler, u32 iconType)
     switch (iconType)
     {
     case KA_BUFF_GUTS:
-        if (gBattleStruct != NULL)
-            gBattleStruct->bugSpace.gutsActive |= (1u << battler);
         if (sGutsSpriteId[battler] != MAX_SPRITES)
             return;
         if (GetSpriteTileStartByTag(TAG_KAZU_GUTS_ICON) == 0xFFFF)
@@ -598,8 +599,6 @@ void DestroyKazuradropBuffIcon(u32 battler, u32 iconType)
     {
     case KA_BUFF_GUTS:
         spriteId = sGutsSpriteId[battler];
-        if (gBattleStruct != NULL)
-            gBattleStruct->bugSpace.gutsActive &= ~(1u << battler);
         if (spriteId != MAX_SPRITES)
         {
             DestroySprite(&gSprites[spriteId]);
