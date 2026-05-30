@@ -897,6 +897,10 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_BUGSPACEKAZURABLOCKEDPOHKO]            = COMPOUND_STRING("“At that size, you couldn't hurt a thing even if I let you. Ufufu.”"),
     [STRINGID_BUGSPACESTATDECAY]                     = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}'s raised stats were lowered!"),
     [STRINGID_BUGSPACEKAZURABOOSTDECAY]            = COMPOUND_STRING("“Insects like you actually think you have POWER in this world?”"),
+    [STRINGID_KAZURADROP_GUTS]                      = COMPOUND_STRING("Kazuradrop's Guts activated!"),
+    [STRINGID_KAZURADROP_GUTS2]                = COMPOUND_STRING("“Phwah? It's like you insects have never even seen a Servant before! You honestly thought THAT would keep ME down?”"),
+    [STRINGID_KAZURADROP_GUTS3]                = COMPOUND_STRING("“Now, I'll give you a taste of the power of the Moon Cell...”"),
+    [STRINGID_KAZURADROP_CQPUNISH]             = COMPOUND_STRING("Kazuradrop's parameters are rapidly increasing!")
 };
 
 const u16 gTrainerUsedItemStringIds[] =

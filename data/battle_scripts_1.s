@@ -9096,3 +9096,10 @@ BattleScript_BugSpaceStatDecay::
 	printstring STRINGID_BUGSPACESTATDECAY
 	waitmessage B_WAIT_TIME_LONG
 	end2
+
+BattleScript_KazuradropGutsProc::
+    playanimation BS_SCRIPTING, B_ANIM_HANGED_ON
+    printstring STRINGID_KAZURADROP_GUTS
+    waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_KAZURADROP_GUTS2
+    end2

@@ -2668,7 +2668,11 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                     BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, INSTANT_HP_BAR_SNAP);
                     gBattleSpritesDataPtr->battleBars[battler].currValue = gBattleMons[battler].hp;
                     MarkBattlerForControllerExec(battler);
-                    gBattlescriptCurrInstr = nextInstr;
+                    SetMonData(&gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_HP, &gBattleMons[battler].hp);
+                    gBattleScripting.battler = battler;
+                    BattleScriptPush(nextInstr);
+                    gBattlescriptCurrInstr = BattleScript_KazuradropGutsProc;
+                    
                     return;
 
                     // Don't emit INSTANT_HP_BAR_SNAP here - it will be handled by

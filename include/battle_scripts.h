@@ -865,5 +865,6 @@ extern const u8 BattleScript_BugSpaceBlocked_Repeat[];
 extern const u8 BattleScript_BugSpaceBlocked_POHKO[];
 extern const u8 BattleScript_BugSpaceStatDecay[];
 extern const u8 BattleScript_BugSpaceStatDecayFirst[];
+extern const u8 BattleScript_KazuradropGutsProc[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H
