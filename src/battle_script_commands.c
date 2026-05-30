@@ -73,6 +73,10 @@
 #include "test/test_runner_battle.h"
 #include "kazuradrop_gameover.h"
 #include "kazuradrop_battle_ui.h"
+#include "gba/isagbprint.h"
+#include "constants/flags.h"
+
+
 
 // table to avoid ugly powing on gba (courtesy of doesnt)
 // this returns (i^2.5)/4
@@ -2403,22 +2407,35 @@ static void Cmd_healthbarupdate(void)
               && !DoesDisguiseBlockMove(battler, gCurrentMove))
         {
             s32 damage = gBattleStruct->moveDamage[battler];
-            // If this is a Kazuradrop transformation hit, clamp the visual damage
-            if (gBattleMons[battler].species == SPECIES_KAZURADROP
-            && gBattleStruct->bugSpace.active
-            && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
+            // Check if this is a Guts snap (moveDamage == 0 signals this)
+            /* if (FlagGet(FLAG_GUTS_SNAP))
             {
-                u32 tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
-                if (tenPercentHp == 0) tenPercentHp = 1;
-                if (gBattleMons[battler].hp > tenPercentHp
-                && (s32)gBattleMons[battler].hp - damage < (s32)tenPercentHp)
-                    damage = gBattleMons[battler].hp - tenPercentHp;
+                FlagClear(FLAG_GUTS_SNAP);
+                u32 kazuBattler = gBattleStruct->bugSpace.sourceBattler;
+                BtlController_EmitHealthBarUpdate(kazuBattler, B_COMM_TO_CONTROLLER, INSTANT_HP_BAR_SNAP);
+                MarkBattlerForControllerExec(kazuBattler);
             }
-            damage = min(damage, 10000);
-            BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, damage);
-            MarkBattlerForControllerExec(battler);
-            if (IsOnPlayerSide(battler) && damage > 0)
-                gBattleResults.playerMonWasDamaged = TRUE;
+            */
+            
+            // else
+            // {
+                // If this is a Kazuradrop transformation hit, clamp the visual damage
+                if (gBattleMons[battler].species == SPECIES_KAZURADROP
+                && gBattleStruct->bugSpace.active
+                && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
+                {
+                    u32 tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
+                    if (tenPercentHp == 0) tenPercentHp = 1;
+                    if (gBattleMons[battler].hp > tenPercentHp
+                    && (s32)gBattleMons[battler].hp - damage < (s32)tenPercentHp)
+                        damage = gBattleMons[battler].hp - tenPercentHp;
+                }
+                damage = min(damage, 10000);
+                BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, damage);
+                MarkBattlerForControllerExec(battler);
+                if (IsOnPlayerSide(battler) && damage > 0)
+                    gBattleResults.playerMonWasDamaged = TRUE;
+            // }
         }
         break;
     }
@@ -2519,8 +2536,7 @@ static void ApplyKazuradropTransformation(u32 battler)
     for (i = 0; i < MAX_MON_MOVES; i++)
         gBattleMons[battler].pp[i] = GetMovePP(gBattleMons[battler].moves[i]);
     // Activate Guts (one-turn cheat death) and show icon
-    gBattleStruct->bugSpace.gutsActive |= (1u << battler);
-    CreateKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+    gBattleMons[battler].volatiles.kazuradropGuts = 2;
     // Auto-trigger Infinite Growth: set the volatile and replace the move slot immediately. Currently commented out so I can decide how best to implement visual feedback.
     /* gBattleMons[battler].volatiles.infiniteGrowth = TRUE;
     // Replace Infinite Growth slot with a random move (same as BS_TryInfiniteGrowth)
@@ -2618,18 +2634,47 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
             else
             {
                 // Check for Guts (cheat death) - Kazuradrop snaps to 50% HP instead
-                if ((gBattleStruct->bugSpace.gutsActive & (1u << battler))
-                    && gBattleMons[battler].species == SPECIES_KAZURADROP)
+                if (gBattleMons[battler].volatiles.kazuradropGuts)
                 {
-                    // Clear Guts flag
-                    gBattleStruct->bugSpace.gutsActive &= ~(1u << battler);
+                    DebugPrintf("Guts branch battler: %d species: %d", battler, gBattleMons[battler].species);
+                    // Clear 1-turn Guts (cheat death) so it can't be re-triggered
+                    gBattleMons[battler].volatiles.kazuradropGuts = 0;
                     // Destroy Guts icon
                     DestroyKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+                    // u32 preSnapHP = gBattleMons[battler].hp;
+
                     // Snap HP to 50% of max instantly
-                    gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - (gBattleMons[battler].maxHP / 2);
-                    if (gBattleStruct->moveDamage[battler] < 1)
-                        gBattleStruct->moveDamage[battler] = 1;
                     gBattleMons[battler].hp = gBattleMons[battler].maxHP / 2;
+                    FlagSet(FLAG_GUTS_SNAP);
+                    // Signal to MOVE_DAMAGE_HP_UPDATE that this is a Guts snap
+                    
+                    // Ensure controller uses the transformed maxHP before applying the snap.
+                    /* BtlController_EmitSetMonData(
+                        battler,
+                        B_COMM_TO_CONTROLLER,
+                        REQUEST_MAX_HP_BATTLE,
+                        1u << gBattleStruct->battlerPartyIndexes[battler],
+                        sizeof(gBattleMons[battler].maxHP),
+                        &gBattleMons[battler].maxHP);
+                    
+                    BtlController_EmitSetMonData(
+                        battler,
+                        B_COMM_TO_CONTROLLER,
+                        REQUEST_HP_BATTLE,
+                        0,
+                        sizeof(gBattleMons[battler].hp),
+                        &gBattleMons[battler].hp); */
+
+                    BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, INSTANT_HP_BAR_SNAP);
+                    gBattleSpritesDataPtr->battleBars[battler].currValue = gBattleMons[battler].hp;
+                    MarkBattlerForControllerExec(battler);
+                    gBattlescriptCurrInstr = nextInstr;
+                    return;
+
+                    // Don't emit INSTANT_HP_BAR_SNAP here - it will be handled by
+                    // MOVE_DAMAGE_HP_UPDATE which runs later and needs to know this is a snap.
+                    // Setting moveDamage = 0 above signals to MOVE_DAMAGE_HP_UPDATE.
+                    // The REQUEST_HP_BATTLE sync above ensures party data matches gBattleMons.
                 }
                 else
                 {
