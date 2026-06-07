@@ -46,7 +46,8 @@ void BS_ShowKazuGutsIcon(void);
 void BS_ShowKazuInvincibleIcon(void);
 void BS_BugSpacePanelSlideIn(void);
 void BS_BugSpacePanelSlideOut(void);
-
+void BS_ShowKazuraDialogueBox(void);
+void BS_ShowKazuraDialogue(void);
 // ---------------------------------------------------------------
 // Initialization and cleanup
 // ---------------------------------------------------------------
@@ -57,5 +58,15 @@ void FreeKazuradropBattleIconGfx(void);
 // Called by reshow_battle_screen.c after menu open/return wipes sprites.
 // Recreates the Bug Space panel + Kazuradrop icons based on gBattleStruct->bugSpace flags.
 void ReshowKazuradropBattleUI(void);
+
+// ---------------------------------------------------------------
+// Kazuradrop dialogue box (Moon Cell styled message window)
+// ---------------------------------------------------------------
+
+// Show her styled dialogue box with the given string, auto-dismisses after delay.
+// Call from BattleScript via BS_ShowKazuraDialogue.
+void ShowKazuraDialogueBox(const u8 *str);
+void HideKazuraDialogueBox(void);
+
 
 #endif // GUARD_KAZURADROP_BATTLE_UI_H

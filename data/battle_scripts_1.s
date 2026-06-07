@@ -9002,8 +9002,10 @@ BattleScript_KazuradropTransform::
 	callnative BS_BugSpacePanelSlideOut
 	printstring STRINGID_KAZURASPOKE
 	waitmessage B_WAIT_TIME_SHORT
-	printstring STRINGID_TAUNTEDBYKAZURA
-	waitmessage B_WAIT_TIME_LONG
+	@ printstring STRINGID_TAUNTEDBYKAZURA
+	@ waitmessage B_WAIT_TIME_LONG
+	callnative BS_ShowKazuraDialogueBox, STRINGID_TAUNTEDBYKAZURA
+	callnative BS_ShowKazuraDialogue
 	callnative BS_ApplyKazuradropTransformation
 	callnative BS_SaveAttacker
 	callnative BS_SetTargetAsAttacker

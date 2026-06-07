@@ -12,6 +12,7 @@
 #include "battle_interface.h"
 #include "battle_gimmick.h"
 #include "battle_controllers.h"
+#include "battle_message.h"
 #include "kazuradrop_battle_ui.h"
 #include "sprite.h"
 #include "palette.h"
@@ -20,7 +21,7 @@
 #include "text.h"
 #include "fonts.h"
 #include "menu.h"
-
+#include "bg.h"
 
 // =====================================================================
 // Graphics
@@ -43,6 +44,12 @@ static const u16 sKazuBuffIconsPal[] =
 static const u8 ALIGNED(4) sKazuNumberGfx[256] = {1}; // 8 tiles for 32x16
 static const struct SpriteSheet sSpriteSheet_KazuNumber =
     { sKazuNumberGfx, sizeof(sKazuNumberGfx), TAG_KAZU_NUMBER };
+
+// Kazura's dialogue box (Moon Cell styled message window)
+static const u8 ALIGNED(4) sKazuraBoxGfx[] =
+    INCBIN_U8("graphics/battle_interface/textboxkaz.4bpp");
+static const u16 sKazuraBoxPal[] =
+    INCBIN_U16("graphics/battle_interface/textboxkaz.gbapal");
 
 // =====================================================================
 // Tags
@@ -128,6 +135,13 @@ static const struct OamData sOamData_Number =
 #define PANEL_SLIDING_IN   1
 #define PANEL_SLIDING_OUT  2
 
+// Kazuradrop dialogue box
+#define KAZ_WIN_BASE_TILE_NUM  0x0360
+#define KAZ_WIN_PALETTE_NUM    8
+#define KAZ_TILE_HFLIP         0x0400
+#define KAZ_TILE_VFLIP         0x0800
+#define KAZ_TILE_HVFLIP        0x0C00
+
 // =====================================================================
 // State tracking
 // =====================================================================
@@ -137,6 +151,7 @@ static u8 sGutsSpriteId[MAX_BATTLERS_COUNT];
 static u8 sInvincibleSpriteId[MAX_BATTLERS_COUNT];
 static bool32 sKazuBuffIconsLoaded = FALSE;
 static u8 sNumberSpriteId[MAX_BATTLERS_COUNT];
+static u8 sKazuraDialogWindowId;
 
 // =====================================================================
 // Forward declarations
@@ -145,6 +160,7 @@ static u8 sNumberSpriteId[MAX_BATTLERS_COUNT];
 static void LoadKazuBuffIconGfx(void);
 static void WriteThresholdIntoPanel(u32 spriteId);
 static u8 *AddTextPrinterForKazuPanel(const u8 *str, u32 x, u32 y, u32 bgColor, u32 *windowId);
+static void DrawKazuraWindowFrame(u8 windowId);
 
 // =====================================================================
 // Panel sprite callback
@@ -294,6 +310,18 @@ static const struct SpriteTemplate sSpriteTemplate_KazuNumber =
     .callback    = SpriteCb_KazuNumber,
 };
 
+// Kazuradrop dialogue box window template
+static const struct WindowTemplate sKazuraDialogWindowTemplate = {
+    .bg          = 0,
+    .tilemapLeft = 1,
+    .tilemapTop  = 16,
+    .width       = 28,
+    .height      = 4,
+    .paletteNum  = KAZ_WIN_PALETTE_NUM,
+    .baseBlock   = 0x0360,
+};
+
+
 // =====================================================================
 // Internal helpers
 // =====================================================================
@@ -358,6 +386,7 @@ void FreeKazuradropBattleIconGfx(void)
     FreeSpriteTilesByTag(TAG_KAZU_NUMBER);
     sKazuBuffIconsLoaded = FALSE;
 }
+
 
 // =====================================================================
 // Bug Space panel — public API
@@ -657,6 +686,92 @@ void BS_BugSpacePanelSlideOut(void)
     NATIVE_ARGS();
     TriggerBugSpacePanelTransformSlide(gBattlerAttacker);
     gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_ShowKazuraDialogueBox(void)
+{
+    NATIVE_ARGS(u16 stringId);
+    ShowKazuraDialogueBox(gBattleStringsTable[cmd->stringId]);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_ShowKazuraDialogue(void)
+{
+    NATIVE_ARGS();
+    // Phase 1: text scrolling or paused at \p — text engine handles A press internally
+    if (IsTextPrinterActive(sKazuraDialogWindowId))
+        return;
+    // Phase 2: all text done, wait for final A press
+    if (!JOY_NEW(A_BUTTON))
+        return;
+    // Phase 3: dismiss and advance script
+    HideKazuraDialogueBox();
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+// =====================================================================
+// Kazuradrop dialogue box — public API
+// =====================================================================
+
+static void DrawKazuraWindowFrame(u8 windowId)
+{
+    u8  bg     = GetWindowAttribute(windowId, WINDOW_BG);
+    u16 left   = GetWindowAttribute(windowId, WINDOW_TILEMAP_LEFT);
+    u16 top    = GetWindowAttribute(windowId, WINDOW_TILEMAP_TOP);
+    u16 width  = GetWindowAttribute(windowId, WINDOW_WIDTH);
+    u16 height = GetWindowAttribute(windowId, WINDOW_HEIGHT);
+    u8  pal    = KAZ_WIN_PALETTE_NUM;
+    u16 base   = KAZ_WIN_BASE_TILE_NUM;
+
+    // Top row
+    FillBgTilemapBufferRect(bg, base + 0,                    left - 1,          top - 1, 1,          1, pal); // top-left solid
+    FillBgTilemapBufferRect(bg, base + 1,                    left,              top - 1, 1,          1, pal); // top-left curve
+    FillBgTilemapBufferRect(bg, base + 2,                    left + 1,          top - 1, width - 2,  1, pal); // top edge repeat
+    FillBgTilemapBufferRect(bg, base + 3,                    left + width - 1,  top - 1, 1,          1, pal); // top-right curve
+    FillBgTilemapBufferRect(bg, (base + 0) | KAZ_TILE_HFLIP,  left + width,      top - 1, 1,          1, pal); // top-right solid
+
+    // Middle rows
+    FillBgTilemapBufferRect(bg, base + 4,                    left - 1,          top,     1,      height, pal); // left edge
+    FillBgTilemapBufferRect(bg, base + 5,                    left,              top,     width,  height, pal); // fill (grid baked in)
+    FillBgTilemapBufferRect(bg, (base + 4) | KAZ_TILE_HFLIP,  left + width,      top,     1,      height, pal); // right edge
+
+    // Bottom row
+    FillBgTilemapBufferRect(bg, (base + 0) | KAZ_TILE_VFLIP,  left - 1,          top + height, 1,         1, pal); // bottom-left solid
+    FillBgTilemapBufferRect(bg, base + 6,                    left,              top + height, 1,         1, pal); // bottom-left curve
+    FillBgTilemapBufferRect(bg, base + 7,                    left + 1,          top + height, width - 2, 1, pal); // bottom edge repeat
+    FillBgTilemapBufferRect(bg, base + 8,                    left + width - 1,  top + height, 1,         1, pal); // bottom-right curve
+    FillBgTilemapBufferRect(bg, (base + 0) | KAZ_TILE_HVFLIP, left + width,      top + height, 1,         1, pal); // bottom-right solid
+}
+
+void ShowKazuraDialogueBox(const u8 *str)
+{
+    sKazuraDialogWindowId = 0xFF; // sentinel reset before use
+    LoadBgTiles(0, sKazuraBoxGfx, sizeof(sKazuraBoxGfx), KAZ_WIN_BASE_TILE_NUM);
+    LoadPalette(sKazuraBoxPal, BG_PLTT_ID(KAZ_WIN_PALETTE_NUM), PLTT_SIZE_4BPP);
+
+    sKazuraDialogWindowId = AddWindow(&sKazuraDialogWindowTemplate);
+    FillWindowPixelBuffer(sKazuraDialogWindowId, PIXEL_FILL(0));
+
+    DrawKazuraWindowFrame(sKazuraDialogWindowId);
+
+    static const u8 color[3] = {0, 1, 2};
+    AddTextPrinterParameterized4(sKazuraDialogWindowId, FONT_NORMAL,
+                                 4, 2, 0, 0, color, 1, str);
+
+    PutWindowTilemap(sKazuraDialogWindowId);
+    CopyWindowToVram(sKazuraDialogWindowId, COPYWIN_FULL);
+    CopyBgTilemapBufferToVram(0);
+}
+
+void HideKazuraDialogueBox(void)
+{
+    if (sKazuraDialogWindowId == 0xFF)
+        return;
+    ClearWindowTilemap(sKazuraDialogWindowId);
+    CopyWindowToVram(sKazuraDialogWindowId, COPYWIN_FULL);
+    CopyBgTilemapBufferToVram(0);
+    RemoveWindow(sKazuraDialogWindowId);
+    sKazuraDialogWindowId = 0xFF;
 }
 
 // =====================================================================
