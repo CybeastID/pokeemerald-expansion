@@ -1093,6 +1093,7 @@ LittlerootTown_Alice_Fight::
 
 LittlerootTown_Not_In_Demo::
 	msgbox LittleRootTownAreaSealedText, MSGBOX_DEFAULT
+	end
 
 LittleRootTownAreaSealedText::
 	.string "A sign is on the doorway.\n"
