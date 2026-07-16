@@ -13,6 +13,7 @@
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "event_data.h"
+#include "castoria_name_theft.h"
 
 static u32 GetBattlerSideForMessage(u32 side)
 {
@@ -1370,6 +1371,14 @@ static bool32 HandleEndTurnDynamax(u32 battler)
         BattleScriptExecute(BattleScript_DynamaxEnds);
         effect = TRUE;
     }
+
+    if (gBattleMons[battler].species == SPECIES_CASTORIA
+    && gBattleMons[battler].volatiles.castoriaMaxMoveTimer > 0
+    && --gBattleMons[battler].volatiles.castoriaMaxMoveTimer == 0)
+    {
+         gBattleStruct->castoria.useCommand |= CASTORIA_MAXMOVE_EXPIRED;
+    }
+
 
     return effect;
 }

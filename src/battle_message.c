@@ -900,7 +900,15 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_KAZURADROP_GUTS]                      = COMPOUND_STRING("Kazuradrop's Guts activated!"),
     [STRINGID_KAZURADROP_GUTS2]                = COMPOUND_STRING("“Phwah? It's like you insects have never even seen a Servant before! You honestly thought THAT would keep ME down?”"),
     [STRINGID_KAZURADROP_GUTS3]                = COMPOUND_STRING("“Now, I'll give you a taste of the power of the Moon Cell...”"),
-    [STRINGID_KAZURADROP_CQPUNISH]             = COMPOUND_STRING("Kazuradrop's parameters are rapidly increasing!")
+    [STRINGID_KAZURADROP_CQPUNISH]             = COMPOUND_STRING("Kazuradrop's parameters are rapidly increasing!"),
+    [STRINGID_CASTORIA_ASKS_NAME]              = COMPOUND_STRING("The fairy tilts her head.\n“Tell me, what is your true name?”"),
+    [STRINGID_CASTORIA_TRUE_NAME]               = COMPOUND_STRING("“Oh my... you gave me your REAL name?\nHow foolish... I can do ANYTHING to you!”"),
+    [STRINGID_CASTORIA_FALSE_NAME]              = COMPOUND_STRING("“Hmm... that's not quite right.\nBut I'll keep it anyway, little liar~”"),
+    [STRINGID_CASTORIA_BACKED_OUT]              = COMPOUND_STRING("“How rude! I offered you a good contract...”"),
+    [STRINGID_CASTORIA_COMMANDS_MOVE] = COMPOUND_STRING("“By my Command Seal...! \nUse {B_BUFF1}!”"),
+    [STRINGID_CASTORIA_DYNAMAX_EXPIRE] = COMPOUND_STRING("“Oh I'm sorry...you thought this was Dynamax? No, I'm just big!”"),
+
+
 };
 
 const u16 gTrainerUsedItemStringIds[] =

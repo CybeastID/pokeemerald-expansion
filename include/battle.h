@@ -275,6 +275,13 @@ enum BugSpaceThresholdTier
     BUGSPACE_TIER_PASSIVE_OHKO,   // Floor reached - end-of-turn passive OHKO active
 };
 
+struct CastoriaBattleData
+{
+    u8 nameResult;
+    u8 useCommand;
+    u8 padding;
+};
+
 struct BugSpaceData
 {
     u8 active;                    // 0 = off, 1 = on
@@ -290,6 +297,7 @@ struct BugSpaceData
     u8 entryDefenseTimer;         // Turns remaining for the entry defensive buff
     u8 gutsActive;                // Bitmask per battler: 1 if Guts (Endure) is active
     u8 invincibleActive;          // Bitmask per battler: 1 if Kazuradrop invincible icon should be shown
+    u8 kazuraDialogState;
 };
 
 struct AI_SavedBattleMon
@@ -815,6 +823,7 @@ struct BattleStruct
     u8 echoedVoiceCounter:3;
     u8 padding3:4;
     struct BugSpaceData bugSpace;
+    struct CastoriaBattleData castoria;
 };
 
 struct AiBattleData

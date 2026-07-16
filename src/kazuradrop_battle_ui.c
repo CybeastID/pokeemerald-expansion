@@ -22,6 +22,7 @@
 #include "fonts.h"
 #include "menu.h"
 #include "bg.h"
+#include "line_break.h"
 
 // =====================================================================
 // Graphics
@@ -47,9 +48,11 @@ static const struct SpriteSheet sSpriteSheet_KazuNumber =
 
 // Kazura's dialogue box (Moon Cell styled message window)
 static const u8 ALIGNED(4) sKazuraBoxGfx[] =
-    INCBIN_U8("graphics/battle_interface/textboxkaz.4bpp");
+    INCBIN_U8("graphics/battle_interface/textboxkaztiled.4bpp");
 static const u16 sKazuraBoxPal[] =
-    INCBIN_U16("graphics/battle_interface/textboxkaz.gbapal");
+    INCBIN_U16("graphics/battle_interface/textboxkaztiled.gbapal");
+static const u8 ALIGNED(4) sKazuraBoxTilemap[] =
+    INCBIN_U8("graphics/battle_interface/textboxkaztiled.bin");
 
 // =====================================================================
 // Tags
@@ -136,7 +139,7 @@ static const struct OamData sOamData_Number =
 #define PANEL_SLIDING_OUT  2
 
 // Kazuradrop dialogue box
-#define KAZ_WIN_BASE_TILE_NUM  0x0360
+#define KAZ_WIN_BASE_TILE_NUM  0x03D0
 #define KAZ_WIN_PALETTE_NUM    8
 #define KAZ_TILE_HFLIP         0x0400
 #define KAZ_TILE_VFLIP         0x0800
@@ -314,7 +317,7 @@ static const struct SpriteTemplate sSpriteTemplate_KazuNumber =
 static const struct WindowTemplate sKazuraDialogWindowTemplate = {
     .bg          = 0,
     .tilemapLeft = 1,
-    .tilemapTop  = 16,
+    .tilemapTop  = 15,
     .width       = 28,
     .height      = 4,
     .paletteNum  = KAZ_WIN_PALETTE_NUM,
@@ -691,21 +694,19 @@ void BS_BugSpacePanelSlideOut(void)
 void BS_ShowKazuraDialogueBox(void)
 {
     NATIVE_ARGS(u16 stringId);
-    ShowKazuraDialogueBox(gBattleStringsTable[cmd->stringId]);
-    gBattlescriptCurrInstr = cmd->nextInstr;
-}
 
-void BS_ShowKazuraDialogue(void)
-{
-    NATIVE_ARGS();
-    // Phase 1: text scrolling or paused at \p — text engine handles A press internally
+    if (gBattleStruct->bugSpace.kazuraDialogState == 0)
+    {
+        ShowKazuraDialogueBox(gBattleStringsTable[cmd->stringId]);
+        gBattleStruct->bugSpace.kazuraDialogState = 1;
+        return;
+    }
     if (IsTextPrinterActive(sKazuraDialogWindowId))
         return;
-    // Phase 2: all text done, wait for final A press
     if (!JOY_NEW(A_BUTTON))
         return;
-    // Phase 3: dismiss and advance script
     HideKazuraDialogueBox();
+    gBattleStruct->bugSpace.kazuraDialogState = 0;
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -745,22 +746,28 @@ static void DrawKazuraWindowFrame(u8 windowId)
 
 void ShowKazuraDialogueBox(const u8 *str)
 {
+    u8 buffer[512];
+
     sKazuraDialogWindowId = 0xFF; // sentinel reset before use
     LoadBgTiles(0, sKazuraBoxGfx, sizeof(sKazuraBoxGfx), KAZ_WIN_BASE_TILE_NUM);
     LoadPalette(sKazuraBoxPal, BG_PLTT_ID(KAZ_WIN_PALETTE_NUM), PLTT_SIZE_4BPP);
 
     sKazuraDialogWindowId = AddWindow(&sKazuraDialogWindowTemplate);
+    DebugPrintf("KazuraDialogWindowId: %d", sKazuraDialogWindowId);
     FillWindowPixelBuffer(sKazuraDialogWindowId, PIXEL_FILL(0));
 
     DrawKazuraWindowFrame(sKazuraDialogWindowId);
 
-    static const u8 color[3] = {0, 1, 2};
+    StringCopy(buffer, str);
+    BreakStringAutomatic(buffer, 220, 2, FONT_NORMAL, SHOW_SCROLL_PROMPT);
+
+    static const u8 color[3] = {0, 9, 11};
     AddTextPrinterParameterized4(sKazuraDialogWindowId, FONT_NORMAL,
-                                 4, 2, 0, 0, color, 1, str);
+                                 4, 2, 0, 0, color, 1, buffer);
 
     PutWindowTilemap(sKazuraDialogWindowId);
     CopyWindowToVram(sKazuraDialogWindowId, COPYWIN_FULL);
-    CopyBgTilemapBufferToVram(0);
+    // CopyBgTilemapBufferToVram(0);
 }
 
 void HideKazuraDialogueBox(void)

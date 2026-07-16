@@ -8921,6 +8921,8 @@ BattleScript_SwapToSubstituteContinue:
 BattleScript_SwapToSubstituteReturn:
 	return
 
+
+@Kazuradrop stuff
 BattleScript_MoveEffectMeltVirus::
 	setmoveeffect MOVE_EFFECT_MELT_VIRUS
 	printstring STRINGID_TARGETINFECTEDBYMELTVIRUS
@@ -9004,12 +9006,12 @@ BattleScript_KazuradropTransform::
 	waitmessage B_WAIT_TIME_SHORT
 	@ printstring STRINGID_TAUNTEDBYKAZURA
 	@ waitmessage B_WAIT_TIME_LONG
-	callnative BS_ShowKazuraDialogueBox, STRINGID_TAUNTEDBYKAZURA
-	callnative BS_ShowKazuraDialogue
+	kazuradialogue STRINGID_TAUNTEDBYKAZURA
+	waitmessage B_WAIT_TIME_LONG
 	callnative BS_ApplyKazuradropTransformation
 	callnative BS_SaveAttacker
 	callnative BS_SetTargetAsAttacker
-	printstring STRINGID_TAUNTEDBYKAZURA2
+	kazuradialogue STRINGID_TAUNTEDBYKAZURA2
 	playmoveanimation MOVE_LUNAR_DANCE
 	callnative BS_FadeToSeraph
 	waitanimation
@@ -9037,9 +9039,9 @@ BattleScript_BugSpaceStart::
 	end3
 
 BattleScript_BugSpacePassiveOHKO::
-	printstring STRINGID_BUGSPACEPASSIVEOHKO
+	kazuradialogue STRINGID_BUGSPACEPASSIVEOHKO
 	playmoveanimation MOVE_HURRICANE
-	
+	kazuradialogue STRINGID_BUGSPACEPASSIVEFAINT
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
 	waitmessage B_WAIT_TIME_LONG
@@ -9048,18 +9050,18 @@ BattleScript_BugSpacePassiveOHKO::
 	end2
 
 BattleScript_BugSpaceMinimize::
-	printstring STRINGID_TAUNTEDBYKAZURAMINIMIZE
+	kazuradialogue STRINGID_TAUNTEDBYKAZURAMINIMIZE
 	waitmessage B_WAIT_TIME_LONG
 	end2
 
 BattleScript_BugSpaceOHKO::
-	printstring STRINGID_TAUNTEDBYKAZURAOHKO
+	kazuradialogue STRINGID_TAUNTEDBYKAZURAOHKO
 	waitmessage B_WAIT_TIME_LONG
 	end2
 
 BattleScript_BugSpaceP_OHKOMessage::
 	playanimation BS_TARGET_SIDE B_ANIM_STRONG_WINDS
-	printstring STRINGID_TAUNTEDBYKAZURA_P_OHKO
+	kazuradialogue STRINGID_TAUNTEDBYKAZURA_P_OHKO
 	waitmessage B_WAIT_TIME_LONG
 	end2
 
@@ -9067,7 +9069,7 @@ BattleScript_BugSpaceBlocked_First::
 	call BattleScript_AbilityPopUp
 	printstring STRINGID_BUGSPACEMOVEBLOCKED
 	waitmessage B_WAIT_TIME_LONG
-	printstring STRINGID_BUGSPACEKAZURABLOCKEDFIRST
+	kazuradialogue STRINGID_BUGSPACEKAZURABLOCKEDFIRST
 	waitmessage B_WAIT_TIME_LONG
 	tryfaintmon BS_ATTACKER
 	end2
@@ -9076,19 +9078,19 @@ BattleScript_BugSpaceBlocked_Repeat::
 	call BattleScript_AbilityPopUp
 	printstring STRINGID_BUGSPACEMOVEBLOCKED
 	waitmessage B_WAIT_TIME_LONG
-	printstring STRINGID_BUGSPACEKAZURABLOCKEDREPEAT
+	kazuradialogue STRINGID_BUGSPACEKAZURABLOCKEDREPEAT
 	waitmessage B_WAIT_TIME_LONG
 	tryfaintmon BS_ATTACKER
 	end2
 
 BattleScript_BugSpaceBlocked_POHKO::
-	printstring STRINGID_BUGSPACEKAZURABLOCKEDPOHKO
+	kazuradialogue STRINGID_BUGSPACEKAZURABLOCKEDPOHKO
 	waitmessage B_WAIT_TIME_LONG
 	tryfaintmon BS_ATTACKER
 	end2
 
 BattleScript_BugSpaceStatDecayFirst::
-	printstring STRINGID_BUGSPACEKAZURABOOSTDECAY
+	kazuradialogue STRINGID_BUGSPACEKAZURABOOSTDECAY
 	waitmessage B_WAIT_TIME_LONG
 
 BattleScript_BugSpaceStatDecay::
@@ -9103,5 +9105,51 @@ BattleScript_KazuradropGutsProc::
     playanimation BS_SCRIPTING, B_ANIM_HANGED_ON
     printstring STRINGID_KAZURADROP_GUTS
     waitmessage B_WAIT_TIME_LONG
-	printstring STRINGID_KAZURADROP_GUTS2
+	kazuradialogue STRINGID_KAZURADROP_GUTS2
+    end2
+
+@ CASTORIA FIGHT SCRIPTS
+BattleScript_CastoriaNameTheft::
+	printstring STRINGID_CASTORIA_ASKS_NAME
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_DoCastoriaNameChoice
+	end2
+
+BattleScript_CastoriaNameTheftResult::
+	callnative BS_JumpCastoriaNameResult
+
+BattleScript_CastoriaTrueName::
+	printstring STRINGID_CASTORIA_TRUE_NAME
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_ApplyCastoriaNameResult
+	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
+	waitanimation
+	end2
+
+BattleScript_CastoriaFalseName::
+	printstring STRINGID_CASTORIA_FALSE_NAME
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_ApplyCastoriaNameResult
+	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
+	waitanimation
+	end2
+
+BattleScript_CastoriaBackedOut::
+	printstring STRINGID_CASTORIA_BACKED_OUT
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_ApplyCastoriaNameResult
+	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
+	waitanimation
+	end2
+
+BattleScript_CastoriaTrueNameCommand::
+	callnative BS_CastoriaPrepareWorstMove
+	printstring STRINGID_CASTORIA_COMMANDS_MOVE
+	waitmessage B_WAIT_TIME_LONG
+	callnative BS_CastoriaDecTrueNameCharges
+	end2
+
+BattleScript_CastoriaMaxMoveExpire::
+    printstring STRINGID_CASTORIA_DYNAMAX_EXPIRE
+    waitmessage B_WAIT_TIME_LONG
     end2

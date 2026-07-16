@@ -10685,6 +10685,7 @@ u32 GetBattlerVolatile(u32 battler, enum Volatile _volatile)
 
 // Sets the value of a volatile status flag for a certain battler
 // Primarily used for the debug menu and scripts. Outside of it explicit references are preferred
+__attribute__((optimize("Os")))
 void SetMonVolatile(u32 battler, enum Volatile _volatile, u32 newValue)
 {
     switch (_volatile)

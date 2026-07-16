@@ -73,6 +73,7 @@
 #include "test/test_runner_battle.h"
 #include "kazuradrop_gameover.h"
 #include "kazuradrop_battle_ui.h"
+#include "castoria_name_theft.h"
 #include "gba/isagbprint.h"
 #include "constants/flags.h"
 
@@ -8278,6 +8279,16 @@ static bool32 DoSwitchInEffectsForBattler(u32 battler)
     {
         return TRUE;
     }
+
+    else if (gBattleMons[battler].species == SPECIES_CASTORIA
+             && !gBattleStruct->castoria.nameResult)
+    {
+        gBattlerAttacker = battler;
+        BattleScriptCall(BattleScript_CastoriaNameTheft);
+        return TRUE;
+    }
+
+    
     // Healing Wish and Lunar Dance activate before hazards.
     // Starting from Gen8 - it heals only pokemon which can be healed.
     // In Gen5-7 the effect activates anyways.

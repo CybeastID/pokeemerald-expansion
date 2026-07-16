@@ -2488,4 +2488,9 @@
 	callnative BS_TrashCrushOHKOCheck
 	.4byte \failInstr
 	.endm
+
+	.macro kazuradialogue stringId:req
+    callnative BS_ShowKazuraDialogueBox
+    .2byte \stringId
+    .endm
 	
