@@ -23,6 +23,7 @@
 #include "menu.h"
 #include "bg.h"
 #include "line_break.h"
+#include "battle_bg.h"
 
 // =====================================================================
 // Graphics
@@ -693,7 +694,7 @@ void BS_BugSpacePanelSlideOut(void)
 
 void BS_ShowKazuraDialogueBox(void)
 {
-    NATIVE_ARGS(u16 stringId);
+    NATIVE_ARGS(u16 stringId, u8 keep);
 
     if (gBattleStruct->bugSpace.kazuraDialogState == 0)
     {
@@ -707,6 +708,15 @@ void BS_ShowKazuraDialogueBox(void)
         return;
     HideKazuraDialogueBox();
     gBattleStruct->bugSpace.kazuraDialogState = 0;
+    if (!cmd->keep)
+        LoadBattleTextboxAndBackground();
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_RestoreTextbox(void)
+{
+    NATIVE_ARGS();
+    LoadBattleTextboxAndBackground();
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 

@@ -238,7 +238,7 @@ static void HandleInputChooseAction(u32 battler)
     DoBounceEffect(battler, BOUNCE_HEALTHBOX, 7, 1);
     DoBounceEffect(battler, BOUNCE_MON, 7, 1);
 
-    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
     {
         if (!JOY_NEW(A_BUTTON))
             return;
@@ -670,7 +670,7 @@ void HandleInputChooseMove(u32 battler)
         gPlayerDpadHoldFrames++;
     else
         gPlayerDpadHoldFrames = 0;
-        if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+        if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
     {
         if (!JOY_NEW(A_BUTTON))
             return;
@@ -682,9 +682,9 @@ void HandleInputChooseMove(u32 battler)
         TryToHideMoveInfoWindow();
         PlaySE(SE_SELECT);
 
-        if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+        if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
         {
-            gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_THIS_TURN;
+            gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_UI_LOCKED;
         }
 
         moveTarget = GetBattlerMoveTargetType(battler, moveInfo->moves[gMoveSelectionCursor[battler]]);
@@ -2017,7 +2017,7 @@ static void PlayerHandleChooseAction(u32 battler)
 
     TryRestoreLastUsedBall();
     
-    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
         gActionSelectionCursor[battler] = 0;
     
     ActionSelectionCreateCursorAt(gActionSelectionCursor[battler], 0);
@@ -2111,7 +2111,7 @@ void PlayerHandleChooseMove(u32 battler)
         struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleResources->bufferA[battler][4]);
         
     // True Name Command — snap move cursor to the worst move
-    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
     {
         u8 worst = (gBattleStruct->castoria.useCommand & CASTORIA_FORCED_MOVE_SLOT_MASK)
                    >> CASTORIA_FORCED_MOVE_SLOT_SHIFT;

@@ -275,11 +275,16 @@ enum BugSpaceThresholdTier
     BUGSPACE_TIER_PASSIVE_OHKO,   // Floor reached - end-of-turn passive OHKO active
 };
 
+// Must match CASTORIA_ARCANUM_COUNT from castoria_name_theft.h
+#define CASTORIA_ARCANUM_COUNT 4
+
 struct CastoriaBattleData
 {
     u8 nameResult;
     u8 useCommand;
-    u8 padding;
+    u16 timer;
+    // Arcanum: extra magical move slots (battle-only, no PP, unlimited use)
+    u16 arcanumMoves[CASTORIA_ARCANUM_COUNT];
 };
 
 struct BugSpaceData

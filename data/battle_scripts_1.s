@@ -9006,12 +9006,12 @@ BattleScript_KazuradropTransform::
 	waitmessage B_WAIT_TIME_SHORT
 	@ printstring STRINGID_TAUNTEDBYKAZURA
 	@ waitmessage B_WAIT_TIME_LONG
-	kazuradialogue STRINGID_TAUNTEDBYKAZURA
+	kazuradialogue STRINGID_TAUNTEDBYKAZURA, 1
 	waitmessage B_WAIT_TIME_LONG
 	callnative BS_ApplyKazuradropTransformation
 	callnative BS_SaveAttacker
 	callnative BS_SetTargetAsAttacker
-	kazuradialogue STRINGID_TAUNTEDBYKAZURA2
+	kazuradialogue STRINGID_TAUNTEDBYKAZURA2, 1
 	playmoveanimation MOVE_LUNAR_DANCE
 	callnative BS_FadeToSeraph
 	waitanimation
@@ -9019,6 +9019,7 @@ BattleScript_KazuradropTransform::
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
 	callnative BS_BugSpacePanelSlideIn
 	callnative BS_RestoreAttacker
+	callnative BS_RestoreTextbox
 @	printstring STRINGID_PKMNINFINITEGROWTHSTART
 	waitmessage B_WAIT_TIME_LONG
 	
@@ -9039,9 +9040,9 @@ BattleScript_BugSpaceStart::
 	end3
 
 BattleScript_BugSpacePassiveOHKO::
-	kazuradialogue STRINGID_BUGSPACEPASSIVEOHKO
+	kazuradialogue STRINGID_BUGSPACEPASSIVEOHKO, 1
 	playmoveanimation MOVE_HURRICANE
-	kazuradialogue STRINGID_BUGSPACEPASSIVEFAINT
+	kazuradialogue STRINGID_BUGSPACEPASSIVEFAINT, 1
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
 	waitmessage B_WAIT_TIME_LONG

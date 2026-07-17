@@ -16,7 +16,10 @@ enum CastoriaNameResult
 #define CASTORIA_FORCED_MOVE_SLOT_SHIFT   2
 #define CASTORIA_FORCED_MOVE_SLOT_MASK    (3 << CASTORIA_FORCED_MOVE_SLOT_SHIFT)
 #define CASTORIA_MAXMOVE_EXPIRED        (1 << 4)
+#define CASTORIA_COMMAND_UI_LOCKED        (1 << 5)
 
+// Arcanum: extra magical move slots (battle-only, no PP, unlimited use)
+#define CASTORIA_ARCANUM_COUNT 4
 
 // ---------------------------------------------------------------
 // callnative entry point from BattleScript
@@ -50,5 +53,16 @@ void BS_CastoriaDecTrueNameCharges(void);
 
 // callnative: jumps to the correct BattleScript branch based on nameResult
 void BS_JumpCastoriaNameResult(void);
+
+// ---------------------------------------------------------------
+// Arcanum — extra magical move slots for Castoria
+// ---------------------------------------------------------------
+
+// Populates CastoriaBattleData.arcanumMoves[] with the default spell pool.
+void CastoriaInitArcanum(u32 battler);
+
+// Returns the move ID for any logical slot (0-3 normal, 4-7 arcanum).
+// Returns MOVE_NONE for invalid slots or non-Castoria battlers.
+u16 CastoriaGetMoveAtSlot(u32 battler, u8 slot);
 
 #endif // GUARD_CASTORIA_NAME_THEFT_H

@@ -47,6 +47,7 @@ void BS_ShowKazuInvincibleIcon(void);
 void BS_BugSpacePanelSlideIn(void);
 void BS_BugSpacePanelSlideOut(void);
 void BS_ShowKazuraDialogueBox(void);
+void BS_RestoreTextbox(void);
 // ---------------------------------------------------------------
 // Initialization and cleanup
 // ---------------------------------------------------------------

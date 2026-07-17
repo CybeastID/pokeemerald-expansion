@@ -3939,6 +3939,7 @@ static void TryDoEventsBeforeFirstTurn(void)
                 && !gBattleStruct->castoria.nameResult)
             {
                 gBattlerAttacker = i;
+                CastoriaInitArcanum(i);
                 BattleScriptExecute(BattleScript_CastoriaNameTheft);
                 return;
             }
@@ -4000,6 +4001,19 @@ static void HandleEndTurn_ContinueBattle(void)
             gBattleMons[i].volatiles.flinched = FALSE;
             if ((gBattleMons[i].status1 & STATUS1_SLEEP) && (gBattleMons[i].volatiles.multipleTurns))
                 CancelMultiTurnMoves(i, SKY_DROP_IGNORE);
+                 // Castoria Command Seal cooldown transition: THIS_TURN -> LAST_TURN
+            if (gBattleMons[i].species == SPECIES_CASTORIA)
+            {
+                if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+                {
+                    gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_THIS_TURN;
+                    gBattleStruct->castoria.useCommand |= CASTORIA_COMMAND_LAST_TURN;
+                }
+                else
+                {
+                    gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_LAST_TURN;
+                }
+            }
         }
         gBattleStruct->eventState.endTurnBlock = 0;
         gBattleStruct->eventState.endTurnBattler = 0;

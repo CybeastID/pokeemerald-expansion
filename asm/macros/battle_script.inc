@@ -2489,8 +2489,9 @@
 	.4byte \failInstr
 	.endm
 
-	.macro kazuradialogue stringId:req
+	.macro kazuradialogue stringId:req, keep=0
     callnative BS_ShowKazuraDialogueBox
     .2byte \stringId
+	.byte \keep
     .endm
 	

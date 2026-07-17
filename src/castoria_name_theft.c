@@ -33,6 +33,10 @@
 #include "save.h"
 #include "sound.h"
 #include "string_util.h"
+#include "window.h"
+#include "text.h"
+#include "fonts.h"
+#include "menu.h"
 
 #define CHOICE_STATE_INIT       0
 #define CHOICE_STATE_WAIT       1
@@ -44,8 +48,49 @@ static u8 sChoiceState;
 static const u8 sText_FrancisXavier[] = _("F. Xavier");
 
 // ---------------------------------------------------------------
+// NEW WINDOW
+// ---------------------------------------------------------------
+
+#define CASTORIA_WIN_BASE_BLOCK  0x02C0   // free screen-entry space between vanilla battle windows and Kazuradrop's box
+
+static u8 sCastoriaChoiceWindowId;
+
+static const struct WindowTemplate sCastoriaChoiceWindowTemplate = {
+    .bg          = 0,
+    .tilemapLeft = 18,
+    .tilemapTop  = 9,
+    .width       = 11,
+    .height      = 4,
+    .paletteNum  = 5,
+    .baseBlock   = CASTORIA_WIN_BASE_BLOCK,
+};
+
+// ---------------------------------------------------------------
 // callnative entry point — called from BattleScript
 // ---------------------------------------------------------------
+
+static void PrintCastoriaChoiceText(void)
+{
+    static const u8 colorNormal[3]   = {13, 14, 15};
+    static const u8 colorSelected[3] = {14, 13, 15};
+
+    FillWindowPixelBuffer(sCastoriaChoiceWindowId, PIXEL_FILL(0xE));
+
+    StringCopy(gDisplayedStringBattle, gSaveBlock2Ptr->playerName);
+    AddTextPrinterParameterized4(sCastoriaChoiceWindowId, FONT_NORMAL,
+                                  4, 2, 0, 0,
+                                  (sChoiceCursor == 0) ? colorSelected : colorNormal,
+                                  TEXT_SKIP_DRAW, gDisplayedStringBattle);
+
+    StringCopy(gDisplayedStringBattle, sText_FrancisXavier);
+    AddTextPrinterParameterized4(sCastoriaChoiceWindowId, FONT_NORMAL,
+                                  4, 18, 0, 0,
+                                  (sChoiceCursor == 1) ? colorSelected : colorNormal,
+                                  TEXT_SKIP_DRAW, gDisplayedStringBattle);
+
+    CopyWindowToVram(sCastoriaChoiceWindowId, COPYWIN_FULL);
+}
+
 void BS_DoCastoriaNameChoice(void)
 {
     NATIVE_ARGS();
@@ -54,44 +99,41 @@ void BS_DoCastoriaNameChoice(void)
     switch (sChoiceState)
     {
     case CHOICE_STATE_INIT:
-        sChoiceCursor = 0;
-        sChoiceState = CHOICE_STATE_WAIT;
+    sChoiceCursor = 0;
+    sChoiceState = CHOICE_STATE_WAIT;
+    sCastoriaChoiceWindowId = 0xFF;
 
-        // Player's real name on top line, "F. Xavier" on bottom line
-        {
-            u8 *ptr = StringCopy(gBattleTextBuff1, gSaveBlock2Ptr->playerName);
-            *ptr++ = CHAR_NEWLINE;
-            StringCopy(ptr, sText_FrancisXavier);
-        }
-
-        // Window wide enough for player name + "F. Xavier" (9 chars) + cursor
-        HandleBattleWindow(17, 8, 29, 13, 0);
-        BattlePutTextOnWindow(gBattleTextBuff1, B_WIN_YESNO);
-        BattleCreateYesNoCursorAt(0);
-        break;
+    HandleBattleWindow(17, 8, 29, 13, 0);
+    sCastoriaChoiceWindowId = AddWindow(&sCastoriaChoiceWindowTemplate);
+    PrintCastoriaChoiceText();
+    PutWindowTilemap(sCastoriaChoiceWindowId);
+    CopyWindowToVram(sCastoriaChoiceWindowId, COPYWIN_FULL);
+    break;
 
     case CHOICE_STATE_WAIT:
         // D-pad navigation
         if (JOY_NEW(DPAD_UP) && sChoiceCursor != 0)
-        {
-            PlaySE(SE_SELECT);
-            BattleDestroyYesNoCursorAt(sChoiceCursor);
-            sChoiceCursor = 0;
-            BattleCreateYesNoCursorAt(0);
-        }
-        if (JOY_NEW(DPAD_DOWN) && sChoiceCursor == 0)
-        {
-            PlaySE(SE_SELECT);
-            BattleDestroyYesNoCursorAt(sChoiceCursor);
-            sChoiceCursor = 1;
-            BattleCreateYesNoCursorAt(1);
-        }
+    {
+        PlaySE(SE_SELECT);
+        sChoiceCursor = 0;
+        PrintCastoriaChoiceText();
+    }
+    if (JOY_NEW(DPAD_DOWN) && sChoiceCursor == 0)
+    {
+        PlaySE(SE_SELECT);
+        sChoiceCursor = 1;
+        PrintCastoriaChoiceText();
+    }
 
         // A = confirm choice
         if (JOY_NEW(A_BUTTON))
         {
             PlaySE(SE_SELECT);
             HandleBattleWindow(17, 8, 29, 13, WINDOW_CLEAR);
+            ClearWindowTilemap(sCastoriaChoiceWindowId);
+            CopyWindowToVram(sCastoriaChoiceWindowId, COPYWIN_FULL);
+            RemoveWindow(sCastoriaChoiceWindowId);
+            sCastoriaChoiceWindowId = 0xFF;
             sChoiceState = CHOICE_STATE_INIT;
 
             if (sChoiceCursor == 0) // Top choice = player's real name = TRUE
@@ -111,6 +153,10 @@ void BS_DoCastoriaNameChoice(void)
         {
             PlaySE(SE_SELECT);
             HandleBattleWindow(17, 8, 29, 13, WINDOW_CLEAR);
+            ClearWindowTilemap(sCastoriaChoiceWindowId);
+            CopyWindowToVram(sCastoriaChoiceWindowId, COPYWIN_FULL);
+            RemoveWindow(sCastoriaChoiceWindowId);
+            sCastoriaChoiceWindowId = 0xFF;
             sChoiceState = CHOICE_STATE_INIT;
             gBattleStruct->castoria.nameResult = CASTORIA_NAME_BACKED_OUT;
             gBattlescriptCurrInstr = BattleScript_CastoriaNameTheftResult;
@@ -172,7 +218,7 @@ void BS_CastoriaPrepareWorstMove(void)
         PREPARE_MOVE_BUFFER(gBattleTextBuff1, move);
         gBattleStruct->castoria.useCommand &= ~CASTORIA_FORCED_MOVE_SLOT_MASK;
         gBattleStruct->castoria.useCommand |= (worstSlot << CASTORIA_FORCED_MOVE_SLOT_SHIFT);
-        gBattleStruct->castoria.useCommand |= CASTORIA_COMMAND_THIS_TURN;
+        gBattleStruct->castoria.useCommand |= CASTORIA_COMMAND_THIS_TURN | CASTORIA_COMMAND_UI_LOCKED;
     }
     
     gBattlescriptCurrInstr = cmd->nextInstr;
@@ -290,4 +336,37 @@ u8 CastoriaFindWorstMove(u32 castoriaBattler, u32 targetBattler)
     }
 
     return worstSlot;
+}
+
+// ---------------------------------------------------------------
+// Arcanum — extra magical move slots for Castoria
+// ---------------------------------------------------------------
+
+void CastoriaInitArcanum(u32 battler)
+{
+    // Illusion, Evocation, Transformation themed starter set
+    static const u16 sArcanumPool[] = {
+        MOVE_MOONBLAST,       // Evocation
+        MOVE_LIGHT_SCREEN,    // Illusion
+        MOVE_DAZZLING_GLEAM,  // Evocation
+        MOVE_HEALING_WISH,    // Transformation
+    };
+
+    for (u8 i = 0; i < CASTORIA_ARCANUM_COUNT; i++)
+        gBattleStruct->castoria.arcanumMoves[i] = sArcanumPool[i];
+}
+
+u16 CastoriaGetMoveAtSlot(u32 battler, u8 slot)
+{
+    if (slot < MAX_MON_MOVES)
+        return gBattleMons[battler].moves[slot];
+
+    if (gBattleMons[battler].species == SPECIES_CASTORIA)
+    {
+        u8 arcanumSlot = slot - MAX_MON_MOVES;
+        if (arcanumSlot < CASTORIA_ARCANUM_COUNT)
+            return gBattleStruct->castoria.arcanumMoves[arcanumSlot];
+    }
+
+    return MOVE_NONE;
 }
