@@ -1634,3 +1634,14 @@ const u16 gTilesetPalettes_UnionRoom[][16] =
 };
 
 const u32 gTilesetTiles_UnionRoom[] = INCBIN_U32("data/tilesets/secondary/union_room/tiles.4bpp.fastSmol");
+
+const u32 gTilesetTiles_GiantAliceRoom[] = INCBIN_U32("data/tilesets/primary/giant_alice_room_primary/tiles.4bpp.smol");
+const u16 gTilesetPalettes_GiantAliceRoom[][16] =
+{
+    INCBIN_U16("data/tilesets/primary/giant_alice_room_primary/palettes/00.gbapal"),
+    INCBIN_U16("data/tilesets/primary/giant_alice_room_primary/palettes/01.gbapal"),
+    INCBIN_U16("data/tilesets/primary/giant_alice_room_primary/palettes/02.gbapal"),
+    INCBIN_U16("data/tilesets/primary/giant_alice_room_primary/palettes/03.gbapal"),
+    INCBIN_U16("data/tilesets/primary/giant_alice_room_primary/palettes/04.gbapal"),
+    INCBIN_U16("data/tilesets/primary/giant_alice_room_primary/palettes/05.gbapal"),
+};

@@ -52,6 +52,7 @@
 #include "constants/trainers.h"
 #include "constants/weather.h"
 #include "constants/pokemon.h"
+#include "kazuradrop_battle_ui.h"
 
 /*
 NOTE: The data and functions in this file up until (but not including) sSoundMovesTable
@@ -4618,7 +4619,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                 effect++;
             }
             break;
-        case ABILITY_SOUL_PARASITE:
+        case ABILITY_BUG_SPACE:
             if (!gSpecialStatuses[battler].switchInAbilityDone)
             {
                 gSpecialStatuses[battler].switchInAbilityDone = TRUE;
@@ -4633,6 +4634,8 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     // gBattleStruct->bugSpace.bpThreshold = 10;
                     gBattleStruct->bugSpace.bpDecayRate = 10;
                     gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
+                    gBattleStruct->bugSpace.entryDefenseTimer = 2;
+                    CreateBugSpacePanel(battler);
                     BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);
                     effect++;
                 }
@@ -10682,6 +10685,7 @@ u32 GetBattlerVolatile(u32 battler, enum Volatile _volatile)
 
 // Sets the value of a volatile status flag for a certain battler
 // Primarily used for the debug menu and scripts. Outside of it explicit references are preferred
+__attribute__((optimize("Os")))
 void SetMonVolatile(u32 battler, enum Volatile _volatile, u32 newValue)
 {
     switch (_volatile)
@@ -11319,7 +11323,7 @@ bool32 IsMimikyuDisguised(u32 battler)
 }
 
 // static void HandleSoulParasiteEffect(struct Pokemon *attacker, struct Pokemon *defender) {
-//     if (!IsAbilityActive(attacker, ABILITY_SOUL_PARASITE)) return;
+//     if (!IsAbilityActive(attacker, ABILITY_BUG_SPACE)) return;
 
 //     // Drain 1/8 of the opponent's HP
 //     u32 damage = defender->hpMax / 8;

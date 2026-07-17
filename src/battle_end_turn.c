@@ -6,12 +6,14 @@
 #include "battle_ai_util.h"
 #include "battle_gimmick.h"
 #include "battle_scripts.h"
+#include "kazuradrop_battle_ui.h"
 #include "constants/battle.h"
 #include "constants/battle_string_ids.h"
 #include "constants/abilities.h"
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "event_data.h"
+#include "castoria_name_theft.h"
 
 static u32 GetBattlerSideForMessage(u32 side)
 {
@@ -66,6 +68,13 @@ static bool32 HandleEndTurnVarious(u32 battler)
 
         if (B_CHARGE < GEN_9 && gBattleMons[i].volatiles.chargeTimer > 0)
             gBattleMons[i].volatiles.chargeTimer--;
+
+        // Kazuradrop Guts: 1-turn cheat-death window after transformation (timer volatile)
+        if (gBattleMons[i].volatiles.kazuradropGuts > 0)
+        {
+            if (--gBattleMons[i].volatiles.kazuradropGuts == 0)
+                DestroyKazuradropBuffIcon(i, KA_BUFF_GUTS);
+        }
 
         if (gDisableStructs[i].laserFocusTimer > 0 && --gDisableStructs[i].laserFocusTimer == 0)
             gBattleMons[i].volatiles.laserFocus = FALSE;
@@ -1363,6 +1372,14 @@ static bool32 HandleEndTurnDynamax(u32 battler)
         effect = TRUE;
     }
 
+    if (gBattleMons[battler].species == SPECIES_CASTORIA
+    && gBattleMons[battler].volatiles.castoriaMaxMoveTimer > 0
+    && --gBattleMons[battler].volatiles.castoriaMaxMoveTimer == 0)
+    {
+         gBattleStruct->castoria.useCommand |= CASTORIA_MAXMOVE_EXPIRED;
+    }
+
+
     return effect;
 }
 
@@ -1396,6 +1413,8 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
     {
         gBattleStruct->bugSpace.bpThreshold = 0;
     }
+
+    RefreshBugSpaceNumber(battler);
 
     // Update current tier based on new threshold
     enum BugSpaceThresholdTier oldTier = gBattleStruct->bugSpace.currentTier;

@@ -76,6 +76,7 @@
 #include "constants/trainers.h"
 #include "constants/weather.h"
 #include "cable_club.h"
+#include "castoria_name_theft.h"
 #include "test/test_runner_battle.h"
 
 extern const struct BgTemplate gBattleBgTemplates[];
@@ -3560,6 +3561,7 @@ static void DoBattleIntro(void)
         else // Skip party summary since it is a wild battle.
             gBattleStruct->eventState.battleIntro = BATTLE_INTRO_STATE_INTRO_TEXT;
         break;
+        
     case BATTLE_INTRO_STATE_DRAW_PARTY_SUMMARY:
         if (!gBattleControllerExecFlags)
         {
@@ -3928,6 +3930,23 @@ static void TryDoEventsBeforeFirstTurn(void)
         if (TrySwitchInEjectPack(FIRST_TURN))
             return;
         break;
+    case FIRST_TURN_EVENTS_CASTORIA_CHECK:
+    {
+            DebugPrintf("CASTORIA_CHECK entered, nameResult=%d", gBattleStruct->castoria.nameResult);
+        for (i = 0; i < gBattlersCount; i++)
+        {
+            if (gBattleMons[i].species == SPECIES_CASTORIA
+                && !gBattleStruct->castoria.nameResult)
+            {
+                gBattlerAttacker = i;
+                CastoriaInitArcanum(i);
+                BattleScriptExecute(BattleScript_CastoriaNameTheft);
+                return;
+            }
+        }
+        gBattleStruct->eventState.beforeFristTurn++;
+        break;
+    }
     case FIRST_TURN_EVENTS_END:
         for (i = 0; i < MAX_BATTLERS_COUNT; i++)
         {
@@ -3982,6 +4001,19 @@ static void HandleEndTurn_ContinueBattle(void)
             gBattleMons[i].volatiles.flinched = FALSE;
             if ((gBattleMons[i].status1 & STATUS1_SLEEP) && (gBattleMons[i].volatiles.multipleTurns))
                 CancelMultiTurnMoves(i, SKY_DROP_IGNORE);
+                 // Castoria Command Seal cooldown transition: THIS_TURN -> LAST_TURN
+            if (gBattleMons[i].species == SPECIES_CASTORIA)
+            {
+                if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_THIS_TURN)
+                {
+                    gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_THIS_TURN;
+                    gBattleStruct->castoria.useCommand |= CASTORIA_COMMAND_LAST_TURN;
+                }
+                else
+                {
+                    gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_LAST_TURN;
+                }
+            }
         }
         gBattleStruct->eventState.endTurnBlock = 0;
         gBattleStruct->eventState.endTurnBattler = 0;
@@ -4197,6 +4229,26 @@ static void HandleTurnActionSelectionState(void)
     s32 i, battler;
 
     gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
+
+    // Castoria True Name Command — AI pre-pass
+    for (battler = 0; battler < gBattlersCount; battler++)
+    {
+        if (gBattleMons[battler].species == SPECIES_CASTORIA
+            && gBattleMons[battler].volatiles.castoriaTrueNameCharges > 0
+            && CastoriaDecideUseCommand(battler))
+        {
+            BattleScriptExecute(BattleScript_CastoriaTrueNameCommand);
+            return;
+        }
+    }
+
+    if (gBattleStruct->castoria.useCommand & CASTORIA_MAXMOVE_EXPIRED)
+{
+    gBattleStruct->castoria.useCommand &= ~CASTORIA_MAXMOVE_EXPIRED;
+    BattleScriptExecute(BattleScript_CastoriaMaxMoveExpire);
+    return;
+}
+
     for (battler = 0; battler < gBattlersCount; battler++)
     {
         u32 position = GetBattlerPosition(battler);
@@ -4222,6 +4274,8 @@ static void HandleTurnActionSelectionState(void)
                     else
                         gBattleCommunication[battler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
                 }
+                // Castoria True Name Command — force player's action
+
                 else
                 {
                     if (gBattleMons[battler].volatiles.multipleTurns

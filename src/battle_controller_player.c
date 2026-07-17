@@ -42,6 +42,7 @@
 #include "constants/trainers.h"
 #include "constants/rgb.h"
 #include "caps.h"
+#include "castoria_name_theft.h"
 #include "menu.h"
 #include "pokemon_summary_screen.h"
 #include "type_icons.h"
@@ -236,6 +237,12 @@ static void HandleInputChooseAction(u32 battler)
 
     DoBounceEffect(battler, BOUNCE_HEALTHBOX, 7, 1);
     DoBounceEffect(battler, BOUNCE_MON, 7, 1);
+
+    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
+    {
+        if (!JOY_NEW(A_BUTTON))
+            return;
+    }
 
     if (JOY_REPEAT(DPAD_ANY) && gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A)
         gPlayerDpadHoldFrames++;
@@ -663,11 +670,22 @@ void HandleInputChooseMove(u32 battler)
         gPlayerDpadHoldFrames++;
     else
         gPlayerDpadHoldFrames = 0;
+        if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
+    {
+        if (!JOY_NEW(A_BUTTON))
+            return;
+    }
+    
 
     if (JOY_NEW(A_BUTTON) && !gBattleStruct->descriptionSubmenu)
     {
         TryToHideMoveInfoWindow();
         PlaySE(SE_SELECT);
+
+        if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
+        {
+            gBattleStruct->castoria.useCommand &= ~CASTORIA_COMMAND_UI_LOCKED;
+        }
 
         moveTarget = GetBattlerMoveTargetType(battler, moveInfo->moves[gMoveSelectionCursor[battler]]);
 
@@ -1998,6 +2016,10 @@ static void PlayerHandleChooseAction(u32 battler)
         ActionSelectionDestroyCursorAt(i);
 
     TryRestoreLastUsedBall();
+    
+    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
+        gActionSelectionCursor[battler] = 0;
+    
     ActionSelectionCreateCursorAt(gActionSelectionCursor[battler], 0);
     PREPARE_MON_NICK_BUFFER(gBattleTextBuff1, battler, gBattlerPartyIndexes[battler]);
     BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo);
@@ -2087,7 +2109,17 @@ void PlayerHandleChooseMove(u32 battler)
     else
     {
         struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleResources->bufferA[battler][4]);
+        
+    // True Name Command — snap move cursor to the worst move
+    if (gBattleStruct->castoria.useCommand & CASTORIA_COMMAND_UI_LOCKED)
+    {
+        u8 worst = (gBattleStruct->castoria.useCommand & CASTORIA_FORCED_MOVE_SLOT_MASK)
+                   >> CASTORIA_FORCED_MOVE_SLOT_SHIFT;
+        if (worst < MAX_MON_MOVES)
+            gMoveSelectionCursor[battler] = worst;
+    }
 
+    
         InitMoveSelectionsVarsAndStrings(battler);
         gBattleStruct->gimmick.playerSelect = FALSE;
         TryToAddMoveInfoWindow();

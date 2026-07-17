@@ -2368,6 +2368,20 @@ bool32 CanIndexMoveFaintTarget(u32 battlerAtk, u32 battlerDef, u32 moveIndex, en
     return FALSE;
 }
 
+bool32 CanIndexMoveBringToThreshold(u32 battlerAtk, u32 battlerDef, u32 moveIndex, enum DamageCalcContext calcContext, u32 thresholdPercent)
+{
+    s32 dmg;
+    u16 *moves = gBattleMons[battlerAtk].moves;
+
+    if (IsDoubleBattle() && battlerDef == BATTLE_PARTNER(battlerAtk))
+        dmg = gAiLogicData->simulatedDmg[battlerAtk][battlerDef][moveIndex].maximum;
+    else
+        dmg = AI_GetDamage(battlerAtk, battlerDef, moveIndex, calcContext, gAiLogicData);
+
+    u32 thresholdHP = gBattleMons[battlerDef].maxHP * thresholdPercent / 100;
+    return (gBattleMons[battlerDef].hp - dmg <= thresholdHP);
+}
+
 u16 *GetMovesArray(u32 battler)
 {
     if (IsAiBattlerAware(battler) || IsAiBattlerAware(BATTLE_PARTNER(battler)))

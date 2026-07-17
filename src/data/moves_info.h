@@ -21406,7 +21406,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
             "target."),
         .effect = EFFECT_HIT,
         .power = 60,
-        .type = TYPE_FIGHTING,
+        .type = TYPE_PSYCHIC,
         .accuracy = 100,
         .pp = 10,
         .target = MOVE_TARGET_SELECTED,

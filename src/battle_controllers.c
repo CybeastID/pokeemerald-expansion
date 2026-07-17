@@ -7,6 +7,7 @@
 #include "battle_controllers.h"
 #include "battle_gfx_sfx_util.h"
 #include "battle_interface.h"
+#include "kazuradrop_battle_ui.h"
 #include "battle_message.h"
 #include "battle_setup.h"
 #include "battle_tv.h"
@@ -1863,6 +1864,13 @@ static void SetBattlerMonData(u32 battler, struct Pokemon *party, u32 monId)
         break;
     case REQUEST_HP_BATTLE:
         SetMonData(&party[monId], MON_DATA_HP, &gBattleResources->bufferA[battler][3]);
+        if (gBattleMons[battler].volatiles.kazuradropGuts)
+        {
+            u16 hp = GetMonData(&party[monId], MON_DATA_HP);
+            u16 maxHp = GetMonData(&party[monId], MON_DATA_MAX_HP);
+            if (hp == maxHp)
+                CreateKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+        }
         break;
     case REQUEST_MAX_HP_BATTLE:
         SetMonData(&party[monId], MON_DATA_MAX_HP, &gBattleResources->bufferA[battler][3]);
@@ -2590,11 +2598,31 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
     hpVal = gBattleResources->bufferA[battler][2] | (gBattleResources->bufferA[battler][3] << 8);
     maxHP = GetMonData(mon, MON_DATA_MAX_HP);
     curHP = GetMonData(mon, MON_DATA_HP);
+    DebugPrintf("hpVal: %d SNAP: %d curHP: %d", hpVal, (s16)INSTANT_HP_BAR_SNAP, curHP);
 
-    if (hpVal != INSTANT_HP_BAR_DROP)
+    if (hpVal != INSTANT_HP_BAR_DROP && hpVal != INSTANT_HP_BAR_SNAP)
     {
         SetBattleBarStruct(battler, gHealthboxSpriteIds[battler], maxHP, curHP, hpVal);
         TestRunner_Battle_RecordHP(battler, curHP, min(maxHP, max(0, curHP - hpVal)));
+    }
+    
+    else if (hpVal == (s16)INSTANT_HP_BAR_SNAP)
+    {
+        // Guts updated gBattleMons[battler].hp to maxHP/2, but the party
+        // Pokemon struct (GetMonData) still has the old damage-reduced HP.
+        // Use gBattleMons for the correct snap value.
+        s32 snapHp = gBattleMons[battler].hp;
+        DebugPrintf("snapHp: %d maxHP: %d", snapHp, maxHP);
+        SetBattleBarStruct(battler, gHealthboxSpriteIds[battler], maxHP, snapHp, 0);
+        gBattleSpritesDataPtr->battleBars[battler].currValue = snapHp;
+        MoveBattleBar(battler, gHealthboxSpriteIds[battler], HEALTH_BAR, 0);
+        if (IsControllerPlayer(battler)
+        || IsControllerRecordedPlayer(battler)
+        || IsControllerRecordedPartner(battler)
+        || IsControllerWally(battler))
+            UpdateHpTextInHealthbox(gHealthboxSpriteIds[battler], HP_CURRENT, snapHp, maxHP);
+        TestRunner_Battle_RecordHP(battler, snapHp, snapHp);
+        gBattlerControllerFuncs[battler] = Controller_WaitForHealthBar;
     }
     else
     {
@@ -2604,7 +2632,9 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
          || IsControllerRecordedPartner(battler)
          || IsControllerWally(battler))
             UpdateHpTextInHealthbox(gHealthboxSpriteIds[battler], HP_CURRENT, 0, maxHP);
-        TestRunner_Battle_RecordHP(battler, curHP, 0);
+        // For INSTANT_HP_BAR_DROP we still want HP_BAR expectations to match the real HP
+        // (the move logic already updated gBattleMons[battler].hp).
+        TestRunner_Battle_RecordHP(battler, curHP, curHP);
     }
 
     gBattlerControllerFuncs[battler] = Controller_WaitForHealthBar;

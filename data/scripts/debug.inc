@@ -150,6 +150,7 @@ Debug_EventScript_Script_1::
 	waitmoncry
 	dowildbattle
 	release
+	clearflag FLAG_KAZURADROP_ENTERED_BATTLE
 	end
 
 Debug_EventScript_Script_2::

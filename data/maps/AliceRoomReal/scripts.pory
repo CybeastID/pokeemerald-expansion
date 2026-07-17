@@ -1,0 +1,341 @@
+// ==============================================================
+// AliceRoomReal.pory
+// Scripts for Alice's Giant Room
+// ==============================================================
+
+// VAR_ALICE_ROOM_STATE values:
+// 0 = fresh entry
+// 1 = Kazuradrop scene done / player on bed
+// 2 = Alice entered
+//
+// VAR_ALICE_ROOM_CHECKS: counts how many unique interactables checked (0-4)
+// Individual check tracking: bits in VAR_ALICE_ROOM_CHECKS_BITS
+//   bit 0 = bed, bit 1 = TV, bit 2 = computer, bit 3 = door
+
+// ==============================================================
+// MAP SCRIPTS
+// ==============================================================
+
+mapscripts AliceRoomReal_MapScripts {
+    onresume {
+        // nothing yet
+    }
+}
+
+// ==============================================================
+// ENTRY TELEPORT TRIGGER
+// Place this coord event at the map entrance to yank player in
+// ==============================================================
+
+script AliceRoomReal_EntryTeleport {
+    setvar(VAR_TEMP_1, 0)
+    applymovement(OBJ_EVENT_ID_PLAYER, AliceRoomReal_Movement_PlayerEnter)
+    waitmovement(0)
+    end
+}
+
+movement AliceRoomReal_Movement_PlayerEnter {
+    walk_left
+    walk_left
+    walk_left
+    step_end
+}
+
+// ==============================================================
+// INTERACTABLE: BED (before trap)
+// ==============================================================
+
+script AliceRoomReal_Bed {
+    // Check if already used this interactable
+    checkvar(VAR_ALICE_ROOM_CHECKS_BITS)
+    if (VAR_RESULT != FLAG_BIT_0) {
+        // Not checked yet
+        msgbox(AliceRoomReal_Text_Bed, MSGBOX_DEFAULT)
+        // Set bit 0
+        addvar(VAR_ALICE_ROOM_CHECKS_BITS, 1)
+        addvar(VAR_ALICE_ROOM_CHECKS, 1)
+        call(AliceRoomReal_TryFireTrap)
+    } else {
+        msgbox(AliceRoomReal_Text_Bed_Again, MSGBOX_DEFAULT)
+    }
+    end
+}
+
+// After trap fires, bed becomes escape route
+script AliceRoomReal_BedEscape {
+    lockall
+    applymovement(OBJ_EVENT_ID_PLAYER, AliceRoomReal_Movement_ClimbBed)
+    waitmovement(0)
+    // Kazuradrop taunts from below
+    msgbox(AliceRoomReal_Text_Kazura_BedTaunt, MSGBOX_DEFAULT)
+    releaseall
+    // Now set state so stepping on bed tile fires Alice scene
+    setvar(VAR_ALICE_ROOM_STATE, 1)
+    end
+}
+
+movement AliceRoomReal_Movement_ClimbBed {
+    walk_up
+    walk_up
+    step_end
+}
+
+// ==============================================================
+// INTERACTABLE: TV
+// ==============================================================
+
+script AliceRoomReal_TV {
+    checkvar(VAR_ALICE_ROOM_CHECKS_BITS)
+    if (VAR_RESULT != FLAG_BIT_1) {
+        msgbox(AliceRoomReal_Text_TooTall, MSGBOX_DEFAULT)
+        addvar(VAR_ALICE_ROOM_CHECKS_BITS, 2)
+        addvar(VAR_ALICE_ROOM_CHECKS, 1)
+        call(AliceRoomReal_TryFireTrap)
+    } else {
+        msgbox(AliceRoomReal_Text_TooTall, MSGBOX_DEFAULT)
+    }
+    end
+}
+
+// ==============================================================
+// INTERACTABLE: COMPUTER
+// ==============================================================
+
+script AliceRoomReal_Computer {
+    checkvar(VAR_ALICE_ROOM_CHECKS_BITS)
+    if (VAR_RESULT != FLAG_BIT_2) {
+        msgbox(AliceRoomReal_Text_TooTall, MSGBOX_DEFAULT)
+        addvar(VAR_ALICE_ROOM_CHECKS_BITS, 4)
+        addvar(VAR_ALICE_ROOM_CHECKS, 1)
+        call(AliceRoomReal_TryFireTrap)
+    } else {
+        msgbox(AliceRoomReal_Text_TooTall, MSGBOX_DEFAULT)
+    }
+    end
+}
+
+// ==============================================================
+// INTERACTABLE: DOOR HANDLE
+// ==============================================================
+
+script AliceRoomReal_DoorHandle {
+    checkvar(VAR_ALICE_ROOM_CHECKS_BITS)
+    if (VAR_RESULT != FLAG_BIT_3) {
+        msgbox(AliceRoomReal_Text_DoorHandle, MSGBOX_DEFAULT)
+        addvar(VAR_ALICE_ROOM_CHECKS_BITS, 8)
+        addvar(VAR_ALICE_ROOM_CHECKS, 1)
+        call(AliceRoomReal_TryFireTrap)
+    } else {
+        msgbox(AliceRoomReal_Text_DoorHandle, MSGBOX_DEFAULT)
+    }
+    end
+}
+
+// ==============================================================
+// TRAP FIRE CHECK
+// Called after every interactable — fires scene if all 4 checked
+// ==============================================================
+
+script AliceRoomReal_TryFireTrap {
+    checkvar(VAR_ALICE_ROOM_CHECKS)
+    if (VAR_RESULT == 4) {
+        call(AliceRoomReal_KazuradropScene)
+    }
+    return
+}
+
+// ==============================================================
+// KAZURADROP SCENE
+// ==============================================================
+
+script AliceRoomReal_KazuradropScene {
+    lockall
+    // Pan camera east to show the entrance
+    setvar(VAR_ALICE_ROOM_STATE, 0) // scene in progress
+    cam_pan_east: // placeholder — use setcameratoobject or similar
+    // Spawn Kazuradrop at warp entry
+    addobject(LOCALID_KAZURA_TRAP)
+    // Kazuradrop runs east two tiles and nails the boards
+    applymovement(LOCALID_KAZURA_TRAP, AliceRoomReal_Movement_KazuraEnter)
+    waitmovement(0)
+    // Replace hole metatile with boarded version
+    setmetatile(27, 3, 0x051, TRUE)
+    // Kazuradrop's first line
+    faceplayer(LOCALID_KAZURA_TRAP)
+    msgbox(AliceRoomReal_Text_Kazura1, MSGBOX_DEFAULT)
+    // Pan camera back to player
+    setcameratoobject(CAM_OBJ_PLAYER)
+    // Lock player movement and script the chase
+    applymovement(LOCALID_KAZURA_TRAP, AliceRoomReal_Movement_KazuraAdvance)
+    applymovement(OBJ_EVENT_ID_PLAYER, AliceRoomReal_Movement_PlayerFlee)
+    waitmovement(0)
+    msgbox(AliceRoomReal_Text_Kazura2, MSGBOX_DEFAULT)
+    applymovement(LOCALID_KAZURA_TRAP, AliceRoomReal_Movement_KazuraAdvance2)
+    applymovement(OBJ_EVENT_ID_PLAYER, AliceRoomReal_Movement_PlayerFlee2)
+    waitmovement(0)
+    msgbox(AliceRoomReal_Text_Kazura3, MSGBOX_DEFAULT)
+    // Player reaches bed
+    applymovement(OBJ_EVENT_ID_PLAYER, AliceRoomReal_Movement_PlayerClimbBed)
+    waitmovement(0)
+    // Kazuradrop closes in but can't reach
+    applymovement(LOCALID_KAZURA_TRAP, AliceRoomReal_Movement_KazuraStop)
+    waitmovement(0)
+    msgbox(AliceRoomReal_Text_Kazura_BedTaunt, MSGBOX_DEFAULT)
+    // Remove Kazuradrop
+    removeobject(LOCALID_KAZURA_TRAP)
+    setvar(VAR_ALICE_ROOM_STATE, 1)
+    releaseall
+    return
+}
+
+movement AliceRoomReal_Movement_KazuraEnter {
+    walk_right
+    walk_right
+    step_end
+}
+
+movement AliceRoomReal_Movement_KazuraAdvance {
+    walk_left
+    walk_left
+    walk_left
+    walk_left
+    step_end
+}
+
+movement AliceRoomReal_Movement_PlayerFlee {
+    walk_left
+    walk_left
+    walk_left
+    walk_left
+    step_end
+}
+
+movement AliceRoomReal_Movement_KazuraAdvance2 {
+    walk_left
+    walk_left
+    walk_left
+    step_end
+}
+
+movement AliceRoomReal_Movement_PlayerFlee2 {
+    walk_left
+    walk_left
+    walk_left
+    step_end
+}
+
+movement AliceRoomReal_Movement_PlayerClimbBed {
+    walk_left
+    walk_left
+    walk_up
+    walk_up
+    step_end
+}
+
+movement AliceRoomReal_Movement_KazuraStop {
+    walk_left
+    walk_left
+    step_end
+}
+
+// ==============================================================
+// ALICE SCENE
+// Triggered when player steps on bed tile (2, 8) after state == 1
+// ==============================================================
+
+script AliceRoomReal_AliceEntry {
+    if (var(VAR_ALICE_ROOM_STATE) == 1) {
+        lockall
+        // Pan camera down to exit mat
+        setcameratopos(9, 18)
+        delay(30)
+        // Spawn Alice at south edge
+        addobject(LOCALID_ALICE)
+        applymovement(LOCALID_ALICE, AliceRoomReal_Movement_AliceEnter)
+        waitmovement(0)
+        // Alice looks up at player on bed
+        applymovement(LOCALID_ALICE, AliceRoomReal_Movement_AliceLookUp)
+        waitmovement(0)
+        msgbox(AliceRoomReal_Text_Alice1, MSGBOX_DEFAULT)
+        msgbox(AliceRoomReal_Text_Alice2, MSGBOX_DEFAULT)
+        msgbox(AliceRoomReal_Text_Alice3, MSGBOX_DEFAULT)
+        msgbox(AliceRoomReal_Text_Alice4, MSGBOX_DEFAULT)
+        // Pan back to player
+        setcameratoobject(CAM_OBJ_PLAYER)
+        setvar(VAR_ALICE_ROOM_STATE, 2)
+        // Trigger battle
+        trainerbattle_no_intro(TRAINER_ALICE2, AliceRoomReal_Text_AliceDefeated)
+        releaseall
+    }
+    end
+}
+
+movement AliceRoomReal_Movement_AliceEnter {
+    walk_up
+    walk_up
+    walk_up
+    walk_up
+    walk_up
+    step_end
+}
+
+movement AliceRoomReal_Movement_AliceLookUp {
+    face_up
+    step_end
+}
+
+// ==============================================================
+// TEXT
+// ==============================================================
+
+text AliceRoomReal_Text_Bed {
+    format("The bed is enormous...\nYou might be able to climb up\lif you really had to.")
+}
+
+text AliceRoomReal_Text_Bed_Again {
+    format("...That bed is really something.")
+}
+
+text AliceRoomReal_Text_TooTall {
+    format("It's too tall to reach.")
+}
+
+text AliceRoomReal_Text_DoorHandle {
+    format("The door handle is too\nhigh to reach.")
+}
+
+text AliceRoomReal_Text_Kazura1 {
+    format("Ara ara...\nThere you are.\pDid you really think you could hide\nin Lady Alice's room?\pHow unsanitary.\nA little bug, scurrying around\lwhere it doesn't belong.")
+}
+
+text AliceRoomReal_Text_Kazura2 {
+    format("Come now, don't run.\nIt's so unbecoming.\pI'll make this quick, I promise~")
+}
+
+text AliceRoomReal_Text_Kazura3 {
+    format("Oh?\nStill trying to escape?\pHow adorably stubborn.")
+}
+
+text AliceRoomReal_Text_Kazura_BedTaunt {
+    format("Climbing the furniture now?\pThat won't help you.\nLady Alice will be most displeased\lto find you've been on her bed.\p...But I suppose that's no longer\nmy problem~")
+}
+
+text AliceRoomReal_Text_Alice1 {
+    format("My my...\nWhat do we have here?")
+}
+
+text AliceRoomReal_Text_Alice2 {
+    format("A little intruder, making\nthemselves at home in my bed.\p...You have very good taste,\nI'll give you that.")
+}
+
+text AliceRoomReal_Text_Alice3 {
+    format("I suppose I can entertain\nyou for a little while.\pDon't cry when it's over~")
+}
+
+text AliceRoomReal_Text_Alice4 {
+    format("Now then.\nShall we?")
+}
+
+text AliceRoomReal_Text_AliceDefeated {
+    format("...")
+}

@@ -865,5 +865,14 @@ extern const u8 BattleScript_BugSpaceBlocked_Repeat[];
 extern const u8 BattleScript_BugSpaceBlocked_POHKO[];
 extern const u8 BattleScript_BugSpaceStatDecay[];
 extern const u8 BattleScript_BugSpaceStatDecayFirst[];
+extern const u8 BattleScript_KazuradropGutsProc[];
+extern const u8 BattleScript_CastoriaNameTheft[];
+extern const u8 BattleScript_CastoriaNameTheftResult[];
+extern const u8 BattleScript_CastoriaMaxMoveExpire[];
+extern const u8 BattleScript_CastoriaTrueName[];
+extern const u8 BattleScript_CastoriaFalseName[];
+extern const u8 BattleScript_CastoriaBackedOut[];
+extern const u8 BattleScript_CastoriaTrueNameCommand[];
+
 
 #endif // GUARD_BATTLE_SCRIPTS_H

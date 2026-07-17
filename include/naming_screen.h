@@ -10,6 +10,7 @@ enum {
     NAMING_SCREEN_NICKNAME,
     NAMING_SCREEN_WALDA,
     NAMING_SCREEN_CODE,
+    NAMING_SCREEN_CASTORIA,
 };
 
 extern void BattleMainCB2(void);

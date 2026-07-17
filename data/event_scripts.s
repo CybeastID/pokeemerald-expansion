@@ -1177,3 +1177,9 @@ EventScript_VsSeekerChargingDone::
 	.include "data/maps/TerrariumTown/scripts.inc"
 
 	.include "data/maps/TerrariumEastWater/scripts.inc"
+
+	.include "data/maps/AliceRoom/scripts.inc"
+
+	.include "data/maps/AlicesRoom/scripts.inc"
+
+	.include "data/maps/AliceRoomReal/scripts.inc"

@@ -88,6 +88,12 @@ enum
 #define TAG_DIVINE_INDICATOR_TILE       0xD790
 #define TAG_TERA_TRIGGER_TILE           0xD791
 
+#define TAG_KAZU_PANEL           0xD7B0
+#define TAG_KAZU_GUTS_ICON      0xD7B1
+#define TAG_KAZU_INVINCIBLE_ICON 0xD7B2
+#define TAG_KAZU_BUFF_PAL       0xD7B3
+#define TAG_KAZU_NUMBER 0xD7B4
+
 #define TAG_GIMMICK_TRIGGER_PAL         0xD777
 #define TAG_MEGA_INDICATOR_PAL          0xD778
 #define TAG_MISC_INDICATOR_PAL          0xD779 // Alpha, Omega, and Dynamax indicators use the same palette as each of them only uses 4 different colors.
@@ -139,5 +145,9 @@ void UpdateAbilityPopup(u8 battlerId);
 void CategoryIcons_LoadSpritesGfx(void);
 void TryToAddMoveInfoWindow(void);
 void TryToHideMoveInfoWindow(void);
+
+u8 *AddTextPrinterAndCreateWindowOnHealthbox(const u8 *str, u32 x, u32 y, u32 bgColor, u32 *windowId);
+void RemoveWindowOnHealthbox(u32 windowId);
+void TextIntoHealthboxObject(void *dest, u8 *windowTileData, s32 windowWidth);
 
 #endif // GUARD_BATTLE_INTERFACE_H

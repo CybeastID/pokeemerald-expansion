@@ -2412,7 +2412,7 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
         .cantBeSwapped = TRUE,
         .cantBeTraced = TRUE,
     },
-    [ABILITY_SOUL_PARASITE] =
+    [ABILITY_BUG_SPACE] =
     {
         .name = _("Bug Space"),
         .description = COMPOUND_STRING("Kazuradrop's Bug Space."),

@@ -1,0 +1,32 @@
+// ==============================================================
+// AlicesRoom.pory
+// The decoy map. Two floor triggers seal the room on crossing.
+// ==============================================================
+
+mapscripts AlicesRoom_MapScripts {
+    .byte 0
+}
+
+// ==============================================================
+// TRIGGER A — place coord event at (4, 8)
+// ==============================================================
+
+script AlicesRoom_SealTriggerA {
+    setmetatile(4, 8, 0x259, TRUE)
+    setmetatile(5, 8, 0x259, TRUE)
+    removetrigger(AlicesRoom_SealTriggerA)
+    removetrigger(AlicesRoom_SealTriggerB)
+    end
+}
+
+// ==============================================================
+// TRIGGER B — place coord event at (5, 8)
+// ==============================================================
+
+script AlicesRoom_SealTriggerB {
+    setmetatile(4, 8, 0x259, TRUE)
+    setmetatile(5, 8, 0x259, TRUE)
+    removetrigger(AlicesRoom_SealTriggerA)
+    removetrigger(AlicesRoom_SealTriggerB)
+    end
+}

@@ -222,7 +222,12 @@ enum VolatileFlags
     F(VOLATILE_BEADS_OF_RUIN,               beadsOfRuin,                   (u32, 1)) \
     F(VOLATILE_MELT_VIRUS,                  meltVirus,                     (u32, 1)) \
     F(VOLATILE_MELT_VIRUS_BY,               meltVirusBy,                   (enum BattlerId, MAX_BITS(4))) \
-    F(VOLATILE_INFINITE_GROWTH,             infiniteGrowth,                (u32, 1))
+    F(VOLATILE_INFINITE_GROWTH,             infiniteGrowth,                (u32, 1)) \
+    F(VOLATILE_KAZURADROP_GUTS,             kazuradropGuts,               (u32, 2)) \
+    F(VOLATILE_CASTORIA_TRUE_NAME_CHARGES,   castoriaTrueNameCharges,   (u8, 3)) \
+    F(VOLATILE_CASTORIA_NAMELESS,            castoriaNameless,          (u8, 1)) \
+    F(VOLATILE_CASTORIA_MAX_MOVE_TIMER,      castoriaMaxMoveTimer,      (u8, 3)) \
+
 /* Use within a macro to get the maximum allowed value for a volatile. Requires _typeMaxValue as input. */
 #define GET_VOLATILE_MAXIMUM(_typeMaxValue, ...) INVOKE_WITH_B(GET_VOLATILE_MAXIMUM_, _typeMaxValue)
 #define GET_VOLATILE_MAXIMUM_(_type, ...) FIRST(__VA_OPT__(FIRST(__VA_ARGS__),) MAX_BITS((sizeof(_type) * 8)))

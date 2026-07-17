@@ -15,6 +15,7 @@
 #include "battle_interface.h"
 #include "battle_anim.h"
 #include "data.h"
+#include "kazuradrop_battle_ui.h"
 
 // this file's functions
 static void CB2_ReshowBattleScreenAfterMenu(void);
@@ -164,6 +165,8 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         gPaletteFade.bufferTransferDisabled = 0;
         SetMainCallback2(BattleMainCB2);
         FillAroundBattleWindows();
+        // menu close/return reshow path wipes sprites/OBJ tiles; recreate ours
+        ReshowKazuradropBattleUI();
         break;
     }
 
@@ -247,6 +250,8 @@ static void CB2_ReshowBlankBattleScreenAfterMenu(void)
         gPaletteFade.bufferTransferDisabled = 0;
         SetMainCallback2(BattleMainCB2);
         FillAroundBattleWindows();
+        // menu close/return reshow path wipes sprites/OBJ tiles; recreate ours
+        ReshowKazuradropBattleUI();
         break;
     }
 

@@ -179,6 +179,14 @@ void ActivateDynamax(u32 battler)
     SetGimmickAsActivated(battler, GIMMICK_DYNAMAX);
     gBattleStruct->dynamax.dynamaxTurns[battler] = DYNAMAX_TURNS_COUNT;
 
+    if (gBattleMons[battler].species == SPECIES_CASTORIA)
+    {
+        gBattleStruct->dynamax.dynamaxTurns[battler] = DYNAMAX_TURNS_COUNT_CHEATER;
+        gBattleMons[battler].volatiles.castoriaMaxMoveTimer = 3;
+    }
+
+
+
     // Substitute is removed upon Dynamaxing.
     gBattleMons[battler].volatiles.substitute = FALSE;
     ClearBehindSubstituteBit(battler);
@@ -264,6 +272,10 @@ static u16 GetTypeBasedMaxMove(u32 battler, enum Type type)
 // Returns the appropriate Max Move or G-Max Move for a battler to use.
 u16 GetMaxMove(u32 battler, u32 baseMove)
 {
+        if (gBattleMons[battler].species == SPECIES_CASTORIA
+        && !gBattleMons[battler].volatiles.castoriaMaxMoveTimer)
+        return baseMove;
+
     enum Type moveType;
     SetTypeBeforeUsingMove(baseMove, battler);
     moveType = GetBattleMoveType(baseMove);

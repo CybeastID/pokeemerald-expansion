@@ -16993,7 +16993,35 @@ Timid Nature
 
 Kazura (SPECIES_KAZURADROP) @ Black Glasses 
 Level: 105 
-Ability: Soul Parasite  
+Ability: Bug Space  
+EVs: 252 SpA / 4 HP / 252 Spe  
+Modest Nature  
+- Moonblast  
+- Bug Buzz
+- Quiver Dance  
+- Stomp
+
+=== TRAINER_ALICE3 ===
+Name: ALICE
+Class: Alice
+Pic: Swimmer F
+Gender: Female
+Music: Elite Four
+Double Battle: No
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT / AI_FLAG_DYNAMIC_FUNC
+
+Espeon @ Life Orb  
+Ability: Magic Bounce  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+- Psychic  
+- Shadow Ball  
+- Dazzling Gleam  
+- Calm Mind  
+
+Kazura (SPECIES_KAZURADROP) @ Black Glasses 
+Level: 105 
+Ability: Bug Space  
 EVs: 252 SpA / 4 HP / 252 Spe  
 Modest Nature  
 - Moonblast  

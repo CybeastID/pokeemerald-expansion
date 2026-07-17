@@ -1060,13 +1060,12 @@ ShrinkPlayerScript_Text_Shrunk:
 	giveitem ITEM_MEGA_RING, 1
 	giveitem ITEM_TERA_ORB, 1
 	setflag FLAG_SYS_POKEMON_GET
-givemon species=SPECIES_BLAZIKEN, level=100, item=ITEM_BLAZIKENITE, ball=ITEM_POKE_BALL, nature=NATURE_ADAMANT, abilityNum=2, gender=MON_MALE, atkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_FLARE_BLITZ, move2=MOVE_CLOSE_COMBAT, move3=MOVE_SWORDS_DANCE, move4=MOVE_PROTECT, teraType=TYPE_FIRE
-givemon species=SPECIES_SHIFTRY, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_BALL, nature=NATURE_LONELY, abilityNum=0, gender=MON_MALE, atkEv=252, spAtkEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_LEAF_STORM, move2=MOVE_KNOCK_OFF, move3=MOVE_SUCKER_PUNCH, move4=MOVE_GROWTH, teraType=TYPE_DARK
-givemon species=SPECIES_STARMIE, level=100, item=ITEM_LIFE_ORB, ball=ITEM_POKE_BALL, nature=NATURE_TIMID, abilityNum=2, gender=MON_GENDERLESS, spAtkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=0, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_HYDRO_PUMP, move2=MOVE_PSYSHOCK, move3=MOVE_ICE_BEAM, move4=MOVE_RAPID_SPIN, teraType=TYPE_WATER
-givemon species=SPECIES_DUSCLOPS, level=100, item=ITEM_EVIOLITE, ball=ITEM_POKE_BALL, nature=NATURE_RELAXED, abilityNum=0, gender=MON_MALE, hpEv=252, defEv=252, spDefEv=4, hpIv=31, atkIv=0, defIv=31, speedIv=0, spAtkIv=31, spDefIv=31, move1=MOVE_NIGHT_SHADE, move2=MOVE_WILL_O_WISP, move3=MOVE_PAIN_SPLIT, move4=MOVE_TRICK_ROOM, teraType=TYPE_GHOST
-givemon species=SPECIES_AGGRON, level=100, item=ITEM_CHOICE_BAND, ball=ITEM_POKE_BALL, nature=NATURE_ADAMANT, abilityNum=1, gender=MON_MALE, hpEv=252, atkEv=252, spDefEv=4, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_HEAD_SMASH, move2=MOVE_HEAVY_SLAM, move3=MOVE_EARTHQUAKE, move4=MOVE_FIRE_PUNCH, teraType=TYPE_ROCK
-givemon species=SPECIES_FLYGON, level=100, item=ITEM_CHOICE_SCARF, ball=ITEM_POKE_BALL, nature=NATURE_JOLLY, abilityNum=0, gender=MON_MALE, atkEv=252, spDefEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_EARTHQUAKE, move2=MOVE_OUTRAGE, move3=MOVE_U_TURN, move4=MOVE_STONE_EDGE, teraType=TYPE_GROUND	
-	giveitem ITEM_REVIVE, 5
+givemon SPECIES_INFERNAPE, 100, item=ITEM_LIFE_ORB, nature=NATURE_NAIVE, abilityNum=2, atkEv=252, spAtkEv=4, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_FLAMETHROWER, move2=MOVE_CLOSE_COMBAT, move3=MOVE_MACH_PUNCH, move4=MOVE_FIRE_BLAST, teraType=TYPE_FIRE
+givemon SPECIES_STARAPTOR, 100, item=ITEM_CHOICE_BAND, nature=NATURE_JOLLY, abilityNum=2, hpEv=4, atkEv=252, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_BRAVE_BIRD, move2=MOVE_FLY, move3=MOVE_STEEL_WING, move4=MOVE_CLOSE_COMBAT, teraType=TYPE_NORMAL
+givemon SPECIES_LUXRAY, 100, item=ITEM_CHOICE_BAND, nature=NATURE_ADAMANT, abilityNum=2, hpEv=4, atkEv=252, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_STRENGTH, move2=MOVE_THUNDER_FANG, move3=MOVE_CRUNCH, move4=MOVE_WILD_CHARGE, teraType=TYPE_ELECTRIC
+givemon SPECIES_PALKIA, 100, item=ITEM_CHOICE_SPECS, nature=NATURE_TIMID, abilityNum=0, gender=MON_GENDERLESS, hpEv=4, spAtkEv=252, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_ANCIENT_POWER, move2=MOVE_DRAGON_BREATH, move3=MOVE_GIGA_IMPACT, move4=MOVE_SPACIAL_REND, teraType=TYPE_WATER
+givemon SPECIES_MACHAMP, 100, item=ITEM_ASSAULT_VEST, nature=NATURE_ADAMANT, abilityNum=1, hpEv=128, atkEv=252, spDefEv=128, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_DYNAMIC_PUNCH, move2=MOVE_KNOCK_OFF, move3=MOVE_BULLET_PUNCH, move4=MOVE_ICE_PUNCH, teraType=TYPE_FIGHTING
+givemon SPECIES_FLOATZEL, 100, item=ITEM_LIFE_ORB, nature=NATURE_JOLLY, abilityNum=0, hpEv=4, atkEv=252, speedEv=252, hpIv=31, atkIv=31, defIv=31, speedIv=31, spAtkIv=31, spDefIv=31, move1=MOVE_WATERFALL, move2=MOVE_ICE_PUNCH, move3=MOVE_AQUA_JET, move4=MOVE_BULK_UP, teraType=TYPE_WATER
 	giveitem ITEM_FULL_RESTORE, 3
 	giveitem ITEM_MOOMOO_MILK, 4
 	giveitem ITEM_SUPER_POTION, 10
@@ -1093,6 +1092,7 @@ LittlerootTown_Alice_Fight::
 
 LittlerootTown_Not_In_Demo::
 	msgbox LittleRootTownAreaSealedText, MSGBOX_DEFAULT
+	end
 
 LittleRootTownAreaSealedText::
 	.string "A sign is on the doorway.\n"

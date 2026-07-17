@@ -392,9 +392,11 @@ static void SetVBlank(void);
 static void VBlankCB_NamingScreen(void);
 static void NamingScreen_ShowBgs(void);
 static bool8 IsWideLetter(u8);
+static void DebugPrintHeapStatus(void);
 
 void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback)
 {
+    DebugPrintHeapStatus();   // <-- add this
     sNamingScreen = Alloc(sizeof(struct NamingScreenData));
     if (!sNamingScreen)
     {
@@ -1749,6 +1751,7 @@ static void (*const sDrawTextEntryBoxFuncs[])(void) =
     [NAMING_SCREEN_NICKNAME]   = DrawMonTextEntryBox,
     [NAMING_SCREEN_WALDA]      = DrawNormalTextEntryBox,
     [NAMING_SCREEN_CODE]       = DrawNormalTextEntryBox,
+    [NAMING_SCREEN_CASTORIA] = DrawNormalTextEntryBox,
 };
 
 static void DrawTextEntryBox(void)
@@ -2163,6 +2166,17 @@ static const struct NamingScreenTemplate sCodeScreenTemplate =
     .title = sText_EnterCode,
 };
 
+static const u8 sText_CastoriaContract[] = _("Your name...?");
+static const struct NamingScreenTemplate sCastoriaNameTemplate =
+{
+    .iconFunction = 0,
+    .title = sText_CastoriaContract,
+    .maxChars = PLAYER_NAME_LENGTH,       
+    .copyExistingString = FALSE,
+    .initialPage = KBPAGE_LETTERS_UPPER,
+    .addGenderIcon = 0,
+};
+
 static const struct NamingScreenTemplate *const sNamingScreenTemplates[] =
 {
     [NAMING_SCREEN_PLAYER]     = &sPlayerNamingScreenTemplate,
@@ -2171,6 +2185,7 @@ static const struct NamingScreenTemplate *const sNamingScreenTemplates[] =
     [NAMING_SCREEN_NICKNAME]   = &sMonNamingScreenTemplate,
     [NAMING_SCREEN_WALDA]      = &sWaldaWordsScreenTemplate,
     [NAMING_SCREEN_CODE]       = &sCodeScreenTemplate,
+    [NAMING_SCREEN_CASTORIA]   = &sCastoriaNameTemplate,
 };
 
 static const struct OamData sOam_8x8 =
@@ -2621,4 +2636,31 @@ static const struct SpritePalette sSpritePalettes[] =
     {}
 };
 
+static void DebugPrintHeapStatus(void)
+{
+    const struct MemBlock *pos = HeapHead();
+    const struct MemBlock *head = pos;
+    u32 totalFree = 0;
+    u32 largestFree = 0;
+    u32 totalUsed = 0;
+    u32 blockCount = 0;
 
+    do
+    {
+        blockCount++;
+        if (!pos->allocated)
+        {
+            totalFree += pos->size;
+            if (pos->size > largestFree)
+                largestFree = pos->size;
+        }
+        else
+        {
+            totalUsed += pos->size;
+            DebugPrintf("  USED: size=%d loc=%s", pos->size, MemBlockLocation(pos));
+        }
+        pos = pos->next;
+    } while (pos != head);
+
+    DebugPrintf("HEAP: blocks=%d free=%d largest=%d used=%d", blockCount, totalFree, largestFree, totalUsed);
+}
