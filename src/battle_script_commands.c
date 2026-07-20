@@ -2420,17 +2420,23 @@ static void Cmd_healthbarupdate(void)
             
             // else
             // {
-                // If this is a Kazuradrop transformation hit, clamp the visual damage
-                if (gBattleMons[battler].species == SPECIES_KAZURADROP
-                && gBattleStruct->bugSpace.active
-                && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
-                {
-                    u32 tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
-                    if (tenPercentHp == 0) tenPercentHp = 1;
-                    if (gBattleMons[battler].hp > tenPercentHp
-                    && (s32)gBattleMons[battler].hp - damage < (s32)tenPercentHp)
-                        damage = gBattleMons[battler].hp - tenPercentHp;
-                }
+                /*
+                 * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
+                 * This clamped the visual HP bar at 10% so the bar would stop at the
+                 * threshold before the transformation restored it.  Now the HP bar
+                 * drains fully to 0 (Break Bar behaviour) and the transformation is
+                 * triggered by the gate in Cmd_tryfaintmon instead.
+                 */
+                // if (gBattleMons[battler].species == SPECIES_KAZURADROP
+                // && gBattleStruct->bugSpace.active
+                // && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
+                // {
+                //     u32 tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
+                //     if (tenPercentHp == 0) tenPercentHp = 1;
+                //     if (gBattleMons[battler].hp > tenPercentHp
+                //     && (s32)gBattleMons[battler].hp - damage < (s32)tenPercentHp)
+                //         damage = gBattleMons[battler].hp - tenPercentHp;
+                // }
                 damage = min(damage, 10000);
                 BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, damage);
                 MarkBattlerForControllerExec(battler);
@@ -2476,10 +2482,27 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
     gBattlescriptCurrInstr = nextInstr;
 }
 
+/*
+ * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
+ * TryTriggerKazuradropTransformation  was  called  just  before  the  damage-application
+ * block in MoveDamageDataHpUpdate.  It clamped moveDamage so HP never dropped below 10%,
+ * then set kazuradropTransformed = TRUE to push BattleScript_KazuradropTransform after
+ * the damage was dealt.  This only worked for direct move damage  (Destiny Bond, Perish
+ * Song, passive end-of-turn damage all bypassed it).
+ *
+ * The replacement gate in Cmd_tryfaintmon  catches *any* source of lethal damage  at the
+ * faint checkpoint.  When Kazuradrop hits 0 HP  the gate pushes BattleScript_Kazuradrop-
+ * Transform  (which  calls  ApplyKazuradropTransformation)  and  returns,  skipping  the
+ * entire faint machinery.  The HP bar now drains fully to 0 (Break Bar behaviour) rather
+ * than  stopping at 10%.
+ *
+ * Original function (a few lines below) is retained as reference.
+ */
+
 // Kazuradrop transformation: clamp damage at 10% HP, then trigger full restore + double max HP + accelerate decay + swap to Sakura Five moves
+/*
 static bool32 TryTriggerKazuradropTransformation(u32 battler)
 {
-    // u32 i;
     u32 tenPercentHp;
 
     // Only applies to Kazuradrop
@@ -2509,15 +2532,17 @@ static bool32 TryTriggerKazuradropTransformation(u32 battler)
     // Clamp damage at 10% HP threshold
     gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - tenPercentHp;
     gBattleStruct->bugSpace.sourceBattler = battler;
-    
+
     return TRUE;
 }
+*/
 
 // Apply Kazuradrop transformation effects after damage is dealt
 static void ApplyKazuradropTransformation(u32 battler)
 {
     u32 i;
-
+     // Restore HP bar to normal red (break bar phase is over)
+    SetKazuradropHpBarPalette(battler, FALSE);
     // Double max HP
     gBattleMons[battler].maxHP *= 2;
     // Full restore
@@ -2617,9 +2642,18 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
         {
             bool32 kazuradropTransformed = FALSE;
 
-            // Check for Kazuradrop transformation before applying damage
-            if (TryTriggerKazuradropTransformation(battler))
-                kazuradropTransformed = TRUE;
+            /*
+             * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
+             * TryTriggerKazuradropTransformation  clamped  moveDamage  at  10%  HP  and
+             * returned TRUE so the block after hp=0 would push BattleScript_Kazuradrop-
+             * Transform.  This only covered direct move damage — nothing else.
+             *
+             * The replacement is the early-return gate in Cmd_tryfaintmon  which catches
+             * any source of lethal damage.  See the note above ApplyKazuradropTransform-
+             * ation for more details.
+             */
+            // if (TryTriggerKazuradropTransformation(battler))
+            //     kazuradropTransformed = TRUE;
 
             gBideDmg[battler] += gBattleStruct->moveDamage[battler];
             if (scriptBattler == BS_TARGET)
@@ -2642,6 +2676,8 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                     gBattleMons[battler].volatiles.kazuradropGuts = 0;
                     // Destroy Guts icon
                     DestroyKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+                    // Restore HP bar to normal red (break bar is broken) (MOVED TO TRANSFORM)
+                    // SetKazuradropHpBarPalette(battler, FALSE);
                     // u32 preSnapHP = gBattleMons[battler].hp;
 
                     // Snap HP to 50% of max instantly
@@ -2688,31 +2724,22 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                 }
             }
 
-            // Apply Kazuradrop transformation effects after damage is dealt
-            if (kazuradropTransformed)
-            {
-                gBattleStruct->bugSpace.moveSwapActive |= (1u << battler);
-
-                // First, send the current HP (clamped at 10%) to the controller so the HP bar
-                // visually stops at the 10% threshold before the transformation restores it.
-                /* u32 hpBeforeTransform = gBattleMons[battler].hp;
-                BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(hpBeforeTransform), &hpBeforeTransform);
-                MarkBattlerForControllerExec(battler);
-                // Now apply transformation effects
-                // ApplyKazuradropTransformation(battler);
-                
-                MarkBattlerForControllerExec(battler);
-                
-                 MarkBattlerForControllerExec(battler);
-                // gBattlescriptCurrInstr = nextInstr;
-                */ 
-               // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
-               // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
-                BattleScriptPush(nextInstr);
-                BattleScriptPush(BattleScript_KazuradropTransformReturn);
-                gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
-                return;
-            }
+            /*
+             * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
+             * kazuradropTransformed  was  set  TRUE  by  TryTriggerKazuradropTransformation
+             * and this block would push BattleScript_KazuradropTransform after the 10%-HP-
+             * clamped damage was applied.  Now the gate in Cmd_tryfaintmon catches all damage
+             * sources at the faint checkpoint instead.  See notes above ApplyKazuradropTrans-
+             * formation for more details.
+             */
+            // if (kazuradropTransformed)
+            // {
+            //     gBattleStruct->bugSpace.moveSwapActive |= (1u << battler);
+            //     BattleScriptPush(nextInstr);
+            //     BattleScriptPush(BattleScript_KazuradropTransformReturn);
+            //     gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
+            //     return;
+            // }
 
             gProtectStructs[battler].assuranceDoubled = TRUE;
             gProtectStructs[battler].revengeDoubled |= 1u << gBattlerAttacker;
@@ -4578,6 +4605,19 @@ static void Cmd_tryfaintmon(void)
 
         if (cmd->battler == BS_TARGET && gCurrentMove != MOVE_NONE)
             TryUpdateEvolutionTracker(IF_DEFEAT_X_WITH_ITEMS, 1, MOVE_NONE);
+
+        // Kazuradrop Break Bar: intercept faint, trigger transformation instead
+        if (!IsBattlerAlive(battler)
+            && gBattleStruct->bugSpace.active
+            && battler == gBattleStruct->bugSpace.sourceBattler
+            && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
+            && !gBattleMons[battler].volatiles.transformed)
+        {
+            BattleScriptPush(cmd->nextInstr);
+            BattleScriptPush(BattleScript_KazuradropTransformReturn);
+            gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
+            return;
+        }
 
         gBattlerFainted = battler;
         if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)

@@ -301,7 +301,7 @@ struct BugSpaceData
     u8 moveSwapActive;            // Bitmask per battler: 1 if their moves have been swapped
     u8 entryDefenseTimer;         // Turns remaining for the entry defensive buff
     u8 gutsActive;                // Bitmask per battler: 1 if Guts (Endure) is active
-    u8 invincibleActive;          // Bitmask per battler: 1 if Kazuradrop invincible icon should be shown
+    u8 invincibleActive;            // Bits 0-3: per-battler Kazuradrop invincible icon shown.
     u8 kazuraDialogState;
 };
 

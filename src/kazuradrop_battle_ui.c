@@ -55,6 +55,10 @@ static const u16 sKazuraBoxPal[] =
 static const u8 ALIGNED(4) sKazuraBoxTilemap[] =
     INCBIN_U8("graphics/battle_interface/textboxkaztiled.bin");
 
+// Purple HP bar palette for Kazuradrop's break bar
+static const u16 sKazuHpBarPurplePal[] =
+    INCBIN_U16("graphics/battle_interface/hpbar_purple.gbapal");
+
 // =====================================================================
 // Tags
 // =====================================================================
@@ -154,6 +158,7 @@ static u8 sBugSpacePanelSpriteId[MAX_BATTLERS_COUNT];
 static u8 sGutsSpriteId[MAX_BATTLERS_COUNT];
 static u8 sInvincibleSpriteId[MAX_BATTLERS_COUNT];
 static bool32 sKazuBuffIconsLoaded = FALSE;
+static bool32 sKazuHpBarPalLoaded = FALSE;
 static u8 sNumberSpriteId[MAX_BATTLERS_COUNT];
 static u8 sKazuraDialogWindowId;
 
@@ -378,7 +383,8 @@ void InitKazuradropBattleIcons(void)
         sInvincibleSpriteId[i]    = MAX_SPRITES;
         sNumberSpriteId[i] = MAX_SPRITES;
     }
-     sKazuBuffIconsLoaded = FALSE;
+    sKazuBuffIconsLoaded = FALSE;
+    sKazuHpBarPalLoaded = FALSE;
 }
 
 void FreeKazuradropBattleIconGfx(void)
@@ -444,6 +450,9 @@ void CreateBugSpacePanel(u32 battler)
 
     sBugSpacePanelSpriteId[battler] = spriteId;
     // Number will be written once the slide-in completes (see callback)
+
+    // Activate purple HP bar for Kazuradrop's break bar
+    SetKazuradropHpBarPalette(battler, TRUE);
 
     if (GetSpriteTileStartByTag(TAG_KAZU_NUMBER) == 0xFFFF)
     LoadSpriteSheet(&sSpriteSheet_KazuNumber);
@@ -548,6 +557,7 @@ void ReshowKazuradropBattleUI(void)
     }
 
     sKazuBuffIconsLoaded = FALSE;
+    sKazuHpBarPalLoaded = FALSE;
 
     if (gBattleStruct == NULL)
         return;
@@ -790,6 +800,65 @@ void HideKazuraDialogueBox(void)
     RemoveWindow(sKazuraDialogWindowId);
     sKazuraDialogWindowId = 0xFF;
 }
+
+// =====================================================================
+// HP bar palette override (purple break bar → red after break)
+// =====================================================================
+
+// Accessor alias — matches the same field used in battle_interface.c
+// healthbox sprite's data[5] holds the healthbar sprite ID.
+#define hMain_HealthBarSpriteId     data[5]
+
+static const struct SpritePalette sSpritePalette_KazuHpBarPurple =
+    { sKazuHpBarPurplePal, TAG_KAZU_HP_BAR_PAL };
+
+void LoadKazuradropHpBarPalette(void)
+{
+    DebugPrintf("LKHBP called, sKazuHpBarPalLoaded=%d, preExistingSlot=%d", sKazuHpBarPalLoaded, IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
+    if (!sKazuHpBarPalLoaded)
+    {
+        LoadSpritePalette(&sSpritePalette_KazuHpBarPurple);
+        sKazuHpBarPalLoaded = TRUE;
+    }
+    DebugPrintf("LKHBP done, slotAfter=%d", IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
+}
+
+void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
+{
+    // Ensure the purple palette is loaded if we need it
+    if (usePurple)
+        LoadKazuradropHpBarPalette();
+
+    // Get the healthbar sprite ID for this battler
+    u8 healthboxSpriteId = gHealthboxSpriteIds[battler];
+    if (healthboxSpriteId == MAX_SPRITES)
+        return;
+
+    u8 healthbarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
+    if (healthbarSpriteId == MAX_SPRITES)
+        return;
+
+    if (usePurple)
+    {
+        // Switch to the purple palette slot
+        // Find which OBJ palette slot TAG_KAZU_HP_BAR_PAL was loaded into
+        u8 palSlot = IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL);
+        DebugPrintf("SKHBP purple branch palSlot=%d", palSlot);
+        if (palSlot != 0xFF)
+            gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
+    }
+    else
+    {
+        // Restore the original healthbar palette
+        u8 palSlot = IndexOfSpritePaletteTag(TAG_HEALTHBAR_PAL);
+        DebugPrintf("SKHBP restore branch palSlot=%d", palSlot);
+        if (palSlot != 0xFF)
+            gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
+    }
+    DebugPrintf("SKHBP final oam.paletteNum=%d", gSprites[healthbarSpriteId].oam.paletteNum);
+}
+
+#undef hMain_HealthBarSpriteId
 
 // =====================================================================
 // Undefine data field aliases

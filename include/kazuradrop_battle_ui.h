@@ -8,6 +8,7 @@ enum KazuradropBuffIconType
     KA_BUFF_INVINCIBLE,   // Invincibility from BugSpace vs Explosion
 };
 
+
 // ---------------------------------------------------------------
 // Bug Space threshold panel (number display, slides in/out)
 // ---------------------------------------------------------------
@@ -58,6 +59,12 @@ void FreeKazuradropBattleIconGfx(void);
 // Called by reshow_battle_screen.c after menu open/return wipes sprites.
 // Recreates the Bug Space panel + Kazuradrop icons based on gBattleStruct->bugSpace flags.
 void ReshowKazuradropBattleUI(void);
+
+// ---------------------------------------------------------------
+// HP bar palette override (purple break bar → red after break)
+// ---------------------------------------------------------------
+void LoadKazuradropHpBarPalette(void);
+void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple);
 
 // ---------------------------------------------------------------
 // Kazuradrop dialogue box (Moon Cell styled message window)

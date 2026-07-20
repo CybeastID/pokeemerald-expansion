@@ -35,6 +35,7 @@
 #include "constants/items.h"
 #include "caps.h"
 #include "event_data.h"
+#include "kazuradrop_battle_ui.h"
 
 enum
 {   // Corresponds to gHealthboxElementsGfxTable (and the tables after it) in graphics.c
@@ -730,7 +731,7 @@ u8 CreateBattlerHealthboxSprites(u8 battler)
     gBattleStruct->ballSpriteIds[0] = MAX_SPRITES;
     gBattleStruct->ballSpriteIds[1] = MAX_SPRITES;
     gBattleStruct->moveInfoSpriteId = MAX_SPRITES;
-
+    DebugPrintf("CBHS battler=%d species=%d isKazu=%d", battler, gBattleMons[battler].species, gBattleMons[battler].species == SPECIES_KAZURADROP);
     return healthboxLeftSpriteId;
 }
 
@@ -2132,19 +2133,32 @@ static void MoveBattleBarGraphically(u8 battler, u8 whichBar)
     switch (whichBar)
     {
     case HEALTH_BAR:
-        filledPixelsCount = CalcBarFilledPixels(gBattleSpritesDataPtr->battleBars[battler].maxValue,
+         filledPixelsCount = CalcBarFilledPixels(gBattleSpritesDataPtr->battleBars[battler].maxValue,
                             gBattleSpritesDataPtr->battleBars[battler].oldValue,
                             gBattleSpritesDataPtr->battleBars[battler].receivedValue,
                             &gBattleSpritesDataPtr->battleBars[battler].currValue,
                             array, B_HEALTHBAR_PIXELS / 8);
 
-        if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 50 / 100)) // more than 50 % hp
+        DebugPrintf("MBBG battler=%d species=%d isKazu=%d", battler, gBattleMons[battler].species, gBattleMons[battler].species == SPECIES_KAZURADROP);
+
+        if (gBattleMons[battler].species == SPECIES_KAZURADROP)
+        {
+            u8 healthbarSpriteId = gSprites[gBattleSpritesDataPtr->battleBars[battler].healthboxSpriteId].hMain_HealthBarSpriteId;
+            u8 curPalNum = gSprites[healthbarSpriteId].oam.paletteNum;
+            u8 kazuPalSlot = IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL);
+            DebugPrintf("MBBG kazu healthbarSpriteId=%d curPalNum=%d kazuPalSlot=%d match=%d", healthbarSpriteId, curPalNum, kazuPalSlot, curPalNum == kazuPalSlot);
+            if (curPalNum == kazuPalSlot)
+                barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;
+            else
+                barElementId = HEALTHBOX_GFX_HP_BAR_RED;
+            DebugPrintf("MBBG kazu chose barElementId=%d", barElementId);
+        }
+        else if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 50 / 100)) // more than 50 % hp
             barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;
         else if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 20 / 100)) // more than 20% hp
             barElementId = HEALTHBOX_GFX_HP_BAR_YELLOW;
         else
             barElementId = HEALTHBOX_GFX_HP_BAR_RED; // 20 % or less
-
         for (i = 0; i < 6; i++)
         {
             u8 healthbarSpriteId = gSprites[gBattleSpritesDataPtr->battleBars[battler].healthboxSpriteId].hMain_HealthBarSpriteId;

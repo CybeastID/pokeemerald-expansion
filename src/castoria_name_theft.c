@@ -208,9 +208,44 @@ void BS_ApplyCastoriaNameResult(void)
 void BS_CastoriaPrepareWorstMove(void)
 {
     NATIVE_ARGS();
-    u32 battler = gBattlerAttacker;  // Castoria
-    u32 target = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(battler)));
-    
+    u32 battler, target = MAX_BATTLERS_COUNT;
+
+    // Explicitly find Castoria and the player's active mon
+    // (do not rely on gBattlerAttacker, which may point to the wrong battler
+    //  depending on script context — e.g. after Dynamax activation)
+    for (battler = 0; battler < gBattlersCount; battler++)
+    {
+        if (gBattleMons[battler].species == SPECIES_CASTORIA
+            && IsBattlerAlive(battler)
+            && !IsOnPlayerSide(battler))
+        {
+            break;
+        }
+    }
+    if (battler >= gBattlersCount)
+    {
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return;
+    }
+
+    // Find the player's active mon on the opposite side
+    for (target = 0; target < gBattlersCount; target++)
+    {
+        if (IsBattlerAlive(target)
+            && IsOnPlayerSide(target)
+            && GetBattlerPosition(target) == BATTLE_OPPOSITE(GetBattlerPosition(battler)))
+        {
+            break;
+        }
+    }
+
+    // Safety check: skip if target == battler (self-referencing)
+    if (target >= gBattlersCount || target == battler)
+    {
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return;
+    }
+
     u8 worstSlot = CastoriaFindWorstMove(battler, target);
     if (worstSlot != 0xFF)
     {
