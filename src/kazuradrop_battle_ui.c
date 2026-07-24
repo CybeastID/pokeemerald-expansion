@@ -24,6 +24,7 @@
 #include "bg.h"
 #include "line_break.h"
 #include "battle_bg.h"
+#include "graphics.h"
 
 // =====================================================================
 // Graphics
@@ -149,6 +150,9 @@ static const struct OamData sOamData_Number =
 #define KAZ_TILE_HFLIP         0x0400
 #define KAZ_TILE_VFLIP         0x0800
 #define KAZ_TILE_HVFLIP        0x0C00
+
+
+#define KAZU_HP_BAR_FADE_FRAMES 16
 
 // =====================================================================
 // State tracking
@@ -812,6 +816,20 @@ void HideKazuraDialogueBox(void)
 static const struct SpritePalette sSpritePalette_KazuHpBarPurple =
     { sKazuHpBarPurplePal, TAG_KAZU_HP_BAR_PAL };
 
+static void BlendTwoPalettes(const u16 *src, const u16 *dst, u16 *out, u32 coeff /* 0-16 */)
+{
+    u32 i;
+    for (i = 0; i < 16; i++)
+    {
+        s32 sr = src[i] & 0x1F, sg = (src[i] >> 5) & 0x1F, sb = (src[i] >> 10) & 0x1F;
+        s32 dr = dst[i] & 0x1F, dg = (dst[i] >> 5) & 0x1F, db = (dst[i] >> 10) & 0x1F;
+        s32 r = sr + (((dr - sr) * (s32)coeff) / KAZU_HP_BAR_FADE_FRAMES);
+        s32 g = sg + (((dg - sg) * (s32)coeff) / KAZU_HP_BAR_FADE_FRAMES);
+        s32 b = sb + (((db - sb) * (s32)coeff) / KAZU_HP_BAR_FADE_FRAMES);
+        out[i] = (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10);
+    }
+}
+
 void LoadKazuradropHpBarPalette(void)
 {
     DebugPrintf("LKHBP called, sKazuHpBarPalLoaded=%d, preExistingSlot=%d", sKazuHpBarPalLoaded, IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
@@ -846,6 +864,7 @@ void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
         DebugPrintf("SKHBP purple branch palSlot=%d", palSlot);
         if (palSlot != 0xFF)
             gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
+            StartKazuHpBarPurpleFade(battler);
     }
     else
     {
@@ -856,6 +875,54 @@ void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
             gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
     }
     DebugPrintf("SKHBP final oam.paletteNum=%d", gSprites[healthbarSpriteId].oam.paletteNum);
+}
+
+static void Task_KazuHpBarPurpleFade(u8 taskId)
+{
+    u32 battler = gTasks[taskId].data[0];
+    u32 frame = gTasks[taskId].data[1];
+    u16 fadeBuf[16];
+    u8 healthboxSpriteId = gHealthboxSpriteIds[battler];
+    u8 healthbarSpriteId, palSlot;
+
+    DebugPrintf("KHBPF tick battler=%d frame=%d", battler, frame);
+
+    if (healthboxSpriteId == MAX_SPRITES)
+    {
+        DebugPrintf("KHBPF abort: healthboxSpriteId==MAX_SPRITES");
+        DestroyTask(taskId);
+        return;
+    }
+    healthbarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
+    if (healthbarSpriteId == MAX_SPRITES)
+    {
+        DebugPrintf("KHBPF abort: healthbarSpriteId==MAX_SPRITES");
+        DestroyTask(taskId);
+        return;
+    }
+    palSlot = gSprites[healthbarSpriteId].oam.paletteNum;
+    DebugPrintf("KHBPF healthbarSpriteId=%d palSlot=%d", healthbarSpriteId, palSlot);
+
+    BlendTwoPalettes(gBattleInterface_BallDisplayPal, sKazuHpBarPurplePal, fadeBuf, frame);
+    DebugPrintf("KHBPF fadeBuf[10]=%04x fadeBuf[11]=%04x (coeff=%d)", fadeBuf[10], fadeBuf[11], frame);
+    LoadPalette(fadeBuf, OBJ_PLTT_ID(palSlot), PLTT_SIZE_4BPP);
+
+    frame++;
+    if (frame > KAZU_HP_BAR_FADE_FRAMES)
+    {
+        DebugPrintf("KHBPF done, destroying task");
+        DestroyTask(taskId);
+        return;
+    }
+    gTasks[taskId].data[1] = frame;
+}
+
+void StartKazuHpBarPurpleFade(u32 battler)
+{
+    u8 taskId = CreateTask(Task_KazuHpBarPurpleFade, 0);
+    DebugPrintf("KHBPF started, taskId=%d battler=%d", taskId, battler);
+    gTasks[taskId].data[0] = battler;
+    gTasks[taskId].data[1] = 0;
 }
 
 #undef hMain_HealthBarSpriteId
