@@ -6886,9 +6886,15 @@ s32 AI_TagBattlePreferFoe(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
 s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
-    u32 bestDmgMove = GetBestDmgMoveFromBattler(battlerDef, battlerAtk, AI_DEFENDING);
-    bool32 canBeKOd = CanIndexMoveFaintTarget(battlerDef, battlerAtk, bestDmgMove, AI_DEFENDING);
-
+ u32 bestDmgMove = GetBestDmgMoveFromBattler(battlerDef, battlerAtk, AI_DEFENDING);
+    u8 canBeKOd = CanTargetMoveFaintAi(bestDmgMove, battlerDef, battlerAtk, 1);
+    u8 isTwoHKO = CanTargetMoveFaintAi(bestDmgMove, battlerDef, battlerAtk, 2);
+    u32 predictedMoveSpeedCheck = GetIncomingMoveSpeedCheck(battlerAtk, battlerDef, gAiLogicData);
+    u8 aliceMonOutspeeds = AI_IsFaster(battlerAtk, battlerDef, move, predictedMoveSpeedCheck, CONSIDER_PRIORITY);
+    u32 currentMoveIndex = GetIndexInMoveArray(battlerAtk, move);
+    u8 moveKillsTarget = (currentMoveIndex < MAX_MON_MOVES)
+        ? CanIndexMoveFaintTarget(battlerAtk, battlerDef, currentMoveIndex, AI_ATTACKING)
+        : FALSE;
     switch (gBattleMons[battlerAtk].species)
     {
     case SPECIES_KAZURADROP:
@@ -6909,15 +6915,20 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
             if (gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_OHKO)
             {
                 if (move == MOVE_STOMP)
-                    score += 100;
+                    ADJUST_SCORE(100);
                 else
-                    score -= 100;
+                    ADJUST_SCORE(-100);
             }
 
-            s32 incomingDmg = AI_GetDamage(battlerDef, battlerAtk, bestDmgMove, AI_DEFENDING, gAiLogicData);
-            u32 tenPercentHP = gBattleMons[battlerAtk].maxHP / 10;
-
-            if (gBattleMons[battlerAtk].hp - incomingDmg <= tenPercentHP)
+            
+        // Predict transformation threshold - use Infinite Growth replacement move
+        // if player's likely damage would trigger transform next turn
+        // (handled by standard AI after Infinite Growth fires)
+        // NOTE: this "prediction" is emergent, not a discrete check — Quiver Dance
+        // and Infinite Growth share a moveslot, so if canBeKOd is true and Kazuradrop
+        // moves second, the slot has already swapped to Infinite Growth by the time
+        // her chosen move resolves.
+            if (canBeKOd)
             {
                 if (move == MOVE_QUIVER_DANCE)
                     ADJUST_SCORE(30);
@@ -6947,9 +6958,6 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
             return score;
         }
 
-        // Predict transformation threshold - use Infinite Growth replacement move
-        // if player's likely damage would trigger transform next turn
-        // (handled by standard AI after Infinite Growth fires)
 
         // Priority tree for remaining turns
         if (move == MOVE_CRACK_ICE
@@ -6959,6 +6967,8 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         else if (move == MOVE_TRASH_CRUSH
         && gBattleStruct->bugSpace.currentTier >= BUGSPACE_TIER_MINIMIZE)
             ADJUST_SCORE(15);
+        else if (move == gBattleMons[battlerAtk].moves[2])
+            ADJUST_SCORE(moveKillsTarget ? 25 : 8);
         return score;
     }
 
@@ -6967,30 +6977,43 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         // Espeon is a fast special sweeper with Magic Bounce
         if (move == MOVE_CALM_MIND)
         {
-            // Cap at +2 SpA (stage 8) - don't waste turns overboosting
-            if (gBattleMons[battlerAtk].statStages[STAT_SPATK] < 8)
-            {
-                uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_PSYCHIC, battlerAtk, battlerDef);
-                if (effectiveness >= UQ_4_12(1.0))
-                {
-                    if (!CanIndexMoveFaintTarget(battlerDef, battlerAtk, bestDmgMove, AI_DEFENDING))
-                        ADJUST_SCORE(15);
-                }
-            }
+            if (canBeKOd)
+                ADJUST_SCORE(-20);
+            else if (isTwoHKO && !aliceMonOutspeeds)
+                ADJUST_SCORE(-15);
+            else if (gBattleMons[battlerAtk].statStages[STAT_SPATK] >= 8)
+                ADJUST_SCORE(-15);
+            else
+                ADJUST_SCORE(15);
         }
         else if (move == MOVE_PSYCHIC)
-            ADJUST_SCORE(3);
+        {
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+                ADJUST_SCORE(canBeKOd ? 10 : 3);
+        }
         else if (move == MOVE_DAZZLING_GLEAM)
         {
-            uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_DAZZLING_GLEAM, battlerAtk, battlerDef);
-            if (effectiveness > UQ_4_12(1.0))
-                ADJUST_SCORE(5);
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+            {
+                uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_DAZZLING_GLEAM, battlerAtk, battlerDef);
+                if (effectiveness > UQ_4_12(1.0))
+                    ADJUST_SCORE(canBeKOd ? 10 : 5);
+            }
         }
         else if (move == MOVE_SHADOW_BALL)
         {
-            uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_SHADOW_BALL, battlerAtk, battlerDef);
-            if (effectiveness > UQ_4_12(1.0))
-                ADJUST_SCORE(5);
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+            {
+                uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_SHADOW_BALL, battlerAtk, battlerDef);
+                if (effectiveness > UQ_4_12(1.0))
+                    ADJUST_SCORE(canBeKOd ? 10 : 5);
+            }
         }
         return score;
     }
@@ -7014,80 +7037,112 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         }
         else if (move == MOVE_TOXIC)
         {
-            // Umbreon is a Toxic staller - boost if opponent isn't already statused
-            // and target is not immune to Toxic
             enum Ability defAbility = GetBattlerAbility(battlerDef);
             if (!(gBattleMons[battlerDef].status1 & STATUS1_ANY)
-             && !IS_BATTLER_ANY_TYPE(battlerDef, TYPE_POISON, TYPE_STEEL)
-             && defAbility != ABILITY_IMMUNITY
-             && defAbility != ABILITY_MAGIC_BOUNCE
-             && defAbility != ABILITY_GOOD_AS_GOLD
-             && defAbility != ABILITY_PURIFYING_SALT)
-                ADJUST_SCORE(12);
+            && !IS_BATTLER_ANY_TYPE(battlerDef, TYPE_POISON, TYPE_STEEL)
+            && defAbility != ABILITY_IMMUNITY
+            && defAbility != ABILITY_MAGIC_BOUNCE
+            && defAbility != ABILITY_GOOD_AS_GOLD
+            && defAbility != ABILITY_PURIFYING_SALT)
+                ADJUST_SCORE(30);
         }
         else if (move == MOVE_FOUL_PLAY)
         {
-            uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_FOUL_PLAY, battlerAtk, battlerDef);
-            if (effectiveness > UQ_4_12(1.0))
-                ADJUST_SCORE(5);
+            if (moveKillsTarget)
+                ADJUST_SCORE(30);
+            else
+                ADJUST_SCORE(-10);
         }
         return score;
     }
 
     case SPECIES_GOTHITELLE:
     {
-        // Gothitelle is a Shadow Tag trapper
-        if (move == MOVE_REST)
+    // Gothitelle is a Shadow Tag trapper
+         if (move == MOVE_REST)
         {
-            if (GetHealthPercentage(battlerAtk) < 50)
+            if (canBeKOd && !aliceMonOutspeeds)
+                ADJUST_SCORE(-25);
+            else if (GetHealthPercentage(battlerAtk) < 50)
                 ADJUST_SCORE(20);
             else
                 ADJUST_SCORE(-5);
         }
         else if (move == MOVE_PSYCHIC)
-            ADJUST_SCORE(3);
+        {
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+            {
+                uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_PSYCHIC, battlerAtk, battlerDef);
+                if (effectiveness > UQ_4_12(1.0))
+                    ADJUST_SCORE(canBeKOd ? 10 : 6);
+                else
+                    ADJUST_SCORE(canBeKOd ? 7 : 3);
+            }
+        }
         else if (move == MOVE_SHADOW_BALL)
         {
-            uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_SHADOW_BALL, battlerAtk, battlerDef);
-            if (effectiveness > UQ_4_12(1.0))
-                ADJUST_SCORE(5);
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+            {
+                uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_SHADOW_BALL, battlerAtk, battlerDef);
+                if (effectiveness > UQ_4_12(1.0))
+                    ADJUST_SCORE(canBeKOd ? 10 : 5);
+            }
         }
         else if (move == MOVE_THUNDERBOLT)
         {
-            uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_THUNDERBOLT, battlerAtk, battlerDef);
-            if (effectiveness > UQ_4_12(1.0))
-                ADJUST_SCORE(5);
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+            {
+                uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_THUNDERBOLT, battlerAtk, battlerDef);
+                if (effectiveness > UQ_4_12(1.0))
+                    ADJUST_SCORE(canBeKOd ? 10 : 5);
+            }
         }
-        return score;
     }
 
     case SPECIES_PALKIA:
     {
         // Palkia is a powerful legendary special attacker with Lustrous Orb
+            u32 palkiaAccuracy = gAiLogicData->moveAccuracy[battlerAtk][battlerDef][currentMoveIndex];
+
         if (move == MOVE_SPACIAL_REND)
-            ADJUST_SCORE(5);
+        {
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else
+                ADJUST_SCORE(8 * palkiaAccuracy / 100);
+        }
         else if (move == MOVE_DRACO_METEOR)
         {
-            u32 moveIndex = GetIndexInMoveArray(battlerAtk, MOVE_DRACO_METEOR);
-            if (CanIndexMoveFaintTarget(battlerAtk, battlerDef, moveIndex, AI_ATTACKING))
-                ADJUST_SCORE(8);
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
             else
-                ADJUST_SCORE(-3);
+                ADJUST_SCORE((6 * palkiaAccuracy / 100) - 5);
         }
         else if (move == MOVE_HYDRO_PUMP)
         {
             uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_HYDRO_PUMP, battlerAtk, battlerDef);
-            if (effectiveness > UQ_4_12(1.0))
-                ADJUST_SCORE(5);
+            if (moveKillsTarget)
+                ADJUST_SCORE(25);
+            else if (effectiveness > UQ_4_12(1.0))
+                ADJUST_SCORE(8 * palkiaAccuracy / 100);
             else
                 ADJUST_SCORE(-3);
         }
         else if (move == MOVE_THUNDER)
         {
-            if (gBattleWeather & B_WEATHER_RAIN)
-                ADJUST_SCORE(10);
+            uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_THUNDER, battlerAtk, battlerDef);
+            if (effectiveness == UQ_4_12(0.0))
+                ADJUST_SCORE(-30);
+            else if (moveKillsTarget)
+                ADJUST_SCORE(25);
             else
-                ADJUST_SCORE(-5);
+                ADJUST_SCORE(8 * palkiaAccuracy / 100);
         }
         return score;
     }
@@ -7096,10 +7151,12 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
     {
         // Hoopa is a special setup sweeper with Hyperspace Hole, BUT is fragile, and thus needs to check if it can survive.
           
-    if (move == MOVE_NASTY_PLOT)
+        if (move == MOVE_NASTY_PLOT)
     {
         if (canBeKOd)
             ADJUST_SCORE(-20);
+        else if (isTwoHKO && !aliceMonOutspeeds)
+            ADJUST_SCORE(-15);
         else if (gBattleMons[battlerAtk].statStages[STAT_SPATK] >= 8)
             ADJUST_SCORE(-15);
         else
@@ -7107,7 +7164,9 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
     }
     else if (move == MOVE_HYPERSPACE_HOLE || move == MOVE_PSYCHIC)
     {
-        if (canBeKOd)
+        if (moveKillsTarget)
+            ADJUST_SCORE(25);
+        else if (canBeKOd)
             ADJUST_SCORE(10);
         else
             ADJUST_SCORE(3);
@@ -7115,11 +7174,15 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
     else if (move == MOVE_THUNDERBOLT)
     {
         uq4_12_t effectiveness = AI_GetMoveEffectiveness(MOVE_THUNDERBOLT, battlerAtk, battlerDef);
-        if (effectiveness > UQ_4_12(1.0))
+        if (effectiveness == UQ_4_12(0.0))
+            ADJUST_SCORE(-30);
+        else if (moveKillsTarget)
+            ADJUST_SCORE(25);
+        else if (effectiveness > UQ_4_12(1.0))
             ADJUST_SCORE(5);
     }
     return score;
-    }
+}
 
     default:
         return score;

@@ -8808,6 +8808,16 @@ static inline uq4_12_t CalcTypeEffectivenessMultiplierInternal(struct DamageCont
     u32 illusionSpecies;
     enum Type types[3];
     GetBattlerTypes(ctx->battlerDef, FALSE, types);
+    // Melt Virus melts through Steel-type immunities/resistances
+    if (ctx->move == MOVE_MELT_VIRUS)
+    {
+        int i;
+        for (i = 0; i < 3; i++)
+        {
+            if (types[i] == TYPE_STEEL)
+                types[i] = TYPE_MYSTERY; // TYPE_MYSTERY is treated as neutral (1x) by the effectiveness chart
+        }
+    }
 
     MulByTypeEffectiveness(ctx, &modifier, types[0]);
     if (types[1] != types[0])

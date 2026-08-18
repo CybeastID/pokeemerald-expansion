@@ -21340,12 +21340,12 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
     {
         .name = COMPOUND_STRING("Melt Virus"),
         .description = COMPOUND_STRING(
-            "An icy virus attack that\n"
+            "A virus attack that\n"
             "drains the target's HP\n"
-            "each turn."),
+            "each turn, ignoring the Steel type."),
         .effect = EFFECT_HIT,
         .power = 80,
-        .type = TYPE_ICE,
+        .type = TYPE_POISON,
         .accuracy = 100,
         .pp = 10,
         .target = MOVE_TARGET_SELECTED,
@@ -21367,7 +21367,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
             "target."),
         .effect = EFFECT_TRASH_CRUSH,
         .power = 100,
-        .type = TYPE_FAIRY,
+        .type = TYPE_STEEL,
         .accuracy = 85,
         .pp = 5,
         .target = MOVE_TARGET_SELECTED,

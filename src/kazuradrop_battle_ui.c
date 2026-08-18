@@ -456,7 +456,8 @@ void CreateBugSpacePanel(u32 battler)
     // Number will be written once the slide-in completes (see callback)
 
     // Activate purple HP bar for Kazuradrop's break bar
-    SetKazuradropHpBarPalette(battler, TRUE);
+    if (!(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
+        SetKazuradropHpBarPalette(battler, TRUE);
 
     if (GetSpriteTileStartByTag(TAG_KAZU_NUMBER) == 0xFFFF)
     LoadSpriteSheet(&sSpriteSheet_KazuNumber);

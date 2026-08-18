@@ -8975,6 +8975,7 @@ BattleScript_MeltVirusTurnDmg::
 	tryfaintmon BS_ATTACKER
 	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
 	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+	tryfaintmon BS_TARGET
 	printstring STRINGID_PKMNHURTBYMELTVIRUS
 	waitmessage B_WAIT_TIME_LONG
 	end2
