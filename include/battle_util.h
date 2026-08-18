@@ -102,6 +102,7 @@ enum MoveSuccessOrder
     CANCELER_CLEAR_FLAGS,
     CANCELER_SKY_DROP,
     CANCELER_RECHARGE,
+    CANCELER_TIMESTOP,
     CANCELER_ASLEEP_OR_FROZEN,
     CANCELER_POWER_POINTS,
     CANCELER_OBEDIENCE,
@@ -258,6 +259,8 @@ u32 DoEndTurnEffects(void);
 bool32 HandleFaintedMonActions(void);
 void TryClearRageAndFuryCutter(void);
 enum MoveCanceler AtkCanceler_MoveSuccessOrder(struct BattleContext *ctx);
+void BattleTimestopApplyGreyscale(void);
+void BattleTimestopRestore(void);
 bool32 HasNoMonsToSwitch(u32 battler, u8 partyIdBattlerOn1, u8 partyIdBattlerOn2);
 bool32 TryChangeBattleWeather(u32 battler, u32 battleWeatherId, u32 ability);
 bool32 TryChangeBattleTerrain(u32 battler, u32 statusFlag);

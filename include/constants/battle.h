@@ -227,6 +227,7 @@ enum VolatileFlags
     F(VOLATILE_CASTORIA_TRUE_NAME_CHARGES,   castoriaTrueNameCharges,   (u8, 3)) \
     F(VOLATILE_CASTORIA_NAMELESS,            castoriaNameless,          (u8, 1)) \
     F(VOLATILE_CASTORIA_MAX_MOVE_TIMER,      castoriaMaxMoveTimer,      (u8, 3)) \
+    F(VOLATILE_TIMESTOP,                     timestop,                  (u32, 2)) \
 
 /* Use within a macro to get the maximum allowed value for a volatile. Requires _typeMaxValue as input. */
 #define GET_VOLATILE_MAXIMUM(_typeMaxValue, ...) INVOKE_WITH_B(GET_VOLATILE_MAXIMUM_, _typeMaxValue)
@@ -472,6 +473,7 @@ enum __attribute__((packed)) MoveEffect
     MOVE_EFFECT_SALT_CURE,
     MOVE_EFFECT_EERIE_SPELL,
     MOVE_EFFECT_MELT_VIRUS,
+    MOVE_EFFECT_TIMESTOP,
 
     // Max move effects happen earlier in the execution chain.
     // For example stealth rock from G-Max Stonesurge is set up before abilities but from Stone Axe after.

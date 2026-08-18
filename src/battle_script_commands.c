@@ -3453,6 +3453,16 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
             gBattlescriptCurrInstr = battleScript;
         }
         break;
+    case MOVE_EFFECT_TIMESTOP:
+        // Timestop cannot be chained: only inflict it if it has fully expired (value 0).
+        // While active, a re-proc must not refresh/extend it back to 2.
+        if (!gBattleMons[gEffectBattler].volatiles.timestop)
+        {
+            gBattleMons[gEffectBattler].volatiles.timestop = 2;
+            BattleTimestopApplyGreyscale();
+        }
+        gBattlescriptCurrInstr = battleScript;
+        break;
     case MOVE_EFFECT_UPROAR:
         if (!gBattleMons[gEffectBattler].volatiles.uproarTurns)
         {

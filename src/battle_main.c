@@ -4279,7 +4279,8 @@ static void HandleTurnActionSelectionState(void)
                 else
                 {
                     if (gBattleMons[battler].volatiles.multipleTurns
-                        || gDisableStructs[battler].rechargeTimer > 0)
+                        || gDisableStructs[battler].rechargeTimer > 0
+                        || gBattleMons[battler].volatiles.timestop)
                     {
                         gChosenActionByBattler[battler] = B_ACTION_USE_MOVE;
                         gBattleCommunication[battler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
@@ -5202,6 +5203,14 @@ static void TurnValuesCleanUp(bool8 var0)
 
             if (gDisableStructs[i].rechargeTimer)
                 gDisableStructs[i].rechargeTimer--;
+
+            // Timestop: count down one per turn. When it expires, give the screen its color back.
+            if (gBattleMons[i].volatiles.timestop)
+            {
+                gBattleMons[i].volatiles.timestop--;
+                if (gBattleMons[i].volatiles.timestop == 0)
+                    BattleTimestopRestore();
+            }
 
             gBattleStruct->battlerState[i].canPickupItem = FALSE;
             gBattleStruct->battlerState[i].wasAboveHalfHp = FALSE;

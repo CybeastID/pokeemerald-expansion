@@ -21403,7 +21403,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .description = COMPOUND_STRING(
             "A lightning-fast slash\n"
             "that may freeze the\n"
-            "target."),
+            "target in time."),
         .effect = EFFECT_HIT,
         .power = 60,
         .type = TYPE_PSYCHIC,
@@ -21416,7 +21416,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .slicingMove = TRUE,
         .battleAnimScript = gBattleAnimMove_NightSlash,
         .additionalEffects = ADDITIONAL_EFFECTS({
-            .moveEffect = MOVE_EFFECT_FREEZE,
+            .moveEffect = MOVE_EFFECT_TIMESTOP,
             .chance = 50,
         }),
     },

@@ -18,6 +18,7 @@
 #include "item.h"
 #include "util.h"
 #include "battle_scripts.h"
+#include "palette.h"
 #include "random.h"
 #include "text.h"
 #include "safari_zone.h"
@@ -1217,6 +1218,53 @@ bool32 WasUnableToUseMove(u32 battler)
     return FALSE;
 }
 
+// Drains the color out of the battle scene (BG + UI + sprites) for the Timestop effect.
+// Kazuradrop — identified by her signature MOVE_CRACK_ICE — stays in full color.
+void BattleTimestopApplyGreyscale(void)
+{
+    u32 battler, i, slot;
+    u8 exemptSlot = 0xFF; // OBJ palette slot to keep in color (Kazuradrop)
+
+    // Start from the true colors.
+    CpuCopy16(gPlttBufferUnfaded, gPlttBufferFaded, PLTT_SIZE);
+
+    // Kazuradrop is the only mon that knows MOVE_CRACK_ICE (and only gains it after transforming),
+    // so find her by that move and exempt her main sprite's OBJ palette slot.
+    for (battler = 0; battler < gBattlersCount; battler++)
+    {
+        if (gBattlerSpriteIds[battler] >= MAX_SPRITES)
+            continue;
+        for (i = 0; i < MAX_MON_MOVES; i++)
+        {
+            if (gBattleMons[battler].moves[i] == MOVE_CRACK_ICE)
+            {
+                exemptSlot = gSprites[gBattlerSpriteIds[battler]].oam.paletteNum;
+                break;
+            }
+        }
+    }
+
+    // Desaturate all 16 background / UI palette banks.
+    TintPalette_GrayScale(&gPlttBufferFaded[BG_PLTT_OFFSET], 16 * 16);
+    // Desaturate every object palette bank except Kazuradrop's.
+    for (slot = 0; slot < 16; slot++)
+    {
+        if (slot == exemptSlot)
+            continue;
+        TintPalette_GrayScale(&gPlttBufferFaded[OBJ_PLTT_ID(slot)], 16);
+    }
+    // If Kazuradrop wasn't found, exemptSlot stays 0xFF and everything gets desaturated.
+
+    TransferPlttBuffer();
+}
+
+// Restores the original colors after the Timestop expires.
+void BattleTimestopRestore(void)
+{
+    CpuCopy16(gPlttBufferUnfaded, gPlttBufferFaded, PLTT_SIZE);
+    TransferPlttBuffer();
+}
+
 // Returns TRUE if no other battler after this one in turn order will use a move
 bool32 IsLastMonToMove(u32 battler)
 {
@@ -2016,6 +2064,19 @@ static enum MoveCanceler CancelerSkyDrop(struct BattleContext *ctx)
     // If Pokemon is being held in Sky Drop
     if (gBattleMons[ctx->battlerAtk].volatiles.semiInvulnerable == STATE_SKY_DROP)
     {
+        gBattlescriptCurrInstr = BattleScript_MoveEnd;
+        gHitMarker |= HITMARKER_UNABLE_TO_USE_MOVE;
+        return MOVE_STEP_FAILURE;
+    }
+    return MOVE_STEP_SUCCESS;
+}
+
+static enum MoveCanceler CancelerTimestop(struct BattleContext *ctx)
+{
+    // A timestopped battler's move resolves into nothing, with no message printed.
+    if (gBattleMons[ctx->battlerAtk].volatiles.timestop)
+    {
+        gProtectStructs[ctx->battlerAtk].unableToUseMove = TRUE;
         gBattlescriptCurrInstr = BattleScript_MoveEnd;
         gHitMarker |= HITMARKER_UNABLE_TO_USE_MOVE;
         return MOVE_STEP_FAILURE;
@@ -3007,6 +3068,7 @@ static enum MoveCanceler (*const sMoveSuccessOrderCancelers[])(struct BattleCont
     [CANCELER_STANCE_CHANGE_1] = CancelerStanceChangeOne,
     [CANCELER_SKY_DROP] = CancelerSkyDrop,
     [CANCELER_RECHARGE] = CancelerRecharge,
+    [CANCELER_TIMESTOP] = CancelerTimestop,
     [CANCELER_ASLEEP_OR_FROZEN] = CancelerAsleepOrFrozen,
     [CANCELER_OBEDIENCE] = CancelerObedience,
     [CANCELER_POWER_POINTS] = CancelerPowerPoints,
