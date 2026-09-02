@@ -7103,6 +7103,7 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
                     ADJUST_SCORE(canBeKOd ? 10 : 5);
             }
         }
+        return score;
     }
 
     case SPECIES_PALKIA:
