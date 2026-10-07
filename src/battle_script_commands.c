@@ -2563,7 +2563,9 @@ static void ApplyKazuradropTransformation(u32 battler)
         gBattleMons[battler].pp[i] = GetMovePP(gBattleMons[battler].moves[i]);
     // Activate Guts (one-turn cheat death) and show icon
     gBattleMons[battler].volatiles.kazuradropGuts = 2;
-    // Auto-trigger Infinite Growth: set the volatile and replace the move slot immediately. Currently commented out so I can decide how best to implement visual feedback.
+    // Remove active nonvolatile status.
+    gBattleMons[battler].status1 = 0;
+    // Auto-trigger Infinite Growth: set the volatile and replace the move slot immediately. Currently commented out for posterity's sake, preferring a natural moveset readin.
     /* gBattleMons[battler].volatiles.infiniteGrowth = TRUE;
     // Replace Infinite Growth slot with a random move (same as BS_TryInfiniteGrowth)
     {

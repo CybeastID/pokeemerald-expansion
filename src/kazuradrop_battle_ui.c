@@ -145,8 +145,19 @@ static const struct OamData sOamData_Number =
 #define PANEL_SLIDING_OUT  2
 
 // Kazuradrop dialogue box
-#define KAZ_WIN_BASE_TILE_NUM  0x03D0
+// NOTE: Must stay below BG0 tile 0x200 (physical VRAM < 0x4000). BG1/BG2 share
+// char base 1 (VRAM + 0x4000), so BG0 tile indices >= 0x200 alias the
+// BG_TRICK_ROOM / move-bg char data. The standard textbox is 256 tiles
+// (0x000-0x0FF), and the action prompt/menu windows occupy 0x190-0x1F8, so
+// this free band (0x100-0x190) is safe from both.
+#define KAZ_WIN_BASE_TILE_NUM  0x0170
 #define KAZ_WIN_PALETTE_NUM    8
+// Opaque box palette index used as the dialogue interior background. The box's
+// intended interior color is pure black (RGB 0x0000). A GBA BG pixel with
+// palette index 0 is always fully transparent (it reveals the layer behind,
+// e.g. the Trick Room bg), so index 0 can't be used. Palette slots 13-15 are
+// currently unused and pure black, so we use one for an OPAQUE black interior.
+#define KAZ_BOX_INTERIOR_COLOR 13
 #define KAZ_TILE_HFLIP         0x0400
 #define KAZ_TILE_VFLIP         0x0800
 #define KAZ_TILE_HVFLIP        0x0C00
@@ -331,7 +342,7 @@ static const struct WindowTemplate sKazuraDialogWindowTemplate = {
     .width       = 28,
     .height      = 4,
     .paletteNum  = KAZ_WIN_PALETTE_NUM,
-    .baseBlock   = 0x0360,
+    .baseBlock   = 0x0100,  // text tiles; frame gfx at KAZ_WIN_BASE_TILE_NUM (0x170)
 };
 
 
@@ -779,14 +790,42 @@ void ShowKazuraDialogueBox(const u8 *str)
 
     sKazuraDialogWindowId = AddWindow(&sKazuraDialogWindowTemplate);
     DebugPrintf("KazuraDialogWindowId: %d", sKazuraDialogWindowId);
-    FillWindowPixelBuffer(sKazuraDialogWindowId, PIXEL_FILL(0));
+    FillWindowPixelBuffer(sKazuraDialogWindowId, PIXEL_FILL(KAZ_BOX_INTERIOR_COLOR));
+
+    // Bake an OPAQUE version of the box's interior ("grid") tile into the whole
+    // text window. The grid tile's raw background pixels are index 0 (pure
+    // black), but index 0 is transparent on a GBA BG layer (it would reveal the
+    // scene behind). Rewrite every index-0 pixel to an opaque black slot
+    // (KAZ_BOX_INTERIOR_COLOR) so the grid keeps its pattern on a solid black
+    // box. GLYPH_COPY (src/text.c) then only stamps the non-zero glyph colors
+    // on top, so the text prints directly on the box.
+    {
+        u32 tile, i;
+        u8 gridTile[TILE_SIZE_4BPP];
+        const u8 *rawGrid = sKazuraBoxGfx + (5 * TILE_SIZE_4BPP); // tile 5 = interior grid fill
+        u32 tileCount = sKazuraDialogWindowTemplate.width
+                      * sKazuraDialogWindowTemplate.height; // 28 * 4 = 112
+
+        for (i = 0; i < TILE_SIZE_4BPP; i++)
+        {
+            u8 px = rawGrid[i];
+            u8 left  = px >> 4;      // left pixel (4bpp)
+            u8 right = px & 0x0F;    // right pixel (4bpp)
+            if (left  == 0) left  = KAZ_BOX_INTERIOR_COLOR;
+            if (right == 0) right = KAZ_BOX_INTERIOR_COLOR;
+            gridTile[i] = (left << 4) | right;
+        }
+
+        for (tile = 0; tile < tileCount; tile++)
+            CopyToWindowPixelBuffer(sKazuraDialogWindowId, gridTile, TILE_SIZE_4BPP, tile);
+    }
 
     DrawKazuraWindowFrame(sKazuraDialogWindowId);
 
     StringCopy(buffer, str);
     BreakStringAutomatic(buffer, 220, 2, FONT_NORMAL, SHOW_SCROLL_PROMPT);
 
-    static const u8 color[3] = {0, 9, 11};
+    static const u8 color[3] = {0, 9, 11}; // bgColor=transparent (keeps baked grid), fgColor, shadowColor
     AddTextPrinterParameterized4(sKazuraDialogWindowId, FONT_NORMAL,
                                  4, 2, 0, 0, color, 1, buffer);
 
