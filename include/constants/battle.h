@@ -227,7 +227,7 @@ enum VolatileFlags
     F(VOLATILE_CASTORIA_TRUE_NAME_CHARGES,   castoriaTrueNameCharges,   (u8, 3)) \
     F(VOLATILE_CASTORIA_NAMELESS,            castoriaNameless,          (u8, 1)) \
     F(VOLATILE_CASTORIA_MAX_MOVE_TIMER,      castoriaMaxMoveTimer,      (u8, 3)) \
-    F(VOLATILE_TIMESTOP,                     timestop,                  (u32, 2)) \
+    F(VOLATILE_TIMESTOP,                     timestop,                  (u32, 3)) \
 
 /* Use within a macro to get the maximum allowed value for a volatile. Requires _typeMaxValue as input. */
 #define GET_VOLATILE_MAXIMUM(_typeMaxValue, ...) INVOKE_WITH_B(GET_VOLATILE_MAXIMUM_, _typeMaxValue)

@@ -3457,10 +3457,11 @@ void SetMoveEffect(u32 battler, u32 effectBattler, enum MoveEffect moveEffect, c
         break;
     case MOVE_EFFECT_TIMESTOP:
         // Timestop cannot be chained: only inflict it if it has fully expired (value 0).
-        // While active, a re-proc must not refresh/extend it back to 2.
+        // Phases: 3/2 = stopped, 1 = cooldown turn after expiry (re-proc still blocked),
+        // 0 = clear. While nonzero, a re-proc must not refresh/extend it.
         if (!gBattleMons[gEffectBattler].volatiles.timestop)
         {
-            gBattleMons[gEffectBattler].volatiles.timestop = 2;
+            gBattleMons[gEffectBattler].volatiles.timestop = 3;
             BattleTimestopApplyGreyscale();
         }
         gBattlescriptCurrInstr = battleScript;

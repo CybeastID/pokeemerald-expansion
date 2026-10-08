@@ -2074,7 +2074,7 @@ static enum MoveCanceler CancelerSkyDrop(struct BattleContext *ctx)
 static enum MoveCanceler CancelerTimestop(struct BattleContext *ctx)
 {
     // A timestopped battler's move resolves into nothing, with no message printed.
-    if (gBattleMons[ctx->battlerAtk].volatiles.timestop)
+    if (gBattleMons[ctx->battlerAtk].volatiles.timestop > 1)
     {
         gProtectStructs[ctx->battlerAtk].unableToUseMove = TRUE;
         gBattlescriptCurrInstr = BattleScript_MoveEnd;

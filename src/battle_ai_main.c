@@ -6961,6 +6961,7 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
         // Priority tree for remaining turns
         if (move == MOVE_CRACK_ICE
+        && !gBattleMons[battlerDef].volatiles.timestop
         && !(gBattleMons[battlerDef].status1 & STATUS1_INCAPACITATED)
         && gBattleStruct->bugSpace.currentTier < BUGSPACE_TIER_MINIMIZE)
             ADJUST_SCORE(10);

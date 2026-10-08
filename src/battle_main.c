@@ -4280,7 +4280,7 @@ static void HandleTurnActionSelectionState(void)
                 {
                     if (gBattleMons[battler].volatiles.multipleTurns
                         || gDisableStructs[battler].rechargeTimer > 0
-                        || gBattleMons[battler].volatiles.timestop)
+                        || gBattleMons[battler].volatiles.timestop > 1)
                     {
                         gChosenActionByBattler[battler] = B_ACTION_USE_MOVE;
                         gBattleCommunication[battler] = STATE_WAIT_ACTION_CONFIRMED_STANDBY;
@@ -5208,7 +5208,7 @@ static void TurnValuesCleanUp(bool8 var0)
             if (gBattleMons[i].volatiles.timestop)
             {
                 gBattleMons[i].volatiles.timestop--;
-                if (gBattleMons[i].volatiles.timestop == 0)
+                if (gBattleMons[i].volatiles.timestop == 1)
                     BattleTimestopRestore();
             }
 
