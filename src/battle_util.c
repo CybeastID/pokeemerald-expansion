@@ -8297,7 +8297,7 @@ static inline uq4_12_t GetMinimizeModifier(u32 move, u32 battlerDef)
         && (gBattleMons[battlerDef].volatiles.minimize
             || (gBattleStruct->bugSpace.active
                 && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_MINIMIZE
-                && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))))
+                && GetBattlerSide(gBattlerAttacker) == GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))))
         return UQ_4_12(2.0);
     return UQ_4_12(1.0);
 }
@@ -10940,7 +10940,7 @@ bool32 CanMoveSkipAccuracyCalc(u32 battlerAtk, u32 battlerDef, enum Ability abil
     else if (gBattleStruct->bugSpace.active
      && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_MINIMIZE
      && MoveIncreasesPowerToMinimizedTargets(move)
-     && GetBattlerSide(battlerAtk) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+     && GetBattlerSide(battlerAtk) == GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
     {
         effect = TRUE;
     }

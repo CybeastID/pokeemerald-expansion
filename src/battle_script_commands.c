@@ -1995,7 +1995,7 @@ static void Cmd_adjustdamage(void)
         if (gBattleStruct->bugSpace.active
             && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_OHKO
             && MoveIncreasesPowerToMinimizedTargets(gCurrentMove)
-            && GetBattlerSide(gBattlerAttacker) != GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
+            && GetBattlerSide(gBattlerAttacker) == GetBattlerSide(gBattleStruct->bugSpace.sourceBattler))
         {
             gBattleStruct->moveDamage[battlerDef] = 9999;
             BattleScriptCall(BattleScript_OneHitKOMsg);
