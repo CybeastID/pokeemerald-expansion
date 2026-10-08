@@ -21417,7 +21417,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .battleAnimScript = gBattleAnimMove_NightSlash,
         .additionalEffects = ADDITIONAL_EFFECTS({
             .moveEffect = MOVE_EFFECT_TIMESTOP,
-            .chance = 50,
+            .chance = 33,
         }),
     },
     
