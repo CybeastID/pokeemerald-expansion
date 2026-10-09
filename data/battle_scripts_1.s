@@ -4552,13 +4552,16 @@ BattleScript_HandleFaintedMonMultipleStart::
 	switchhandleorder BS_FAINTED, 0
 BattleScript_HandleFaintedMonLoop::
 	switchhandleorder BS_FAINTED, 3
+	trytrainerslidemsgbeforeon BS_FAINTED      @ NEW: double-KO path — slide before panel
 	drawpartystatussummary BS_FAINTED
 	getswitchedmondata BS_FAINTED
 	switchindataupdate BS_FAINTED
 	hpthresholds BS_FAINTED
 	trytoclearprimalweather
 	flushtextbox
+	jumpifincomingmonkazura BS_FAINTED, BattleScript_KazuNoSentOutMsgMulti   @ NEW: double-KO path
 	printstring STRINGID_SWITCHINMON
+BattleScript_KazuNoSentOutMsgMulti:
 	hidepartystatussummary BS_FAINTED
 	switchinanim BS_FAINTED, FALSE, FALSE
 	waitstate

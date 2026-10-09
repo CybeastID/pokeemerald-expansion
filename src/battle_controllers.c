@@ -3129,6 +3129,12 @@ void BtlController_HandleSwitchInShowHealthbox(u32 battler)
         StartHealthboxSlideIn(battler);
         SetHealthboxSpriteVisible(gHealthboxSpriteIds[battler]);
 
+        // Alter Ego sigil: spawn it WITH the healthbox as it comes on from
+        // offscreen, so it rides the slide-in. Battler is authoritative here
+        // and the healthbox + bar child are valid (UpdateHealthboxAttribute ran).
+        if (GetBattlerVisualSpecies(battler) == SPECIES_KAZURADROP)
+            CreateKazuradropBuffIcon(battler, KA_BUFF_ALTER_EGO);
+
         if (side == B_SIDE_OPPONENT)
             CopyBattleSpriteInvisibility(battler);
         gBattlerControllerFuncs[battler] = BtlController_HandleSwitchInShowSubstitute;

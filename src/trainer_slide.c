@@ -222,6 +222,8 @@ static bool32 ShouldRunTrainerSlideLastLowHp(u32 firstId, u32 lastId, u32 battle
 // before this hook, so gBattleMons already holds the incoming mon.
 static bool32 ShouldRunTrainerSlideKazuradropSendout(u32 battler)
 {
+    if (IsOnPlayerSide(battler))
+    return FALSE;
     u32 partyId = gBattleStruct->monToSwitchIntoId[battler];
     return GetMonData(&gEnemyParty[partyId], MON_DATA_SPECIES) == SPECIES_KAZURADROP;
 }

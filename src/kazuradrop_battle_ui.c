@@ -60,6 +60,17 @@ static const u8 ALIGNED(4) sKazuraBoxTilemap[] =
 static const u16 sKazuHpBarPurplePal[] =
     INCBIN_U16("graphics/battle_interface/hpbar_purple.gbapal");
 
+// 12x12 Alter Ego sigil in a 16x16 box (own palette)
+static const u8 ALIGNED(4) sKazuAlterEgoSigilGfx[] =
+    INCBIN_U8("graphics/special/kazfightui/Class16.4bpp");
+static const u16 sKazuAlterEgoSigilPal[] =
+    INCBIN_U16("graphics/special/kazfightui/Class16.gbapal");
+
+static const struct SpriteSheet sSpriteSheet_KazuAlterEgoSigil =
+    { sKazuAlterEgoSigilGfx, sizeof(sKazuAlterEgoSigilGfx), TAG_KAZU_ALTEREGO };
+static const struct SpritePalette sSpritePalette_KazuAlterEgoSigil =
+    { sKazuAlterEgoSigilPal, TAG_KAZU_ALTEREGO_PAL };
+
 // =====================================================================
 // Tags
 // =====================================================================
@@ -92,7 +103,7 @@ static const struct OamData sOamData_16x16 =
 {
     .shape    = ST_OAM_SQUARE,
     .size     = 1,    // 16x16
-    .priority = 1,
+    .priority = 0,
 };
 
 static const struct OamData sOamData_8x8 =
@@ -108,6 +119,7 @@ static const struct OamData sOamData_Number =
     .priority = 0,
 };
 
+
 // =====================================================================
 // Sprite data field aliases
 // =====================================================================
@@ -119,6 +131,10 @@ static const struct OamData sOamData_Number =
 #define tFlashTimer data[4]
 #define tSlideBack  data[5]
 #define tIconType   data[6]
+// healthbox sprite's data[5] = its health-bar child sprite ID
+// (same slot as tSlideBack, but that alias is only used on the panel
+// sprite — different sprite, so no conflict)
+#define hMain_HealthBarSpriteId     data[5]
 
 // =====================================================================
 // Panel layout constants
@@ -165,6 +181,13 @@ static const struct OamData sOamData_Number =
 
 #define KAZU_HP_BAR_FADE_FRAMES 16
 
+// Alter Ego sigil: healthbox left edge, on the HP-bar row (16x16).
+// X from healthbox main (overlap left border); Y derived from the bar in the
+// callback so it lands on the HP row without hardcoding the bar's offset.
+#define POS_ALTEREGO_X_OFFSET  (25)   // overlap the healthbox left border  39 right  (original deltapos -17)
+#define POS_ALTEREGO_Y_OFFSET  (-6)   // center the 16px icon on the HP bar row 9 up (original deltapos 3)
+
+
 // =====================================================================
 // State tracking
 // =====================================================================
@@ -176,6 +199,7 @@ static bool32 sKazuBuffIconsLoaded = FALSE;
 static bool32 sKazuHpBarPalLoaded = FALSE;
 static u8 sNumberSpriteId[MAX_BATTLERS_COUNT];
 static u8 sKazuraDialogWindowId;
+static u8 sAlterEgoSpriteId[MAX_BATTLERS_COUNT];
 
 // =====================================================================
 // Forward declarations
@@ -276,6 +300,39 @@ static void SpriteCb_KazuInvincibleIcon(struct Sprite *sprite)
         DestroyKazuradropBuffIcon(sprite->tBattler, KA_BUFF_INVINCIBLE);
 }
 
+// Permanent sigil: tracks the healthbox's health-bar sprite so it rides the
+// HP bar through slide-ins, menu reshow, and damage redraws.
+// Permanent Alter Ego class sigil: rides the healthbox (main) at its left
+// edge, vertically aligned to the HP-bar row. Copies x2/y2 from the healthbox
+// so it slides in with the box (the bar child does the same).
+static void SpriteCb_KazuAlterEgoSigil(struct Sprite *sprite)
+{
+    u32 battler = sprite->tBattler;
+    if (GetBattlerVisualSpecies(battler) != SPECIES_KAZURADROP)
+    {
+        sprite->invisible = TRUE;
+        return;
+    }
+    u8 healthboxId = gHealthboxSpriteIds[battler];
+    if (healthboxId == MAX_SPRITES)
+    {
+        sprite->invisible = TRUE;
+        return;
+    }
+    u8 barId = gSprites[healthboxId].hMain_HealthBarSpriteId;
+    if (barId == MAX_SPRITES)
+    {
+        sprite->invisible = TRUE;
+        return;
+    }
+    sprite->x  = gSprites[healthboxId].x + sprite->tTargetX;   // left edge (healthbox)
+    sprite->y  = gSprites[barId].y + sprite->tState;           // HP row (bar)
+    sprite->x2 = gSprites[healthboxId].x2;                      // ride the slide-in
+    sprite->y2 = gSprites[healthboxId].y2;
+    sprite->invisible = gSprites[healthboxId].invisible;
+}
+
+
 // =====================================================================
 // Sprite and Window templates
 // =====================================================================
@@ -345,7 +402,16 @@ static const struct WindowTemplate sKazuraDialogWindowTemplate = {
     .baseBlock   = 0x0100,  // text tiles; frame gfx at KAZ_WIN_BASE_TILE_NUM (0x170)
 };
 
-
+static const struct SpriteTemplate sSpriteTemplate_KazuAlterEgoSigil =
+{
+    .tileTag     = TAG_KAZU_ALTEREGO,
+    .paletteTag  = TAG_KAZU_ALTEREGO_PAL,
+    .oam         = &sOamData_16x16,
+    .anims       = gDummySpriteAnimTable,
+    .images      = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback    = SpriteCb_KazuAlterEgoSigil,
+};
 // =====================================================================
 // Internal helpers
 // =====================================================================
@@ -397,6 +463,7 @@ void InitKazuradropBattleIcons(void)
         sGutsSpriteId[i]          = MAX_SPRITES;
         sInvincibleSpriteId[i]    = MAX_SPRITES;
         sNumberSpriteId[i] = MAX_SPRITES;
+        sAlterEgoSpriteId[i] = MAX_SPRITES;
     }
     sKazuBuffIconsLoaded = FALSE;
     sKazuHpBarPalLoaded = FALSE;
@@ -409,6 +476,8 @@ void FreeKazuradropBattleIconGfx(void)
     FreeSpriteTilesByTag(TAG_KAZU_GUTS_ICON);
     FreeSpriteTilesByTag(TAG_KAZU_INVINCIBLE_ICON);
     FreeSpriteTilesByTag(TAG_KAZU_NUMBER);
+    FreeSpritePaletteByTag(TAG_KAZU_ALTEREGO_PAL);
+    FreeSpriteTilesByTag(TAG_KAZU_ALTEREGO);
     sKazuBuffIconsLoaded = FALSE;
 }
 
@@ -570,6 +639,7 @@ void ReshowKazuradropBattleUI(void)
         sGutsSpriteId[battler]          = MAX_SPRITES;
         sInvincibleSpriteId[battler]    = MAX_SPRITES;
         sNumberSpriteId[battler] = MAX_SPRITES;
+        sAlterEgoSpriteId[battler] = MAX_SPRITES;
     }
 
     sKazuBuffIconsLoaded = FALSE;
@@ -590,11 +660,15 @@ void ReshowKazuradropBattleUI(void)
 
         if (gBattleStruct->bugSpace.invincibleActive & (1u << battler))
             CreateKazuradropBuffIcon(battler, KA_BUFF_INVINCIBLE);
+        
     }
 
     // Ensure number is written if panel exists and is idle.
     if (gBattleStruct->bugSpace.active == TRUE)
         RefreshBugSpaceNumber(gBattleStruct->bugSpace.sourceBattler);
+    
+    if (GetBattlerVisualSpecies(gBattleStruct->bugSpace.sourceBattler) == SPECIES_KAZURADROP)
+        CreateKazuradropBuffIcon(gBattleStruct->bugSpace.sourceBattler, KA_BUFF_ALTER_EGO);
 }
 
 // =====================================================================
@@ -648,6 +722,35 @@ void CreateKazuradropBuffIcon(u32 battler, u32 iconType)
             sInvincibleSpriteId[battler] = spriteId;
         }
         break;
+        case KA_BUFF_ALTER_EGO:
+            if (sAlterEgoSpriteId[battler] != MAX_SPRITES)
+            return;
+        {
+            u8 healthboxId = gHealthboxSpriteIds[battler];
+            if (healthboxId == MAX_SPRITES)
+                return;
+            u8 barId = gSprites[healthboxId].hMain_HealthBarSpriteId;
+            if (barId == MAX_SPRITES)
+                return;
+
+            if (IndexOfSpritePaletteTag(TAG_KAZU_ALTEREGO_PAL) == 0xFF)
+                LoadSpritePalette(&sSpritePalette_KazuAlterEgoSigil);
+            if (GetSpriteTileStartByTag(TAG_KAZU_ALTEREGO) == 0xFFFF)
+                LoadSpriteSheet(&sSpriteSheet_KazuAlterEgoSigil);
+
+            s16 x = gSprites[healthboxId].x + POS_ALTEREGO_X_OFFSET;   // match callback (healthbox)
+            s16 y = gSprites[barId].y      + POS_ALTEREGO_Y_OFFSET;    // match callback (bar row)
+            u32 spriteId = CreateSprite(&sSpriteTemplate_KazuAlterEgoSigil, x, y, 0);
+            if (spriteId == MAX_SPRITES)
+                return;
+            gSprites[spriteId].tBattler = battler;
+            gSprites[spriteId].tTargetX = POS_ALTEREGO_X_OFFSET;
+            gSprites[spriteId].tState   = POS_ALTEREGO_Y_OFFSET;
+            gSprites[spriteId].x2 = gSprites[healthboxId].x2;          // seed slide offset (no frame-0 jump)
+            gSprites[spriteId].y2 = gSprites[healthboxId].y2;
+            sAlterEgoSpriteId[battler] = spriteId;
+        }
+        break;
     }
 }
 
@@ -672,6 +775,14 @@ void DestroyKazuradropBuffIcon(u32 battler, u32 iconType)
         {
             DestroySprite(&gSprites[spriteId]);
             sInvincibleSpriteId[battler] = MAX_SPRITES;
+        }
+        break;
+    case KA_BUFF_ALTER_EGO:
+        spriteId = sAlterEgoSpriteId[battler];
+        if (spriteId != MAX_SPRITES)
+        {
+            DestroySprite(&gSprites[spriteId]);
+            sAlterEgoSpriteId[battler] = MAX_SPRITES;
         }
         break;
     }
@@ -851,7 +962,6 @@ void HideKazuraDialogueBox(void)
 
 // Accessor alias — matches the same field used in battle_interface.c
 // healthbox sprite's data[5] holds the healthbar sprite ID.
-#define hMain_HealthBarSpriteId     data[5]
 
 static const struct SpritePalette sSpritePalette_KazuHpBarPurple =
     { sKazuHpBarPurplePal, TAG_KAZU_HP_BAR_PAL };
@@ -903,8 +1013,10 @@ void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
         u8 palSlot = IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL);
         DebugPrintf("SKHBP purple branch palSlot=%d", palSlot);
         if (palSlot != 0xFF)
+        {
             gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
             StartKazuHpBarPurpleFade(battler);
+        }
     }
     else
     {
@@ -915,6 +1027,7 @@ void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
             gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
     }
     DebugPrintf("SKHBP final oam.paletteNum=%d", gSprites[healthbarSpriteId].oam.paletteNum);
+    UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], GetBattlerMon(battler), HEALTHBOX_HEALTH_BAR);
 }
 
 static void Task_KazuHpBarPurpleFade(u8 taskId)
