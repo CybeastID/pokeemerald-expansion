@@ -27,6 +27,7 @@ enum TrainerSlideType
     TRAINER_SLIDE_MEGA_EVOLUTION,
     TRAINER_SLIDE_Z_MOVE,
     TRAINER_SLIDE_DYNAMAX,
+    TRAINER_SLIDE_KAZURADROP_SENDOUT, // plays just before Kazuradrop is sent out
     TRAINER_SLIDE_COUNT,
 };
 

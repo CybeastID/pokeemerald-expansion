@@ -1088,7 +1088,7 @@ LittlerootTown_Text_TeamDelivered:
 
 LittlerootTown_Alice_Fight::
 	setdynamicaifunc AI_AliceTrainer
-	trainerbattle_single TRAINER_ALICE2, Text_Alice_Intro, Text_Alice_Defeated
+	trainerbattle_single TRAINER_ALICE3, Text_Alice_Intro, Text_Alice_Defeated
 
 LittlerootTown_Not_In_Demo::
 	msgbox LittleRootTownAreaSealedText, MSGBOX_DEFAULT

@@ -49,6 +49,7 @@ static bool32 ShouldRunTrainerSlideEnemyMonUnaffected(u32 firstId, u32 lastId, e
 static bool32 ShouldRunTrainerSlideLastSwitchIn(u32 battler);
 static bool32 ShouldRunTrainerSlideLastHalfHP(u32 firstId, u32 lastId, u32 battler);
 static bool32 ShouldRunTrainerSlideLastLowHp(u32 firstId, u32 lastId, u32 battler);
+static bool32 ShouldRunTrainerSlideKazuradropSendout(u32 battler);
 static void SetTrainerSlideParamters(u32 battler, u32* firstId, u32* lastId, u32* trainerId, u32* retValue);
 static bool32 IsSlideInitalizedOrPlayed(enum TrainerSlideType slideId);
 
@@ -56,6 +57,14 @@ static const u8* const sTrainerSlides[DIFFICULTY_COUNT][TRAINERS_COUNT][TRAINER_
 {
     [DIFFICULTY_NORMAL] =
     {
+        [TRAINER_ALICE2] =
+        {
+            [TRAINER_SLIDE_KAZURADROP_SENDOUT] = COMPOUND_STRING("So...you beat my Pokemon. But...let's see what you're made of when you face total despair! Come, my Servant! {PAUSE_UNTIL_PRESS}"),
+        },
+        [TRAINER_ALICE3] =
+        {
+            [TRAINER_SLIDE_KAZURADROP_SENDOUT] = COMPOUND_STRING("So...you beat my Pokemon. But...let's see what you're made of when you face total despair! Come, my Servant! {PAUSE_UNTIL_PRESS}"),
+        },
     },
 };
 
@@ -208,6 +217,16 @@ static bool32 ShouldRunTrainerSlideLastLowHp(u32 firstId, u32 lastId, u32 battle
     return (BattlerHPPercentage(battler, LESS_THAN_OR_EQUAL, 4));
 }
 
+// TRUE only when the mon ABOUT to be sent out is Kazuradrop.
+// Safe here: BattleScript_FaintedMonSendOutNew runs switchindataupdate
+// before this hook, so gBattleMons already holds the incoming mon.
+static bool32 ShouldRunTrainerSlideKazuradropSendout(u32 battler)
+{
+    u32 partyId = gBattleStruct->monToSwitchIntoId[battler];
+    return GetMonData(&gEnemyParty[partyId], MON_DATA_SPECIES) == SPECIES_KAZURADROP;
+}
+
+
 static void SetTrainerSlideParamters(u32 battler, u32* firstId, u32* lastId, u32* trainerId, u32* retValue)
 {
     if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
@@ -282,6 +301,9 @@ enum TrainerSlideTargets ShouldDoTrainerSlide(u32 battler, enum TrainerSlideType
             break;
         case TRAINER_SLIDE_LAST_LOW_HP:
             shouldRun = ShouldRunTrainerSlideLastLowHp(firstId, lastId, battler);
+            break;
+        case TRAINER_SLIDE_KAZURADROP_SENDOUT:
+            shouldRun = ShouldRunTrainerSlideKazuradropSendout(battler);
             break;
         case TRAINER_SLIDE_BEFORE_FIRST_TURN:
         case TRAINER_SLIDE_MEGA_EVOLUTION:

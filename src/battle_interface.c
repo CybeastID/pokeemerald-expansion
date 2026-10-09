@@ -2149,9 +2149,10 @@ static void MoveBattleBarGraphically(u8 battler, u8 whichBar)
             DebugPrintf("MBBG kazu healthbarSpriteId=%d curPalNum=%d kazuPalSlot=%d match=%d", healthbarSpriteId, curPalNum, kazuPalSlot, curPalNum == kazuPalSlot);
             if (curPalNum == kazuPalSlot)
                 barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;
+            else if (gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
+                barElementId = HEALTHBOX_GFX_HP_BAR_RED;      // post-break: intentional red
             else
-                barElementId = HEALTHBOX_GFX_HP_BAR_RED;
-            DebugPrintf("MBBG kazu chose barElementId=%d", barElementId);
+                barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;    // Bug Space not active yet: normal greenDebugPrintf("MBBG kazu chose barElementId=%d", barElementId);
         }
         else if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 50 / 100)) // more than 50 % hp
             barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;

@@ -3569,8 +3569,13 @@ static void DoBattleIntro(void)
 
             for (i = 0; i < PARTY_SIZE; i++)
             {
-                if (GetMonData(&gEnemyParty[i], MON_DATA_SPECIES_OR_EGG) == SPECIES_NONE
-                 || GetMonData(&gEnemyParty[i], MON_DATA_SPECIES_OR_EGG) == SPECIES_EGG)
+                u16 species = GetMonData(&gEnemyParty[i], MON_DATA_SPECIES_OR_EGG);
+
+                if (species == SPECIES_KAZURADROP && !gBattleStruct->bugSpace.active)
+                    species = SPECIES_NONE;
+                
+                if (species == SPECIES_NONE || species == SPECIES_EGG)
+                
                 {
                     hpStatus[i].hp = HP_EMPTY_SLOT;
                     hpStatus[i].status = 0;

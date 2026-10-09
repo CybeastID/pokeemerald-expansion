@@ -9012,10 +9012,28 @@ static void Cmd_drawpartystatussummary(void)
     battler = GetBattlerForBattleScript(cmd->battler);
     party = GetBattlerParty(battler);
 
+    // Suppress the party preview when Kazuradrop is the incoming mon — her
+    // send-out is the reveal, and the pre-sendout slide should play against
+    // a clean field instead of the panel.
+    if (!IsOnPlayerSide(battler))
+    {
+        u32 partyId = gBattleStruct->monToSwitchIntoId[battler];
+        if (partyId < PARTY_SIZE
+         && GetMonData(&party[partyId], MON_DATA_SPECIES) == SPECIES_KAZURADROP)
+        {
+            gBattleSpritesDataPtr->healthBoxesData[battler].partyStatusSummaryShown = FALSE;
+            gBattlescriptCurrInstr = cmd->nextInstr;
+            return;
+        }
+    }
+
     for (i = 0; i < PARTY_SIZE; i++)
     {
-        if (GetMonData(&party[i], MON_DATA_SPECIES_OR_EGG) == SPECIES_NONE
-            || GetMonData(&party[i], MON_DATA_SPECIES_OR_EGG) == SPECIES_EGG)
+        u16 species = GetMonData(&party[i], MON_DATA_SPECIES_OR_EGG);
+        if (!IsOnPlayerSide(battler) && species == SPECIES_KAZURADROP && !gBattleStruct->bugSpace.active)
+            species = SPECIES_NONE;
+
+        if (species == SPECIES_NONE || species == SPECIES_EGG)
         {
             hpStatuses[i].hp = 0xFFFF;
             hpStatuses[i].status = 0;
@@ -18129,6 +18147,32 @@ void BS_TryTrainerSlideMsgLastOn(void)
     u32 shouldDoTrainerSlide = 0;
     u32 battler = GetBattlerForBattleScript(cmd->battler);
     if ((shouldDoTrainerSlide = ShouldDoTrainerSlide(battler, TRAINER_SLIDE_LAST_SWITCHIN)))
+    {
+        gBattleScripting.battler = battler;
+        BattleScriptPush(cmd->nextInstr);
+        gBattlescriptCurrInstr = (shouldDoTrainerSlide == 1 ? BattleScript_TrainerASlideMsgRet : BattleScript_TrainerBSlideMsgRet);
+    }
+    else
+    {
+        gBattlescriptCurrInstr = cmd->nextInstr;
+    }
+}
+
+void BS_SetIncomingMonIsKazuraFlag(void)
+{
+    NATIVE_ARGS(u8 battler);
+    u32 b = GetBattlerForBattleScript(cmd->battler);
+    u16 species = GetMonData(&GetBattlerParty(b)[gBattleStruct->monToSwitchIntoId[b]], MON_DATA_SPECIES);
+    gBattleCommunication[MULTIUSE_STATE] = (species == SPECIES_KAZURADROP);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_TryTrainerSlideMsgBeforeOn(void)
+{
+    NATIVE_ARGS(u8 battler);
+    u32 shouldDoTrainerSlide = 0;
+    u32 battler = GetBattlerForBattleScript(cmd->battler);
+    if ((shouldDoTrainerSlide = ShouldDoTrainerSlide(battler, TRAINER_SLIDE_KAZURADROP_SENDOUT)))
     {
         gBattleScripting.battler = battler;
         BattleScriptPush(cmd->nextInstr);

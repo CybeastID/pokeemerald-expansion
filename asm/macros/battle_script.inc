@@ -2494,4 +2494,15 @@
     .2byte \stringId
 	.byte \keep
     .endm
+
+	.macro trytrainerslidemsgbeforeon battler:req
+	callnative BS_TryTrainerSlideMsgBeforeOn
+	.byte \battler
+	.endm
+
+	.macro jumpifincomingmonkazura battler:req, target:req
+	callnative BS_SetIncomingMonIsKazuraFlag
+	.byte \battler
+	jumpifbyte CMP_EQUAL, gBattleCommunication + MULTIUSE_STATE, 1, \target
+	.endm
 	

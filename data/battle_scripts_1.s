@@ -4484,6 +4484,7 @@ BattleScript_FaintedMonTryChoose:
 	jumpifcantswitch BS_PLAYER1, BattleScript_FaintedMonSendOutNew
 	setbyte sILLUSION_NICK_HACK, 1
 @ Yes/No for sending out a new Pokémon when the opponent is switching
+	jumpifincomingmonkazura BS_FAINTED, BattleScript_FaintedMonSendOutNew   @ NEW: no spoiler
 	printstring STRINGID_ENEMYABOUTTOSWITCHPKMN
 	setbyte gBattleCommunication, 0
 	yesnobox
@@ -4514,13 +4515,16 @@ BattleScript_FaintedMonTryChoose:
 	waitstate
 	setbyte sSHIFT_SWITCHED, 1
 BattleScript_FaintedMonSendOutNew:
+	trytrainerslidemsgbeforeon BS_FAINTED      @ NEW - before "sent out"
 	drawpartystatussummary BS_FAINTED
 	getswitchedmondata BS_FAINTED
 	switchindataupdate BS_FAINTED
 	hpthresholds BS_FAINTED
 	trytoclearprimalweather
 	flushtextbox
+	jumpifincomingmonkazura BS_FAINTED, BattleScript_KazuNoSentOutMsg
 	printstring STRINGID_SWITCHINMON
+BattleScript_KazuNoSentOutMsg:
 	hidepartystatussummary BS_FAINTED
 	switchinanim BS_FAINTED, FALSE, FALSE
 	waitstate

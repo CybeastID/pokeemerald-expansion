@@ -8,6 +8,7 @@
 #include "battle_gfx_sfx_util.h"
 #include "battle_interface.h"
 #include "kazuradrop_battle_ui.h"
+#include "kazuradrop_entrance.h"
 #include "battle_message.h"
 #include "battle_setup.h"
 #include "battle_tv.h"
@@ -1990,7 +1991,10 @@ void StartSendOutAnim(u32 battler, bool32 dontClearTransform, bool32 dontClearSu
 
     gSprites[gBattleControllerData[battler]].data[1] = gBattlerSpriteIds[battler];
     gSprites[gBattleControllerData[battler]].data[2] = battler;
-    gSprites[gBattleControllerData[battler]].data[0] = DoPokeballSendOutAnimation(battler, 0, sendoutType);
+    if (!IsOnPlayerSide(battler) && UseCustomSendOut(species))
+        gSprites[gBattleControllerData[battler]].data[0] = DoKazuradropAppearAnimation(battler);
+    else
+        gSprites[gBattleControllerData[battler]].data[0] = DoPokeballSendOutAnimation(battler, 0, sendoutType);
 }
 
 static void FreeMonSprite(u32 battler)
