@@ -33,3 +33,8 @@ keysplit tuba, 24
 keysplit french_horn, 36
 	split 0, 66
 	split 1, 108
+
+keysplit alice_guitar, 36
+	split 0, 67
+	split 1, 82
+	split 2, 108

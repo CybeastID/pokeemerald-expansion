@@ -912,19 +912,37 @@ static void UpdateLvlInHealthbox(u8 healthboxSpriteId, u8 lvl, u16 species)
     u8 *objVram;
     u8 battler = gSprites[healthboxSpriteId].hMain_Battler;
 
-    // Don't print Lv char if mon has a gimmick with an indicator active.
+    bool32 hideRealLevel = (GetBattlerSide(battler) == B_SIDE_OPPONENT
+                            && (lvl > 100 || FlagGet(FLAG_PLAYER_SMOL)));
+
+     // Don't print Lv char if mon has a gimmick with an indicator active.
     if (GetIndicatorPalTag(battler) != TAG_NONE)
     {
-        objVram = ConvertIntToDecimalStringN(text, lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
-        xPos = 5 * (3 - (objVram - (text + 2))) - 1;
-        UpdateIndicatorLevelData(healthboxSpriteId, lvl);
-        UpdateIndicatorVisibilityAndType(healthboxSpriteId, FALSE);
+        if (hideRealLevel)
+        {
+            // Glyph stays visible; the level reads "???". Three glyphs wide,
+            // so reuse the 3-digit footprint exactly.
+            text[0] = CHAR_QUESTION_MARK;
+            text[1] = CHAR_QUESTION_MARK;
+            text[2] = CHAR_QUESTION_MARK;
+            text[3] = EOS;
+            xPos = 9;   // same slot as a 3-digit level: 5 * (3 - 1) - 1
+            UpdateIndicatorLevelData(healthboxSpriteId, 100);  // >= 100 → -4 shift
+        }
+        else
+        {
+            objVram = ConvertIntToDecimalStringN(text, lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
+            xPos = 5 * (3 - (objVram - (text + 2))) - 1;
+            UpdateIndicatorLevelData(healthboxSpriteId, lvl);
+        }
+        UpdateIndicatorVisibilityAndType(healthboxSpriteId, FALSE);  // glyph visible
     }
     else
     {
         text[0] = CHAR_EXTRA_SYMBOL;
         text[1] = CHAR_LV_2;
-        if (GetBattlerSide(battler) == B_SIDE_OPPONENT && (lvl > 100 || FlagGet(FLAG_PLAYER_SMOL))) {
+        if (hideRealLevel)
+        {
             // Replace with "???"
             text[2] = CHAR_QUESTION_MARK;
             text[3] = CHAR_QUESTION_MARK;
@@ -932,18 +950,19 @@ static void UpdateLvlInHealthbox(u8 healthboxSpriteId, u8 lvl, u16 species)
             text[5] = EOS;
             xPos = 0;  // Adjust xPos for "???"
             UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
-    }   else if (species == SPECIES_CASTORIA)
+        }
+        else if (species == SPECIES_CASTORIA)
         {
             text[2] = CHAR_1;
             text[3] = EOS;
             xPos = 10;  // Adjust xPos for "1"
             UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
         }
-        else {
-    
-        objVram = ConvertIntToDecimalStringN(text + 2, lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
-        xPos = 5 * (3 - (objVram - (text + 2)));
-        UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
+        else
+        {
+            objVram = ConvertIntToDecimalStringN(text + 2, lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
+            xPos = 5 * (3 - (objVram - (text + 2)));
+            UpdateIndicatorVisibilityAndType(healthboxSpriteId, TRUE);
         }
     }
 

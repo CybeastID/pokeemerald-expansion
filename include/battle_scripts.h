@@ -873,6 +873,7 @@ extern const u8 BattleScript_CastoriaTrueName[];
 extern const u8 BattleScript_CastoriaFalseName[];
 extern const u8 BattleScript_CastoriaBackedOut[];
 extern const u8 BattleScript_CastoriaTrueNameCommand[];
+extern const u8 BattleScript_TrainerSlideKazuradropSendoutRet[];
 
 
 #endif // GUARD_BATTLE_SCRIPTS_H

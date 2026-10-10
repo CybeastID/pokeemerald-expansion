@@ -15054,7 +15054,15 @@ void BS_ApplyKazuradropTransformation(void)
     BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
     MarkBattlerForControllerExec(battler);
     SetHealAmount(battler, gBattleMons[battler].maxHP - currentHP);
-    FadeOutAndFadeInNewMapMusic(MUS_BB_CHANNEL, 2, 4);
+    // FadeOutAndFadeInNewMapMusic(MUS_BB_CHANNEL, 2, 4);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_KazuradropSendoutMusic(void)
+{
+    NATIVE_ARGS();
+    // Fade out Alice's battle theme, fade in the Kazuradrop boss theme.
+    FadeOutAndFadeInNewMapMusic(MUS_KAZURADROP_APPEARS, 4, 4);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -18176,7 +18184,7 @@ void BS_TryTrainerSlideMsgBeforeOn(void)
     {
         gBattleScripting.battler = battler;
         BattleScriptPush(cmd->nextInstr);
-        gBattlescriptCurrInstr = (shouldDoTrainerSlide == 1 ? BattleScript_TrainerASlideMsgRet : BattleScript_TrainerBSlideMsgRet);
+        gBattlescriptCurrInstr = (shouldDoTrainerSlide == 1 ? BattleScript_TrainerSlideKazuradropSendoutRet : BattleScript_TrainerBSlideMsgRet);
     }
     else
     {
