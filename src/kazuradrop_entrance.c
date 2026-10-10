@@ -54,7 +54,7 @@
 bool8 UseCustomSendOut(u16 species)
 {
     // return FALSE; // disabled for now, but can be re-enabled if desired
-    return species == SPECIES_CASTORIA || species == SPECIES_KAZURADROP;
+    return species == SPECIES_KAZURADROP;
 }
 
 // =====================================================================

@@ -6,7 +6,6 @@ enum KazuradropBuffIconType
 {
     KA_BUFF_GUTS = 0,     // Guts (cheat death) active on Kazuradrop
     KA_BUFF_INVINCIBLE,   // Invincibility from BugSpace vs Explosion
-    KA_BUFF_ALTER_EGO,  // Permanent Alter Ego class sigil (rides the HP bar)
 };
 
 

@@ -16,6 +16,7 @@
 #include "data.h"
 #include "item.h"
 #include "constants/songs.h"
+#include "servant_sigil.h"
 
 static void Task_DoPokeballSendOutAnim(u8 taskId);
 static inline void DoPokeballSendOutSoundEffect(u32 battler);
@@ -1541,6 +1542,11 @@ void StartHealthboxSlideIn(u8 battler)
     gSprites[healthboxSprite->data[5]].callback(&gSprites[healthboxSprite->data[5]]);
     if (GetBattlerPosition(battler) == B_POSITION_PLAYER_RIGHT && !gTestRunnerHeadless)
         healthboxSprite->callback = SpriteCB_HealthboxSlideInDelayed;
+    // Servant sigil: spawn with the healthbox. This is the shared seam every
+    // send-out funnels through (intro + switch-in + wild + safari + wally),
+    // so one hook here covers all battle types. Gated internally by species.
+    CreateServantSigil(battler);
+
 }
 
 static void SpriteCB_HealthboxSlideInDelayed(struct Sprite *sprite)

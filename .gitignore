@@ -71,3 +71,21 @@ taskplan.md
 mGBA.exe - Shortcut.lnk
 differences.txt
 build.log
+TEMPSCRIPTS/build_faithful_kz.py
+TEMPSCRIPTS/check_faithful.py
+TEMPSCRIPTS/check_mid.py
+TEMPSCRIPTS/Cosmos_faithful_kazuradrop.mid
+TEMPSCRIPTS/Cosmos_faithful_kazuradrop.s
+TEMPSCRIPTS/Cosmos_raw.s
+TEMPSCRIPTS/draft_mid2agb.log
+TEMPSCRIPTS/dump_cosmos_s.py
+TEMPSCRIPTS/Fate Grand Order - Cosmos in the Lostbelt Grand Battle(1).mid
+TEMPSCRIPTS/kz_scan.py
+TEMPSCRIPTS/mid2agb_cosmos.log
+TEMPSCRIPTS/midi_analyze.py
+TEMPSCRIPTS/midiparse.py
+TEMPSCRIPTS/orig_scan.py
+TEMPSCRIPTS/orig_scan2.py
+TEMPSCRIPTS/orig_scan3.py
+TEMPSCRIPTS/verify_mid.py
+graphics/special/CasterUI/Caster16.aseprite

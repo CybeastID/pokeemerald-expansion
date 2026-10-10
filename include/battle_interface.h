@@ -96,6 +96,9 @@ enum
 #define TAG_KAZU_HP_BAR_PAL 0xD7B5
 #define TAG_KAZU_ALTEREGO          0xD7B6
 #define TAG_KAZU_ALTEREGO_PAL      0xD7B7
+#define TAG_CASTER_SIGIL          0xD7B8
+#define TAG_CASTER_SIGIL_PAL      0xD7B9
+
 
 #define TAG_GIMMICK_TRIGGER_PAL         0xD777
 #define TAG_MEGA_INDICATOR_PAL          0xD778

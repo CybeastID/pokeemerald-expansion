@@ -8,6 +8,7 @@
 #include "battle_gfx_sfx_util.h"
 #include "battle_interface.h"
 #include "kazuradrop_battle_ui.h"
+#include "servant_sigil.h"
 #include "kazuradrop_entrance.h"
 #include "battle_message.h"
 #include "battle_setup.h"
@@ -3129,11 +3130,11 @@ void BtlController_HandleSwitchInShowHealthbox(u32 battler)
         StartHealthboxSlideIn(battler);
         SetHealthboxSpriteVisible(gHealthboxSpriteIds[battler]);
 
-        // Alter Ego sigil: spawn it WITH the healthbox as it comes on from
+        // Servant sigil: spawn it WITH the healthbox as it comes on from
         // offscreen, so it rides the slide-in. Battler is authoritative here
         // and the healthbox + bar child are valid (UpdateHealthboxAttribute ran).
-        if (GetBattlerVisualSpecies(battler) == SPECIES_KAZURADROP)
-            CreateKazuradropBuffIcon(battler, KA_BUFF_ALTER_EGO);
+      //  CreateServantSigil(battler);
+
 
         if (side == B_SIDE_OPPONENT)
             CopyBattleSpriteInvisibility(battler);
