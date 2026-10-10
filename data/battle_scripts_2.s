@@ -283,6 +283,16 @@ BattleScript_TrainerASlideMsgRet::
 	handletrainerslidemsg BS_SCRIPTING, RESTORE_BATTLER_SLIDE_CONTROL
 	return
 
+BattleScript_TrainerSlideKazuradropSendoutRet::
+	callnative BS_KazuradropSendoutMusic
+	trainerslidein BS_OPPONENT1
+	handletrainerslidemsg BS_SCRIPTING, PRINT_SLIDE_MESSAGE
+	waitstate
+	trainerslideout BS_OPPONENT1
+	waitstate
+	handletrainerslidemsg BS_SCRIPTING, RESTORE_BATTLER_SLIDE_CONTROL
+	return
+
 BattleScript_TrainerASlideMsgEnd2::
 	call BattleScript_TrainerASlideMsgRet
 	end2
