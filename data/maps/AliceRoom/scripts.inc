@@ -37,6 +37,7 @@ AliceRoom_Alice_Fight_PackageTaken:
 	setrespawn HEAL_LOCATION_ALICE_ROOM
 	setdynamicaifunc AI_AliceTrainer
 	trainerbattle_single TRAINER_ALICE2, Text_Alice_Intro, Text_Alice_Defeated
+	clearflag FLAG_KAZURADROP_ENTERED_BATTLE
 	releaseall
 	end
 

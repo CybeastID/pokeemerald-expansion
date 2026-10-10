@@ -4692,12 +4692,15 @@ static void Cmd_dofaintanimation(void)
 
     // Bug Space passive OHKO faint flow can get stuck waiting for controller exec to finish.
     // Skip controller faint animation requests in this specific flow to prevent the hang.
-    if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
-    {
-        gBattleControllerExecFlags = 0;
-        gBattlescriptCurrInstr = cmd->nextInstr;
-        return;
-    }
+    // DISABLED: this suppressed the faint animation for EVERY faint once the boss reached
+    // BUGSPACE_TIER_PASSIVE_OHKO, not just the "blow away" one, and it stomped
+    // gBattleControllerExecFlags to 0 mid-flow.
+    // if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+    // {
+    //     gBattleControllerExecFlags = 0;
+    //     gBattlescriptCurrInstr = cmd->nextInstr;
+    //     return;
+    // }
 
     BtlController_EmitFaintAnimation(battler, B_COMM_TO_CONTROLLER);
     MarkBattlerForControllerExec(battler);
@@ -4720,11 +4723,13 @@ static void Cmd_cleareffectsonfaint(void)
             // battle-script command boundary if we emit controller requests here.
             // In that specific flow, skip the controller request and rely on
             // FaintClearSetData for other cleanup.
-            if (!(gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO))
-            {
+            // DISABLED: this left a stale status icon on the fainted mon's healthbox,
+            // since REQUEST_STATUS_BATTLE was never sent.
+            // if (!(gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO))
+            // {
                 BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, sizeof(gBattleMons[battler].status1), &gBattleMons[battler].status1);
                 MarkBattlerForControllerExec(battler);
-            }
+            // }
         }
 
         clearDataResult = FaintClearSetData(battler); // Effects like attractions, trapping, etc.
@@ -5336,21 +5341,28 @@ static void Cmd_checkteamslost(void)
 
     if (NoAliveMonsForPlayer())
     {
-        if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
-        {
-            // Important: don't set B_OUTCOME_LOST here.
-            // Setting the battle outcome early can interrupt the controller exec flow
-            // started by dofaintanimation, leaving gBattleControllerExecFlags stuck and
-            // causing the battle script to hang at the next post-faint command boundary.
-            //
-            // Instead, BattleScript_BugSpacePassiveOHKO will callnative
-            // TrySetKazGameOverFromBattle() after the "blow away" so we can set outcome
-            // + flag at a safe point.
-        }
-        else
-        {
+        // Important: don't set B_OUTCOME_LOST here.
+        // Setting the battle outcome early can interrupt the controller exec flow
+        // started by dofaintanimation, leaving gBattleControllerExecFlags stuck and
+        // causing the battle script to hang at the next post-faint command boundary.
+        //
+        // Instead, BattleScript_BugSpacePassiveOHKO will callnative
+        // TrySetKazGameOverFromBattle() after the "blow away" so we can set outcome
+        // + flag at a safe point.
+        //
+        // DISABLED: this made gBattleOutcome permanently 0 once the boss hit that tier,
+        // so any faint that wasn't the end-of-turn "blow away" (a move KO, recoil,
+        // Destiny Bond, status, a double KO...) never registered a loss and the battle
+        // wedged. The custom game-over screen is already selected downstream by
+        // TrySetKazGameOverWhiteOut() off FLAG_KAZURADROP_ENTERED_BATTLE, so setting
+        // the outcome normally is safe and sufficient.
+        // if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+        // {
+        // }
+        // else
+        // {
             gBattleOutcome |= B_OUTCOME_LOST;
-        }
+        // }
     }
     if (NoAliveMonsForOpponent())
         gBattleOutcome |= B_OUTCOME_WON;
