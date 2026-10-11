@@ -15074,7 +15074,17 @@ void BS_KazuradropSendoutMusic(void)
 {
     NATIVE_ARGS();
     // Fade out Alice's battle theme, fade in the Kazuradrop boss theme.
-    FadeOutAndFadeInNewMapMusic(MUS_KAZURADROP_APPEARS, 4, 4);
+    FadeOutAndPlayNewMapMusic(MUS_KAZURADROP_APPEARS, 4);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_KazuradropFakeVictorySting(void)
+{
+    NATIVE_ARGS();
+    // Fake-out victory jingle: victory themes are BGM songs (not in sFanfares), so use
+    // the BGM player. PlayFanfare here would fall back to fanfare[0] (MUS_LEVEL_UP)
+    // and stop the BGM. Boss theme then crossfades in via BS_KazuradropSendoutMusic.
+    PlayBGM(MUS_VICTORY_TRAINER);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 

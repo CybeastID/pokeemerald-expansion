@@ -284,10 +284,11 @@ BattleScript_TrainerASlideMsgRet::
 	return
 
 BattleScript_TrainerSlideKazuradropSendoutRet::
-	callnative BS_KazuradropSendoutMusic
+	callnative BS_KazuradropFakeVictorySting   @ NEW: PlayBGM(MUS_VICTORY_TRAINER)
 	trainerslidein BS_OPPONENT1
 	handletrainerslidemsg BS_SCRIPTING, PRINT_SLIDE_MESSAGE
 	waitstate
+	callnative BS_KazuradropSendoutMusic       @ MOVED here — crossfade to boss
 	trainerslideout BS_OPPONENT1
 	waitstate
 	handletrainerslidemsg BS_SCRIPTING, RESTORE_BATTLER_SLIDE_CONTROL
