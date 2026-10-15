@@ -4691,12 +4691,11 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     FlagSet(FLAG_KAZURADROP_ENTERED_BATTLE);
                     VarSet(VAR_TEMP_0, gBattleResults.battleTurnCounter);
                     gBattleStruct->bugSpace.sourceBattler = battler;
+                    // DEADCODE (NOT COMPILED): thresholdPercent was an early percent-based design, replaced by the cmdFaintmon gate. Kept for posterity. And in case I wanted to use the idea for something else and an actual HP% based gate.
                     // gBattleStruct->bugSpace.thresholdPercent = 50;
-                    gBattleStruct->bugSpace.bpThreshold = 150;
-                    // gBattleStruct->bugSpace.bpThreshold = 10;
+                    gBattleStruct->bugSpace.bpThreshold = 160;
                     gBattleStruct->bugSpace.bpDecayRate = 10;
-                    gBattleStruct->bugSpace.bpDecayRatePhase2 = 20;
-                    gBattleStruct->bugSpace.entryDefenseTimer = 2;
+                    gBattleStruct->bugSpace.bpDecayRatePhase2 = 15;
                     CreateBugSpacePanel(battler);
                     BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);
                     effect++;
@@ -11394,6 +11393,8 @@ bool32 IsMimikyuDisguised(u32 battler)
         || gBattleMons[battler].species == SPECIES_MIMIKYU_TOTEM_DISGUISED;
 }
 
+// DEADCODE (NOT COMPILED): HandleSoulParasiteEffect predates the Bug Space design (old Soul Parasite ability name). Replaced by Melt Virus + Bug Space. Kept for posterity; do not read as live.
+#if 0 // DEADCODE (NOT COMPILED)
 // static void HandleSoulParasiteEffect(struct Pokemon *attacker, struct Pokemon *defender) {
 //     if (!IsAbilityActive(attacker, ABILITY_BUG_SPACE)) return;
 
@@ -11408,3 +11409,4 @@ bool32 IsMimikyuDisguised(u32 battler)
 //     BattleScriptPush("bufferstring STRINGID_TARGET_LOST_HP");
 //     BattleScriptPush("playanimation ANIM_DRAIN");
 // }
+#endif // DEADCODE: end HandleSoulParasiteEffect

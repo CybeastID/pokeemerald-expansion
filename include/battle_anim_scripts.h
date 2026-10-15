@@ -1022,5 +1022,7 @@ extern const u8 gBattleAnimSpecial_CriticalCaptureBallThrow[];
 // idiocy
 extern const u8 gBattleAnim_BugSpacePassiveOHKO[];
 extern const u8 gBattleAnimMove_TrashCrush[];
+extern const u8 gBattleAnimMove_TrashCrushOld[];
+extern const u8 gBattleAnimMove_MeltVirus[];
 
 #endif // GUARD_BATTLE_ANIM_SCRIPTS_H

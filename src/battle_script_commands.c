@@ -1390,6 +1390,7 @@ static bool32 IsMoveBlockedByBugSpace(u32 move)
         return FALSE;
     
     // If threshold is 0 (floor reached), don't block (passive OHKO phase)
+    // DEADCODE (NOT COMPILED): floor early-return, currently not needed. Kept for posterity.
     // if (gBattleStruct->bugSpace.bpThreshold == 0)
        // return FALSE;
     
@@ -2420,13 +2421,7 @@ static void Cmd_healthbarupdate(void)
             
             // else
             // {
-                /*
-                 * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
-                 * This clamped the visual HP bar at 10% so the bar would stop at the
-                 * threshold before the transformation restored it.  Now the HP bar
-                 * drains fully to 0 (Break Bar behaviour) and the transformation is
-                 * triggered by the gate in Cmd_tryfaintmon instead.
-                 */
+            // DEADCODE (NOT COMPILED): 10% visual-HP clamp, replaced by the Cmd_tryfaintmon BREAK BAR GATE. See canonical note above ApplyKazuradropTransformation. Kept for posterity; do not read as live.
                 // if (gBattleMons[battler].species == SPECIES_KAZURADROP
                 // && gBattleStruct->bugSpace.active
                 // && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
@@ -2482,60 +2477,54 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
     gBattlescriptCurrInstr = nextInstr;
 }
 
-/*
- * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
- * TryTriggerKazuradropTransformation  was  called  just  before  the  damage-application
- * block in MoveDamageDataHpUpdate.  It clamped moveDamage so HP never dropped below 10%,
- * then set kazuradropTransformed = TRUE to push BattleScript_KazuradropTransform after
- * the damage was dealt.  This only worked for direct move damage  (Destiny Bond, Perish
- * Song, passive end-of-turn damage all bypassed it).
- *
- * The replacement gate in Cmd_tryfaintmon  catches *any* source of lethal damage  at the
- * faint checkpoint.  When Kazuradrop hits 0 HP  the gate pushes BattleScript_Kazuradrop-
- * Transform  (which  calls  ApplyKazuradropTransformation)  and  returns,  skipping  the
- * entire faint machinery.  The HP bar now drains fully to 0 (Break Bar behaviour) rather
- * than  stopping at 10%.
- *
- * Original function (a few lines below) is retained as reference.
- */
+// DEADCODE (NOT COMPILED) — canonical note: the old 10%-HP-clamp transformation design.
+// TryTriggerKazuradropTransformation was called just before the damage-application block in
+// MoveDamageDataHpUpdate. It clamped moveDamage so HP never dropped below 10%, then set
+// kazuradropTransformed = TRUE to push BattleScript_KazuradropTransform after the damage was
+// dealt. This only worked for direct move damage (Destiny Bond, Perish Song, passive end-of-turn
+// damage all bypassed it). Replaced by the gate in Cmd_tryfaintmon, which catches *any* source
+// of lethal damage at the faint checkpoint: when Kazuradrop hits 0 HP the gate pushes
+// BattleScript_KazuradropTransform (which calls ApplyKazuradropTransformation) and returns,
+// skipping the entire faint machinery. The HP bar now drains fully to 0 (Break Bar behaviour)
+// rather than stopping at 10%. Kept for posterity / git history; do not read as live.
 
 // Kazuradrop transformation: clamp damage at 10% HP, then trigger full restore + double max HP + accelerate decay + swap to Sakura Five moves
-/*
-static bool32 TryTriggerKazuradropTransformation(u32 battler)
-{
-    u32 tenPercentHp;
+#if 0 // DEADCODE (NOT COMPILED): TryTriggerKazuradropTransformation, replaced by the Cmd_tryfaintmon BREAK BAR GATE. Kept for posterity; do not read as live.
+// static bool32 TryTriggerKazuradropTransformation(u32 battler)
+// {
+//     u32 tenPercentHp;
 
-    // Only applies to Kazuradrop
-    if (gBattleMons[battler].species != SPECIES_KAZURADROP)
-        return FALSE;
-    // Must have Bug Space active
-    if (!gBattleStruct->bugSpace.active)
-        return FALSE;
-    // Must not have already transformed (moveSwapActive doubles as transformation flag)
-    if (gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
-        return FALSE;
-    // Must not BE transformed INTO Kazuradrop.
-    if (gBattleMons[battler].volatiles.transformed == TRUE)
-        return FALSE;
-    // Must be taking damage
-    if (gBattleStruct->moveDamage[battler] <= 0)
-        return FALSE;
+//     // Only applies to Kazuradrop
+//     if (gBattleMons[battler].species != SPECIES_KAZURADROP)
+//         return FALSE;
+//     // Must have Bug Space active
+//     if (!gBattleStruct->bugSpace.active)
+//         return FALSE;
+//     // Must not have already transformed (moveSwapActive doubles as transformation flag)
+//     if (gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
+//         return FALSE;
+//     // Must not BE transformed INTO Kazuradrop.
+//     if (gBattleMons[battler].volatiles.transformed == TRUE)
+//         return FALSE;
+//     // Must be taking damage
+//     if (gBattleStruct->moveDamage[battler] <= 0)
+//         return FALSE;
 
-    tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
-    if (tenPercentHp == 0)
-        tenPercentHp = 1;
+//     tenPercentHp = GetNonDynamaxMaxHP(battler) / 10;
+//     if (tenPercentHp == 0)
+//         tenPercentHp = 1;
 
-    // If this damage would drop below 10% HP, clamp it
-    if ((s32)gBattleMons[battler].hp - (s32)gBattleStruct->moveDamage[battler] >= (s32)tenPercentHp)
-        return FALSE;
+//     // If this damage would drop below 10% HP, clamp it
+//     if ((s32)gBattleMons[battler].hp - (s32)gBattleStruct->moveDamage[battler] >= (s32)tenPercentHp)
+//         return FALSE;
 
-    // Clamp damage at 10% HP threshold
-    gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - tenPercentHp;
-    gBattleStruct->bugSpace.sourceBattler = battler;
+//     // Clamp damage at 10% HP threshold
+//     gBattleStruct->moveDamage[battler] = gBattleMons[battler].hp - tenPercentHp;
+//     gBattleStruct->bugSpace.sourceBattler = battler;
 
-    return TRUE;
-}
-*/
+//     return TRUE;
+// }
+#endif // DEADCODE: end TryTriggerKazuradropTransformation
 
 // Apply Kazuradrop transformation effects after damage is dealt
 static void ApplyKazuradropTransformation(u32 battler)
@@ -2565,8 +2554,9 @@ static void ApplyKazuradropTransformation(u32 battler)
     gBattleMons[battler].volatiles.kazuradropGuts = 2;
     // Remove active nonvolatile status.
     gBattleMons[battler].status1 = 0;
-    // Auto-trigger Infinite Growth: set the volatile and replace the move slot immediately. Currently commented out for posterity's sake, preferring a natural moveset readin.
-    /* gBattleMons[battler].volatiles.infiniteGrowth = TRUE;
+    // DEADCODE (NOT COMPILED): auto-trigger Infinite Growth on transform, preferring a natural moveset readin instead. Kept for posterity; do not read as live.
+#if 0 // DEADCODE (NOT COMPILED)
+    gBattleMons[battler].volatiles.infiniteGrowth = TRUE;
     // Replace Infinite Growth slot with a random move (same as BS_TryInfiniteGrowth)
     {
         static const u16 sInfiniteGrowthReplacements[] = {
@@ -2578,8 +2568,9 @@ static void ApplyKazuradropTransformation(u32 battler)
         u32 roll = Random() % 4;
         gBattleMons[battler].moves[2] = sInfiniteGrowthReplacements[roll];
         gBattleMons[battler].pp[2] = GetMovePP(sInfiniteGrowthReplacements[roll]);
-        
-    }*/
+
+    }
+#endif // DEADCODE: end Infinite Growth auto-trigger
 }
 
 static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nextInstr)
@@ -2644,16 +2635,7 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
         {
             bool32 kazuradropTransformed = FALSE;
 
-            /*
-             * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
-             * TryTriggerKazuradropTransformation  clamped  moveDamage  at  10%  HP  and
-             * returned TRUE so the block after hp=0 would push BattleScript_Kazuradrop-
-             * Transform.  This only covered direct move damage — nothing else.
-             *
-             * The replacement is the early-return gate in Cmd_tryfaintmon  which catches
-             * any source of lethal damage.  See the note above ApplyKazuradropTransform-
-             * ation for more details.
-             */
+            // DEADCODE (NOT COMPILED): TryTriggerKazuradropTransformation call, replaced by the Cmd_tryfaintmon BREAK BAR GATE. See canonical note above ApplyKazuradropTransformation. Kept for posterity; do not read as live.
             // if (TryTriggerKazuradropTransformation(battler))
             //     kazuradropTransformed = TRUE;
 
@@ -2678,6 +2660,7 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                     gBattleMons[battler].volatiles.kazuradropGuts = 0;
                     // Destroy Guts icon
                     DestroyKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+                    // DEADCODE (NOT COMPILED): palette restore moved to the transform script; preSnapHP debug leftover. Kept for posterity.
                     // Restore HP bar to normal red (break bar is broken) (MOVED TO TRANSFORM)
                     // SetKazuradropHpBarPalette(battler, FALSE);
                     // u32 preSnapHP = gBattleMons[battler].hp;
@@ -2686,23 +2669,25 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                     gBattleMons[battler].hp = gBattleMons[battler].maxHP / 2;
                     FlagSet(FLAG_GUTS_SNAP);
                     // Signal to MOVE_DAMAGE_HP_UPDATE that this is a Guts snap
+
+                    // DEADCODE (NOT COMPILED): manual HP/MAXHP controller sync, superseded by INSTANT_HP_BAR_SNAP below. Kept for posterity; do not read as live.
+#if 0 // DEADCODE (NOT COMPILED)
+                    // BtlController_EmitSetMonData(
+                    //     battler,
+                    //     B_COMM_TO_CONTROLLER,
+                    //     REQUEST_MAX_HP_BATTLE,
+                    //     1u << gBattleStruct->battlerPartyIndexes[battler],
+                    //     sizeof(gBattleMons[battler].maxHP),
+                    //     &gBattleMons[battler].maxHP);
                     
-                    // Ensure controller uses the transformed maxHP before applying the snap.
-                    /* BtlController_EmitSetMonData(
-                        battler,
-                        B_COMM_TO_CONTROLLER,
-                        REQUEST_MAX_HP_BATTLE,
-                        1u << gBattleStruct->battlerPartyIndexes[battler],
-                        sizeof(gBattleMons[battler].maxHP),
-                        &gBattleMons[battler].maxHP);
-                    
-                    BtlController_EmitSetMonData(
-                        battler,
-                        B_COMM_TO_CONTROLLER,
-                        REQUEST_HP_BATTLE,
-                        0,
-                        sizeof(gBattleMons[battler].hp),
-                        &gBattleMons[battler].hp); */
+                    // BtlController_EmitSetMonData(
+                    //     battler,
+                    //     B_COMM_TO_CONTROLLER,
+                    //     REQUEST_HP_BATTLE,
+                    //     0,
+                    //     sizeof(gBattleMons[battler].hp),
+                    //     &gBattleMons[battler].hp);
+#endif // DEADCODE: end Guts controller sync
 
                     BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, INSTANT_HP_BAR_SNAP);
                     gBattleSpritesDataPtr->battleBars[battler].currValue = gBattleMons[battler].hp;
@@ -2726,14 +2711,7 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                 }
             }
 
-            /*
-             * OLD CODE — REPLACED BY Cmd_tryfaintmon BREAK BAR GATE:
-             * kazuradropTransformed  was  set  TRUE  by  TryTriggerKazuradropTransformation
-             * and this block would push BattleScript_KazuradropTransform after the 10%-HP-
-             * clamped damage was applied.  Now the gate in Cmd_tryfaintmon catches all damage
-             * sources at the faint checkpoint instead.  See notes above ApplyKazuradropTrans-
-             * formation for more details.
-             */
+            // DEADCODE (NOT COMPILED): kazuradropTransformed transform-push block, replaced by the Cmd_tryfaintmon BREAK BAR GATE. See canonical note above ApplyKazuradropTransformation. Kept for posterity; do not read as live.
             // if (kazuradropTransformed)
             // {
             //     gBattleStruct->bugSpace.moveSwapActive |= (1u << battler);
@@ -4692,7 +4670,7 @@ static void Cmd_dofaintanimation(void)
 
     // Bug Space passive OHKO faint flow can get stuck waiting for controller exec to finish.
     // Skip controller faint animation requests in this specific flow to prevent the hang.
-    // DISABLED: this suppressed the faint animation for EVERY faint once the boss reached
+    // DEADCODE (NOT COMPILED): DISABLED — this suppressed the faint animation for EVERY faint once the boss reached
     // BUGSPACE_TIER_PASSIVE_OHKO, not just the "blow away" one, and it stomped
     // gBattleControllerExecFlags to 0 mid-flow.
     // if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
@@ -4723,7 +4701,7 @@ static void Cmd_cleareffectsonfaint(void)
             // battle-script command boundary if we emit controller requests here.
             // In that specific flow, skip the controller request and rely on
             // FaintClearSetData for other cleanup.
-            // DISABLED: this left a stale status icon on the fainted mon's healthbox,
+            // DEADCODE (NOT COMPILED): DISABLED — this left a stale status icon on the fainted mon's healthbox,
             // since REQUEST_STATUS_BATTLE was never sent.
             // if (!(gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO))
             // {
@@ -5350,7 +5328,7 @@ static void Cmd_checkteamslost(void)
         // TrySetKazGameOverFromBattle() after the "blow away" so we can set outcome
         // + flag at a safe point.
         //
-        // DISABLED: this made gBattleOutcome permanently 0 once the boss hit that tier,
+        // DEADCODE (NOT COMPILED): DISABLED — this made gBattleOutcome permanently 0 once the boss hit that tier,
         // so any faint that wasn't the end-of-turn "blow away" (a move KO, recoil,
         // Destiny Bond, status, a double KO...) never registered a loss and the battle
         // wedged. The custom game-over screen is already selected downstream by
@@ -10058,7 +10036,8 @@ static void HandleScriptMegaPrimalBurst(u32 caseId, u32 battler, u32 type)
 
         BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_SPECIES_BATTLE, 1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].species), &gBattleMons[battler].species);
         MarkBattlerForControllerExec(battler);
-        /* if (gBattleMons[battler].species == SPECIES_KAZURADROP
+        /* DEADCODE (NOT COMPILED): old Kazuradrop sendout hook, replaced by the Bug Space init in battle_util.c. Uses the abandoned thresholdPercent design. Kept for posterity.
+        if (gBattleMons[battler].species == SPECIES_KAZURADROP
          && !GetBattlerPartyState(battler)->sentOut)
         {
             gBattleStruct->bugSpace.active = TRUE;

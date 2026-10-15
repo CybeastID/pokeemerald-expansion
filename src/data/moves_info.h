@@ -21344,14 +21344,14 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
             "drains the target's HP\n"
             "each turn, ignoring the Steel type."),
         .effect = EFFECT_HIT,
-        .power = 80,
+        .power = 70,
         .type = TYPE_POISON,
         .accuracy = 100,
         .pp = 10,
         .target = MOVE_TARGET_SELECTED,
         .priority = 0,
         .category = DAMAGE_CATEGORY_SPECIAL,
-        .battleAnimScript = gBattleAnimMove_IceBeam,
+        .battleAnimScript = gBattleAnimMove_MeltVirus,
         .additionalEffects = ADDITIONAL_EFFECTS({
             .moveEffect = MOVE_EFFECT_MELT_VIRUS,
             .chance = 100,
@@ -21374,7 +21374,7 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .priority = 0,
         .category = DAMAGE_CATEGORY_PHYSICAL,
         .makesContact = TRUE,
-        .battleAnimScript = gBattleAnimMove_TrashCrush,
+        .battleAnimScript = gBattleAnimMove_TrashCrushOld,
         .minimizeDoubleDamage = TRUE,
     },
 

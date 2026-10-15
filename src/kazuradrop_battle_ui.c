@@ -671,6 +671,7 @@ void ReshowKazuradropBattleUI(void)
     if (gBattleStruct->bugSpace.active == TRUE)
         RefreshBugSpaceNumber(gBattleStruct->bugSpace.sourceBattler);
     
+    // DEADCODE (NOT COMPILED): ALTER_EGO buff icon idea, never implemented (no KA_BUFF_ALTER_EGO exists). Kept for posterity.
     // if (GetBattlerVisualSpecies(gBattleStruct->bugSpace.sourceBattler) == SPECIES_KAZURADROP)
     //     CreateKazuradropBuffIcon(gBattleStruct->bugSpace.sourceBattler, KA_BUFF_ALTER_EGO);
 }

@@ -1420,9 +1420,9 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
     enum BugSpaceThresholdTier oldTier = gBattleStruct->bugSpace.currentTier;
     if (gBattleStruct->bugSpace.bpThreshold == 0)
         gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_PASSIVE_OHKO;
-    else if (gBattleStruct->bugSpace.bpThreshold <= 30)
+    else if (gBattleStruct->bugSpace.bpThreshold <= 45)
         gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_OHKO;
-    else if (gBattleStruct->bugSpace.bpThreshold <= 60)
+    else if (gBattleStruct->bugSpace.bpThreshold <= 90)
         gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_MINIMIZE;
     else
         gBattleStruct->bugSpace.currentTier = BUGSPACE_TIER_NORMAL;
@@ -1558,7 +1558,7 @@ static bool32 HandleEndTurnMeltVirus(u32 battler)
     return effect;
 }
 
-// Infinite Growth: raise raw stats (ATK, DEF, SPATK, SPDEF, SPD) by 10%, increase max HP by 10%, heal 1/16 max HP
+// Infinite Growth: raise raw stats (ATK, DEF, SPATK, SPDEF, SPD) by 10%, increase max HP by 5%, heal 1/16 max HP
 static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
 {
     bool32 effect = FALSE;
@@ -1569,14 +1569,14 @@ static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
      && IsBattlerAlive(battler))
     {
         // Increase raw stats by 10%
-        gBattleMons[battler].attack   += max(1, gBattleMons[battler].attack / 5);
-        gBattleMons[battler].defense  += max(1, gBattleMons[battler].defense / 5);
-        gBattleMons[battler].speed    += max(1, gBattleMons[battler].speed / 5);
-        gBattleMons[battler].spAttack += max(1, gBattleMons[battler].spAttack / 5);
-        gBattleMons[battler].spDefense += max(1, gBattleMons[battler].spDefense / 5);
+        gBattleMons[battler].attack   += max(1, gBattleMons[battler].attack / 10);
+        gBattleMons[battler].defense  += max(1, gBattleMons[battler].defense / 10);
+        gBattleMons[battler].speed    += max(1, gBattleMons[battler].speed / 10);
+        gBattleMons[battler].spAttack += max(1, gBattleMons[battler].spAttack / 10);
+        gBattleMons[battler].spDefense += max(1, gBattleMons[battler].spDefense / 10);
         
-        // Increase max HP by 10%
-        gBattleMons[battler].maxHP += max(1, gBattleMons[battler].maxHP / 10);
+        // Increase max HP by 5%
+        gBattleMons[battler].maxHP += max(1, gBattleMons[battler].maxHP / 20);
         BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
         MarkBattlerForControllerExec(battler);
         // Heal 1/16 max HP

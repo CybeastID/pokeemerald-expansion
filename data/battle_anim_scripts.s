@@ -38092,6 +38092,70 @@ gBattleAnim_BugSpacePassiveOHKO::
 	end
 
 gBattleAnimMove_TrashCrush::
+	loadspritegfx ANIM_TAG_HANDS_AND_FEET @hands
+	loadspritegfx ANIM_TAG_EXPLOSION @burst
+	setalpha 15, 0
+	playsewithpan SE_M_VICEGRIP, 0
+	createsprite gKarateChopSpriteTemplate, ANIM_ATTACKER, 2, -32, 0, 0, 0, 10, 1, 3, 0     @left hand
+	createsprite gKarateChopSpriteTemplate, ANIM_ATTACKER, 2, 1301, 0, 0, 0, 10, 1, 3, 0    @right hand
+	waitforvisualfinish
+	createvisualtask AnimTask_CompressTargetHorizontally, 2 @the squeeze
+	playsewithpan SE_M_HYPER_BEAM, SOUND_PAN_TARGET
+	createvisualtask AnimTask_ShakeMon2, 2, ANIM_TARGET, 4, 0, 8, 1
+	createsprite gCrushGripExplosionTemplate, ANIM_TARGET, 0, 0, 0, 1, 1
+	delay 3
+	playsewithpan SE_M_EXPLOSION, SOUND_PAN_ATTACKER
+	createsprite gCrushGripExplosionTemplate, ANIM_TARGET, 0, 0x18, 0xffe8, 1, 1
+	delay 3
+	createsprite gCrushGripExplosionTemplate, ANIM_TARGET, 0, 0xfff0, 16, 1, 1
+	delay 3
+	createsprite gCrushGripExplosionTemplate, ANIM_TARGET, 0, 0xffe8, -12, 1, 1
+	delay 3
+	createsprite gCrushGripExplosionTemplate, ANIM_TARGET, 0, 16, 16, 1, 1
+	waitforvisualfinish
+	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 16, 0, RGB_WHITE
+	blendoff
+	end
+
+gBattleAnimMove_MeltVirus::
+	loadspritegfx ANIM_TAG_NEEDLE @sting
+	loadspritegfx ANIM_TAG_IMPACT @hit
+	loadspritegfx ANIM_TAG_POISON_BUBBLE @bubbles
+	loadspritegfx ANIM_TAG_TOXIC_BUBBLE @toxic
+
+	@ Act 1 - Poison Sting: the injection
+	monbg ANIM_TARGET
+	splitbgprio ANIM_TARGET
+	setalpha 12, 8
+	playsewithpan SE_M_RAZOR_WIND2, SOUND_PAN_ATTACKER
+	createsprite gLinearStingerSpriteTemplate, ANIM_TARGET, 2, 20, 0, -8, 0, 20
+	waitforvisualfinish
+	createsprite gBasicHitSplatSpriteTemplate, ANIM_ATTACKER, 3, 0, 0, ANIM_TARGET, 2
+	createvisualtask AnimTask_ShakeMon2, 2, ANIM_TARGET, 2, 0, 5, 1
+	playsewithpan SE_M_HORN_ATTACK, SOUND_PAN_TARGET
+	waitforvisualfinish
+	clearmonbg ANIM_TARGET
+	blendoff
+
+	@ Act 2 - Toxic: the virus spreading
+	call ToxicBubbles
+	waitforvisualfinish
+	delay 15
+	call PoisonBubblesEffect
+
+	@ Act 3 - Acid Armor: the target melts down
+	monbg ANIM_TARGET
+	setalpha 15, 0
+	createvisualtask AnimTask_AcidArmor, 2, ANIM_TARGET
+	playsewithpan SE_M_ACID_ARMOR, SOUND_PAN_TARGET
+	waitforvisualfinish
+	blendoff
+	clearmonbg ANIM_TARGET
+	waitforvisualfinish
+	end
+
+
+gBattleAnimMove_TrashCrushOld::
 	fadetobg BG_TRICK_ROOM
 	playsewithpan SE_M_VICEGRIP, 0
 	createvisualtask AnimTask_TrashCrush, 5
@@ -38102,3 +38166,4 @@ gBattleAnimMove_TrashCrush::
 	waitforvisualfinish
 	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 16, 0, RGB_WHITE
 	end
+	
