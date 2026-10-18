@@ -250,7 +250,7 @@ extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_UnusedMauvi
 extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_UnusedMauvilleOldMan2;
 extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_ApricornTree;
 extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Razeluxe;
-// extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Alice;
+extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Alice;
 extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Castoria;
 extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Astra;
 extern const struct ObjectEventGraphicsInfo gObjectEventGraphicsInfo_Runa;
@@ -497,7 +497,7 @@ const struct ObjectEventGraphicsInfo *const gObjectEventGraphicsInfoPointers[NUM
     [OBJ_EVENT_GFX_LUGIA] =                    &gObjectEventGraphicsInfo_Lugia,
     [OBJ_EVENT_GFX_HOOH] =                     &gObjectEventGraphicsInfo_HoOh,
     [OBJ_EVENT_GFX_RAZELUXE] =                 &gObjectEventGraphicsInfo_Razeluxe,
-    [OBJ_EVENT_GFX_ALICE] =                    &gObjectEventGraphicsInfo_SwimmerF,
+    [OBJ_EVENT_GFX_ALICE] =                    &gObjectEventGraphicsInfo_Alice,
     [OBJ_EVENT_GFX_ASTRA] =                   &gObjectEventGraphicsInfo_Astra,
     [OBJ_EVENT_GFX_RUNA] =                    &gObjectEventGraphicsInfo_Runa,
     [OBJ_EVENT_GFX_NAH] =                     &gObjectEventGraphicsInfo_Nah,

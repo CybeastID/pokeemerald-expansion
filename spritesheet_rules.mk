@@ -418,6 +418,9 @@ $(OBJEVENTGFXDIR)/people/runa_overword.4bpp: %.4bpp: %.png
 $(OBJEVENTGFXDIR)/people/nah_overworld.4bpp: %.4bpp: %.png
 	$(GFX) $< $@ -mwidth 2 -mheight 4
 
+$(OBJEVENTGFXDIR)/people/Alice.4bpp: %.4bpp: %.png
+	$(GFX) $< $@ -mwidth 2 -mheight 4
+
 $(OBJEVENTGFXDIR)/people/link_receptionist.4bpp: %.4bpp: %.png
 	$(GFX) $< $@ -mwidth 2 -mheight 4
 

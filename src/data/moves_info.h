@@ -21339,6 +21339,13 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         [MOVE_MELT_VIRUS] =
     {
         .name = COMPOUND_STRING("Melt Virus"),
+        .mirrorMoveBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .sketchBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .meFirstBanned = TRUE,
+        .assistBanned = TRUE,
         .description = COMPOUND_STRING(
             "A virus attack that\n"
             "drains the target's HP\n"
@@ -21361,6 +21368,13 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
     [MOVE_TRASH_CRUSH] =
     {
         .name = COMPOUND_STRING("Trash & Crush"),
+        .mirrorMoveBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .sketchBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .meFirstBanned = TRUE,
+        .assistBanned = TRUE,
         .description = COMPOUND_STRING(
             "A devastating crushing\n"
             "attack. May OHKO the\n"
@@ -21381,6 +21395,13 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
     [MOVE_INFINITE_GROWTH] =
     {
         .name = COMPOUND_STRING("Infinite Growth"),
+        .mirrorMoveBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .sketchBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .meFirstBanned = TRUE,
+        .assistBanned = TRUE,
         .description = COMPOUND_STRING(
             "The user grows endlessly,\n"
             "boosting all stats and\n"
@@ -21400,6 +21421,13 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
     [MOVE_CRACK_ICE] =
     {
         .name = COMPOUND_STRING("Crack Ice"),
+        .mirrorMoveBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .sketchBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .meFirstBanned = TRUE,
+        .assistBanned = TRUE,
         .description = COMPOUND_STRING(
             "A lightning-fast slash\n"
             "that may freeze the\n"

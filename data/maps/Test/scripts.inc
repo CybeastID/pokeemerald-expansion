@@ -16,6 +16,7 @@ Razeluxe_Text:
 	.string "How did you get here?$"
 	
 Test_EventScript_RazeluxeBattle::
+	setdynamicaifunc AI_RazeluxeTrainer
 	trainerbattle_single TRAINER_RAZELUXE, Test_Text_RazeluxeIntro, Test_Text_RazeluxeDefeated
 	msgbox Test_Text_RazeluxePostBattle, MSGBOX_AUTOCLOSE
 	end
