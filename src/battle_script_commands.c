@@ -14953,18 +14953,69 @@ void BS_JumpIfMoreThanHalfHP(void)
 
 
 // DM's Authority
+// Raises the user's stats to max and lowers the target's stats to minimum.
+// Hard-fails if the target is protected from stat loss in any way, and
+// Contrary inverts whichever side of the effect it touches (hard punish).
 void BS_Authority(void)
 {
-    NATIVE_ARGS();
-    s16 i;
-    
-    // Raise all battler stats to max. Reduce all opponent stats to minimum.
-    for (i = 0; i < NUM_STATS; i++) {
-        gBattleMons[gBattlerAttacker].statStages[i] = MAX_STAT_STAGE;
-        gBattleMons[gBattlerTarget].statStages[i] = MIN_STAT_STAGE;
+    NATIVE_ARGS(const u8 *failInstr);
+    enum Ability atkAbility = GetBattlerAbility(gBattlerAttacker);
+    enum Ability defAbility = GetBattlerAbility(gBattlerTarget);
+    u32 stat;
+
+    // Any stat-loss protection on the target makes the entire move fail.
+    if (CanAbilityPreventStatLoss(defAbility) // Clear Body / White Smoke / Full Metal Body
+     || defAbility == ABILITY_HYPER_CUTTER
+     || defAbility == ABILITY_BIG_PECKS
+     || defAbility == ABILITY_KEEN_EYE
+     || defAbility == ABILITY_MINDS_EYE
+     || (GetConfig(CONFIG_ILLUMINATE_EFFECT) >= GEN_9 && defAbility == ABILITY_ILLUMINATE)
+     || IsFlowerVeilProtected(gBattlerTarget)
+     || GetBattlerHoldEffect(gBattlerTarget) == HOLD_EFFECT_CLEAR_AMULET
+     || (gSideStatuses[GetBattlerSide(gBattlerTarget)] & SIDE_STATUS_MIST && atkAbility != ABILITY_INFILTRATOR))
+    {
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
     }
-        gBattlescriptCurrInstr = cmd->nextInstr;
-} 
+
+    // Also fails if the target has no stats left to weaken.
+    for (stat = STAT_ATK; stat < NUM_STATS; stat++)
+    {
+        if (gBattleMons[gBattlerTarget].statStages[stat] > MIN_STAT_STAGE)
+            break;
+    }
+    if (stat == NUM_STATS)
+    {
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
+    }
+
+    bool32 atkContrary = (atkAbility == ABILITY_CONTRARY);
+    bool32 defContrary = (defAbility == ABILITY_CONTRARY);
+    u32 allStats = BIT_ATK | BIT_DEF | BIT_SPEED | BIT_SPATK | BIT_SPDEF | BIT_ACC | BIT_EVASION;
+
+    if (atkContrary)
+        RecordAbilityBattle(gBattlerAttacker, ABILITY_CONTRARY);
+    if (defContrary)
+        RecordAbilityBattle(gBattlerTarget, ABILITY_CONTRARY);
+
+    // Play the animations off the pre-change stages, like ChangeStatBuffs does.
+    gBattleScripting.statAnimPlayed = FALSE;
+    TryPlayStatChangeAnimation(gBattlerAttacker, atkAbility, allStats, atkContrary ? -6 : 6, STAT_ATK, FALSE);
+    gBattleScripting.statAnimPlayed = FALSE;
+    TryPlayStatChangeAnimation(gBattlerTarget, defAbility, allStats, defContrary ? 6 : -6, STAT_ATK, FALSE);
+
+    for (stat = STAT_ATK; stat < NUM_STATS; stat++)
+    {
+        gBattleMons[gBattlerAttacker].statStages[stat] = atkContrary ? MIN_STAT_STAGE : MAX_STAT_STAGE;
+        gBattleMons[gBattlerTarget].statStages[stat] = defContrary ? MAX_STAT_STAGE : MIN_STAT_STAGE;
+    }
+
+    // Bit 0 = target Contrary, bit 1 = user Contrary; picks the battle script's flavor text.
+    gBattleCommunication[MULTISTRING_CHOOSER] = (atkContrary ? 2 : 0) | (defContrary ? 1 : 0);
+
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
 
 void BS_TryRevivalBlessing2(void)
 {

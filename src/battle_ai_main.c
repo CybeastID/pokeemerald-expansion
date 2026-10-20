@@ -7193,8 +7193,96 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
 s32 AI_RazeluxeTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
-    // custom scoring logic here
-    return score;
+    u32 bestDmgMove = GetBestDmgMoveFromBattler(battlerDef, battlerAtk, AI_DEFENDING);
+    u8 canBeKOd = CanTargetMoveFaintAi(bestDmgMove, battlerDef, battlerAtk, 1);
+    u32 currentMoveIndex = GetIndexInMoveArray(battlerAtk, move);
+    u8 moveKillsTarget = (currentMoveIndex < MAX_MON_MOVES)
+        ? CanIndexMoveFaintTarget(battlerAtk, battlerDef, currentMoveIndex, AI_ATTACKING)
+        : FALSE;
+    enum Ability defAbility = GetBattlerAbility(battlerDef);
+    enum Ability atkAbility = GetBattlerAbility(battlerAtk);
+    bool32 defHasContrary = (defAbility == ABILITY_CONTRARY);
+    bool32 atkHasContrary = (atkAbility == ABILITY_CONTRARY);
+    uq4_12_t effectiveness = AI_GetMoveEffectiveness(move, battlerAtk, battlerDef);
+
+    switch (gBattleMons[battlerAtk].species)
+    {
+    case SPECIES_MEWTWO:
+    {
+        // Razeluxe's ace: mega Mewtwo w/ Anris Authority (DMS_PREROGATIVE).
+        // Authority hard-fails against stat-loss protection / no stats to weaken,
+        // and Contrary inverts/punishes. Score it only when the target is vulnerable.
+        if (move == MOVE_DMS_PREROGATIVE)
+        {
+            bool32 targetProtected =
+                defAbility == ABILITY_CLEAR_BODY ||
+                defAbility == ABILITY_FULL_METAL_BODY ||
+                defAbility == ABILITY_WHITE_SMOKE ||
+                defAbility == ABILITY_HYPER_CUTTER ||
+                defAbility == ABILITY_BIG_PECKS ||
+                defAbility == ABILITY_KEEN_EYE ||
+                defAbility == ABILITY_MINDS_EYE ||
+                IsFlowerVeilProtected(battlerDef) ||
+                GetBattlerHoldEffect(battlerDef) == HOLD_EFFECT_CLEAR_AMULET ||
+                (gSideStatuses[GetBattlerSide(battlerDef)] & SIDE_STATUS_MIST
+                 && atkAbility != ABILITY_INFILTRATOR);
+
+            u32 stat;
+            bool32 targetStatsAtMin = TRUE;
+            for (stat = STAT_ATK; stat < NUM_STATS; stat++)
+            {
+                if (gBattleMons[battlerDef].statStages[stat] > MIN_STAT_STAGE)
+                {
+                    targetStatsAtMin = FALSE;
+                    break;
+                }
+            }
+
+            if (targetProtected || targetStatsAtMin)
+            {
+                // Move will fail; don't use it.
+                ADJUST_SCORE(-40);
+            }
+            else if (atkHasContrary)
+            {
+                // Contrary inverts Authority onto the user (self-punish).
+                ADJUST_SCORE(-40);
+            }
+            else if (defHasContrary)
+            {
+                // Contrary inverts Authority onto the target (buffs the foe).
+                ADJUST_SCORE(-40);
+            }
+            else
+            {
+                // Authority is viable: huge swing in Razeluxe's favor.
+                ADJUST_SCORE(30);
+            }
+            return score;
+        }
+
+        // Standard damaging moves for Mewtwo.
+        if (moveKillsTarget)
+        {
+            ADJUST_SCORE(25);
+            return score;
+        }
+        else if (effectiveness > UQ_4_12(1.0))
+        {
+            ADJUST_SCORE(canBeKOd ? 10 : 5);
+            return score;
+        }
+        else if (effectiveness == UQ_4_12(0.0))
+        {
+            ADJUST_SCORE(-30);
+            return score;
+        }
+        return score;
+    }
+
+    default:
+        return score;
+    }
 }
 
 static s32 AI_DynamicFunc(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
