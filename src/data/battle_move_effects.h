@@ -2268,4 +2268,10 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
         .battleScript = BattleScript_TrashCrush,
         .battleTvScore = 0, // TODO: Assign points
     },
+
+    [EFFECT_POLYMORPH] =
+    {
+        .battleScript = BattleScript_EffectPolymorph,
+        .battleTvScore = 0, // TODO: Assign points
+    },
 };

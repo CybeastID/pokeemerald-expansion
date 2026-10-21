@@ -906,7 +906,7 @@ void ShowKazuraDialogueBox(const u8 *str)
     LoadPalette(sKazuraBoxPal, BG_PLTT_ID(KAZ_WIN_PALETTE_NUM), PLTT_SIZE_4BPP);
 
     sKazuraDialogWindowId = AddWindow(&sKazuraDialogWindowTemplate);
-    DebugPrintf("KazuraDialogWindowId: %d", sKazuraDialogWindowId);
+    // DebugPrintf("KazuraDialogWindowId: %d", sKazuraDialogWindowId);
     FillWindowPixelBuffer(sKazuraDialogWindowId, PIXEL_FILL(KAZ_BOX_INTERIOR_COLOR));
 
     // Bake an OPAQUE version of the box's interior ("grid") tile into the whole
@@ -988,13 +988,13 @@ static void BlendTwoPalettes(const u16 *src, const u16 *dst, u16 *out, u32 coeff
 
 void LoadKazuradropHpBarPalette(void)
 {
-    DebugPrintf("LKHBP called, sKazuHpBarPalLoaded=%d, preExistingSlot=%d", sKazuHpBarPalLoaded, IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
+    // DebugPrintf("LKHBP called, sKazuHpBarPalLoaded=%d, preExistingSlot=%d", sKazuHpBarPalLoaded, IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
     if (!sKazuHpBarPalLoaded)
     {
         LoadSpritePalette(&sSpritePalette_KazuHpBarPurple);
         sKazuHpBarPalLoaded = TRUE;
     }
-    DebugPrintf("LKHBP done, slotAfter=%d", IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
+    // DebugPrintf("LKHBP done, slotAfter=%d", IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
 }
 
 void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
@@ -1017,7 +1017,7 @@ void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
         // Switch to the purple palette slot
         // Find which OBJ palette slot TAG_KAZU_HP_BAR_PAL was loaded into
         u8 palSlot = IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL);
-        DebugPrintf("SKHBP purple branch palSlot=%d", palSlot);
+        // DebugPrintf("SKHBP purple branch palSlot=%d", palSlot);
         if (palSlot != 0xFF)
         {
             gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
@@ -1028,11 +1028,11 @@ void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
     {
         // Restore the original healthbar palette
         u8 palSlot = IndexOfSpritePaletteTag(TAG_HEALTHBAR_PAL);
-        DebugPrintf("SKHBP restore branch palSlot=%d", palSlot);
+        // DebugPrintf("SKHBP restore branch palSlot=%d", palSlot);
         if (palSlot != 0xFF)
             gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
     }
-    DebugPrintf("SKHBP final oam.paletteNum=%d", gSprites[healthbarSpriteId].oam.paletteNum);
+    // DebugPrintf("SKHBP final oam.paletteNum=%d", gSprites[healthbarSpriteId].oam.paletteNum);
     UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], GetBattlerMon(battler), HEALTHBOX_HEALTH_BAR);
 }
 
@@ -1044,32 +1044,32 @@ static void Task_KazuHpBarPurpleFade(u8 taskId)
     u8 healthboxSpriteId = gHealthboxSpriteIds[battler];
     u8 healthbarSpriteId, palSlot;
 
-    DebugPrintf("KHBPF tick battler=%d frame=%d", battler, frame);
+    // DebugPrintf("KHBPF tick battler=%d frame=%d", battler, frame);
 
     if (healthboxSpriteId == MAX_SPRITES)
     {
-        DebugPrintf("KHBPF abort: healthboxSpriteId==MAX_SPRITES");
+        // DebugPrintf("KHBPF abort: healthboxSpriteId==MAX_SPRITES");
         DestroyTask(taskId);
         return;
     }
     healthbarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
     if (healthbarSpriteId == MAX_SPRITES)
     {
-        DebugPrintf("KHBPF abort: healthbarSpriteId==MAX_SPRITES");
+        // DebugPrintf("KHBPF abort: healthbarSpriteId==MAX_SPRITES");
         DestroyTask(taskId);
         return;
     }
     palSlot = gSprites[healthbarSpriteId].oam.paletteNum;
-    DebugPrintf("KHBPF healthbarSpriteId=%d palSlot=%d", healthbarSpriteId, palSlot);
+    // DebugPrintf("KHBPF healthbarSpriteId=%d palSlot=%d", healthbarSpriteId, palSlot);
 
     BlendTwoPalettes(gBattleInterface_BallDisplayPal, sKazuHpBarPurplePal, fadeBuf, frame);
-    DebugPrintf("KHBPF fadeBuf[10]=%04x fadeBuf[11]=%04x (coeff=%d)", fadeBuf[10], fadeBuf[11], frame);
+    // DebugPrintf("KHBPF fadeBuf[10]=%04x fadeBuf[11]=%04x (coeff=%d)", fadeBuf[10], fadeBuf[11], frame);
     LoadPalette(fadeBuf, OBJ_PLTT_ID(palSlot), PLTT_SIZE_4BPP);
 
     frame++;
     if (frame > KAZU_HP_BAR_FADE_FRAMES)
     {
-        DebugPrintf("KHBPF done, destroying task");
+        // DebugPrintf("KHBPF done, destroying task");
         DestroyTask(taskId);
         return;
     }
@@ -1079,7 +1079,7 @@ static void Task_KazuHpBarPurpleFade(u8 taskId)
 void StartKazuHpBarPurpleFade(u32 battler)
 {
     u8 taskId = CreateTask(Task_KazuHpBarPurpleFade, 0);
-    DebugPrintf("KHBPF started, taskId=%d battler=%d", taskId, battler);
+    // DebugPrintf("KHBPF started, taskId=%d battler=%d", taskId, battler);
     gTasks[taskId].data[0] = battler;
     gTasks[taskId].data[1] = 0;
 }

@@ -1024,5 +1024,6 @@ extern const u8 gBattleAnim_BugSpacePassiveOHKO[];
 extern const u8 gBattleAnimMove_TrashCrush[];
 extern const u8 gBattleAnimMove_TrashCrushOld[];
 extern const u8 gBattleAnimMove_MeltVirus[];
+extern const u8 gBattleAnimMove_Polymorph[];
 
 #endif // GUARD_BATTLE_ANIM_SCRIPTS_H

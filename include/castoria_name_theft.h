@@ -6,7 +6,8 @@
 // Result of the naming screen interaction
 enum CastoriaNameResult
 {
-    CASTORIA_NAME_BACKED_OUT = 0,   // Player hit B / left empty
+    CASTORIA_NAME_NONE = 0,         // Not asked yet (zero-init battle struct)
+    CASTORIA_NAME_BACKED_OUT,       // Player hit B / left empty
     CASTORIA_NAME_FALSE,            // Entered a name, but not the player's true name
     CASTORIA_NAME_TRUE,             // Entered name matches gSaveBlock2Ptr->playerName
 };
@@ -18,8 +19,6 @@ enum CastoriaNameResult
 #define CASTORIA_MAXMOVE_EXPIRED        (1 << 4)
 #define CASTORIA_COMMAND_UI_LOCKED        (1 << 5)
 
-// Arcanum: extra magical move slots (battle-only, no PP, unlimited use)
-#define CASTORIA_ARCANUM_COUNT 4
 
 // ---------------------------------------------------------------
 // callnative entry point from BattleScript
@@ -29,7 +28,9 @@ enum CastoriaNameResult
 //     B: backs out (CASTORIA_NAME_BACKED_OUT)
 // ---------------------------------------------------------------
 void BS_DoCastoriaNameChoice(void);
-
+bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall);
+void BS_PolymorphTarget(void);
+bool32 TryRestorePolymorphedMon(u32 partyIndex);
 // ---------------------------------------------------------------
 // True Name Command — AI decision + worst-move scoring
 // ---------------------------------------------------------------

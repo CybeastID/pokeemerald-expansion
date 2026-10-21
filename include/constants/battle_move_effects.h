@@ -357,6 +357,7 @@ enum __attribute__((packed)) BattleMoveEffects
     EFFECT_REVIVAL_BLESSING_2,
     EFFECT_INFINITE_GROWTH,
     EFFECT_TRASH_CRUSH,
+    EFFECT_POLYMORPH,
     NUM_BATTLE_MOVE_EFFECTS,
 };
 

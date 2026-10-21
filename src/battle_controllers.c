@@ -2603,7 +2603,7 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
     hpVal = gBattleResources->bufferA[battler][2] | (gBattleResources->bufferA[battler][3] << 8);
     maxHP = GetMonData(mon, MON_DATA_MAX_HP);
     curHP = GetMonData(mon, MON_DATA_HP);
-    DebugPrintf("hpVal: %d SNAP: %d curHP: %d", hpVal, (s16)INSTANT_HP_BAR_SNAP, curHP);
+    // DebugPrintf("hpVal: %d SNAP: %d curHP: %d", hpVal, (s16)INSTANT_HP_BAR_SNAP, curHP);
 
     if (hpVal != INSTANT_HP_BAR_DROP && hpVal != INSTANT_HP_BAR_SNAP)
     {
@@ -2617,7 +2617,7 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
         // Pokemon struct (GetMonData) still has the old damage-reduced HP.
         // Use gBattleMons for the correct snap value.
         s32 snapHp = gBattleMons[battler].hp;
-        DebugPrintf("snapHp: %d maxHP: %d", snapHp, maxHP);
+        // DebugPrintf("snapHp: %d maxHP: %d", snapHp, maxHP);
         SetBattleBarStruct(battler, gHealthboxSpriteIds[battler], maxHP, snapHp, 0);
         gBattleSpritesDataPtr->battleBars[battler].currValue = snapHp;
         MoveBattleBar(battler, gHealthboxSpriteIds[battler], HEALTH_BAR, 0);

@@ -54,6 +54,7 @@
 #include "constants/weather.h"
 #include "constants/pokemon.h"
 #include "kazuradrop_battle_ui.h"
+#include "castoria_name_theft.h"
 
 /*
 NOTE: The data and functions in this file up until (but not including) sSoundMovesTable
@@ -3986,6 +3987,17 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
     return effect;
 }
 
+u32 GetKazuraLegendTier(u32 battler)   // battler must be on the player's side
+{
+    u16 species = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);
+
+    if (!(gSpeciesInfo[species].isLegendary
+       || gSpeciesInfo[species].isMythical
+       || gSpeciesInfo[species].isUltraBeast))
+        return 0;
+    return GetTotalBaseStat(species) >= 650 ? 2 : 1;
+}
+
 u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ability, u32 special, u32 moveArg)
 {
     u32 effect = 0;
@@ -4690,6 +4702,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     gBattleStruct->bugSpace.active = TRUE;
                     FlagSet(FLAG_KAZURADROP_ENTERED_BATTLE);
                     VarSet(VAR_TEMP_0, gBattleResults.battleTurnCounter);
+                    FlagClear(FLAG_KAZU_LEGENDARY_PUNISH);
                     gBattleStruct->bugSpace.sourceBattler = battler;
                     // DEADCODE (NOT COMPILED): thresholdPercent was an early percent-based design, replaced by the cmdFaintmon gate. Kept for posterity. And in case I wanted to use the idea for something else and an actual HP% based gate.
                     // gBattleStruct->bugSpace.thresholdPercent = 50;
@@ -4705,6 +4718,17 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
         default:
             break;
         }
+        if (effect == 0
+         && gBattleStruct->bugSpace.active
+         && GetBattlerSide(battler) == B_SIDE_PLAYER
+         && !FlagGet(FLAG_KAZU_LEGENDARY_PUNISH)
+         && GetKazuraLegendTier(battler) != 0)
+        {
+            FlagSet(FLAG_KAZU_LEGENDARY_PUNISH);
+            BattleScriptPushCursorAndCallback(BattleScript_KazuraLegendPunishSwitchIn);
+            effect++;
+        }
+        break;
         break;
         
     case ABILITYEFFECT_ENDTURN:
@@ -9394,6 +9418,9 @@ bool32 TryRevertPartyMonFormChange(u32 partyIndex)
 {
      bool32 changedForm = FALSE;
 
+     if (TryRestorePolymorphedMon(partyIndex))
+        return TRUE;
+    
     // Appeared in battle and didn't faint
     if (gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].sentOut && GetMonData(&gPlayerParty[partyIndex], MON_DATA_HP, NULL) != 0)
         changedForm = TryFormChange(partyIndex, B_SIDE_PLAYER, FORM_CHANGE_END_BATTLE_ENVIRONMENT);
@@ -9401,6 +9428,21 @@ bool32 TryRevertPartyMonFormChange(u32 partyIndex)
     if (!changedForm)
         changedForm = TryFormChange(partyIndex, B_SIDE_PLAYER, FORM_CHANGE_END_BATTLE);
 
+    
+        // Forced species changes with no END_BATTLE entry in their form table
+    // (Castoria's Polymorph): restore the saved original species directly.
+    if (!changedForm)
+    {
+        u32 original = gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].changedSpecies;
+
+        if (original != SPECIES_NONE
+         && GetMonData(&gPlayerParty[partyIndex], MON_DATA_SPECIES) != original)
+        {
+            SetMonData(&gPlayerParty[partyIndex], MON_DATA_SPECIES, &original);
+            CalculateMonStats(&gPlayerParty[partyIndex]);
+            changedForm = TRUE;
+        }
+    }
     // Clear original species field
     gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].changedSpecies = SPECIES_NONE;
 

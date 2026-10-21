@@ -37,6 +37,8 @@
 #include "text.h"
 #include "fonts.h"
 #include "menu.h"
+#include "pokemon.h"
+#include "random.h"
 
 #define CHOICE_STATE_INIT       0
 #define CHOICE_STATE_WAIT       1
@@ -384,7 +386,9 @@ void CastoriaInitArcanum(u32 battler)
         MOVE_MOONBLAST,       // Evocation
         MOVE_LIGHT_SCREEN,    // Illusion
         MOVE_DAZZLING_GLEAM,  // Evocation
-        MOVE_HEALING_WISH,    // Transformation
+        // MOVE_POLYMORPH,    // Transformation
+        MOVE_FIRE_BLAST,        // Evocation
+        MOVE_SPLASH,          // Do nothing to fill space
     };
 
     for (u8 i = 0; i < CASTORIA_ARCANUM_COUNT; i++)
@@ -404,4 +408,155 @@ u16 CastoriaGetMoveAtSlot(u32 battler, u8 slot)
     }
 
     return MOVE_NONE;
+}
+
+bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall)
+{
+    if (gBattleMons[battler].species != SPECIES_CASTORIA
+        || gBattleStruct->castoria.nameResult != CASTORIA_NAME_NONE
+        || IsOnPlayerSide(battler))
+    {
+        return FALSE;
+    }
+
+    gBattlerAttacker = battler;
+    CastoriaInitArcanum(battler);
+
+    // Switch-in runs inside a script: push the cursor and return to it.
+    // First-turn events have no running script: start a fresh one.
+    if (viaCall)
+        BattleScriptCall(BattleScript_CastoriaNameTheft);
+    else
+        BattleScriptExecute(BattleScript_CastoriaNameTheftExecute);
+    return TRUE;
+}
+
+static bool32 ShouldRejectPolymorphSpecies(u32 species)
+{
+    if (species == SPECIES_NONE
+     || !IsSpeciesEnabled(species)
+     || species == SPECIES_SHEDINJA
+     || species == gBattleMons[gBattlerTarget].species
+     || species > SPECIES_FALINKS_MEGA)   // custom/boss species (Castoria, Raze Kirlia, Kazuradrop, EGG)
+        return TRUE;
+
+    return gSpeciesInfo[species].isMegaEvolution
+        || gSpeciesInfo[species].isPrimalReversion
+        || gSpeciesInfo[species].isUltraBurst
+        || gSpeciesInfo[species].isGigantamax
+        || gSpeciesInfo[species].isTeraForm
+        || gSpeciesInfo[species].isLegendary
+        || gSpeciesInfo[species].isMythical
+        || gSpeciesInfo[species].isParadox
+        || gSpeciesInfo[species].isUltraBeast;
+}
+
+static u32 ScaleHpToNewMax(u32 hp, u32 oldMax, u32 newMax)
+{
+    if (hp == 0 || oldMax == 0)
+        return hp; // fainted stays fainted; avoid divide-by-zero
+    hp = (hp * newMax) / oldMax;
+    return hp == 0 ? 1 : hp;
+}
+
+// Saves original moves/PP during polymorph so TMs aren't lost on revert
+static u16 sPolymorphedSavedMoves[PARTY_SIZE][MAX_MON_MOVES];
+static u8 sPolymorphedSavedPP[PARTY_SIZE][MAX_MON_MOVES];
+
+void BS_PolymorphTarget(void)
+{
+    NATIVE_ARGS();
+    u32 target = gBattlerTarget;
+    u32 monId = gBattlerPartyIndexes[target];
+    struct Pokemon *party = GetBattlerParty(target);
+    struct Pokemon *mon = &party[monId];
+    u32 oldSpecies = gBattleMons[target].species;
+    u32 oldHp = GetMonData(mon, MON_DATA_HP);
+    u32 oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
+    u32 newSpecies;
+    u32 newHp;
+
+    gBattlescriptCurrInstr = cmd->nextInstr;
+
+    if (gBattleMons[target].volatiles.transformed
+     || gBattleStruct->illusion[target].state == ILLUSION_ON
+     || IsSemiInvulnerable(target, EXCLUDE_COMMANDER)
+     || IsBattlerMegaEvolved(target)
+     || IsBattlerUltraBursted(target)
+     || IsBattlerInTeraForm(target)
+     || GetActiveGimmick(target) == GIMMICK_DYNAMAX)
+    {
+        gBattleStruct->moveResultFlags[target] |= MOVE_RESULT_FAILED;
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TRANSFORM_FAILED;
+        return;
+    }
+
+    newSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
+
+    if (GetBattlerPartyState(target)->changedSpecies == SPECIES_NONE)
+        GetBattlerPartyState(target)->changedSpecies = oldSpecies;
+    GetBattlerPartyState(target)->polymorphed = TRUE;
+
+    SetMonData(mon, MON_DATA_SPECIES, &newSpecies);
+    gBattleMons[target].species = newSpecies;
+    RecalcBattlerStats(target, mon, FALSE);
+
+    newHp = ScaleHpToNewMax(oldHp, oldMaxHp, GetMonData(mon, MON_DATA_MAX_HP));
+    SetMonData(mon, MON_DATA_HP, &newHp);
+    gBattleMons[target].hp = newHp;
+
+      // Save original moves before replacing with new species' moveset
+    u32 partyIndex = gBattlerPartyIndexes[target];
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    {
+        sPolymorphedSavedMoves[partyIndex][i] = GetMonData(mon, MON_DATA_MOVE1 + i);
+        sPolymorphedSavedPP[partyIndex][i] = GetMonData(mon, MON_DATA_PP1 + i, NULL);
+    }
+
+     // Give the target the new species' moveset (not its old moves)
+    GiveMonInitialMoveset(mon);
+     for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    {
+        gBattleMons[target].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, NULL);;
+        gBattleMons[target].pp[i] = GetMonData(mon, MON_DATA_PP1 + i, NULL);
+    }
+
+    PREPARE_SPECIES_BUFFER(gBattleTextBuff1, newSpecies)
+
+    PREPARE_SPECIES_BUFFER(gBattleTextBuff1, newSpecies)
+
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TRANSFORMED;
+}
+
+bool32 TryRestorePolymorphedMon(u32 partyIndex)
+{
+    struct PartyState *state = &gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex];
+    struct Pokemon *mon = &gPlayerParty[partyIndex];
+    u32 original, formHp, formMaxHp, newHp;
+
+    if (!state->polymorphed)
+        return FALSE;
+
+    formHp = GetMonData(mon, MON_DATA_HP);
+    formMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
+    original = state->changedSpecies;
+
+    state->polymorphed = FALSE;
+    state->changedSpecies = SPECIES_NONE;
+    if (original == SPECIES_NONE)
+        return TRUE;
+
+    SetMonData(mon, MON_DATA_SPECIES, &original);
+
+    // Restore original moves/PP so TMs aren't permanently lost
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    {
+        SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphedSavedMoves[partyIndex][i]);
+        SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphedSavedPP[partyIndex][i]);
+    }
+
+    CalculateMonStats(mon);
+    newHp = ScaleHpToNewMax(formHp, formMaxHp, GetMonData(mon, MON_DATA_MAX_HP));
+    SetMonData(mon, MON_DATA_HP, &newHp);
+    return TRUE;
 }

@@ -909,6 +909,10 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_CASTORIA_BACKED_OUT]              = COMPOUND_STRING("“How rude! I offered you a good contract...”"),
     [STRINGID_CASTORIA_COMMANDS_MOVE] = COMPOUND_STRING("“By my Command Seal...! \nUse {B_BUFF1}!”"),
     [STRINGID_CASTORIA_DYNAMAX_EXPIRE] = COMPOUND_STRING("“Oh I'm sorry...you thought this was Dynamax? No, I'm just big!”"),
+    [STRINGID_PKMNPOLYMORPHED] = COMPOUND_STRING("The enemy Caster transformed the opposing {B_DEF_NAME} into {B_BUFF1}!"),
+    [STRINGID_CASTORIA_YOURECUTER] = COMPOUND_STRING("“N'awwww, it's cuter like that! Even more so than I expected!”"),
+     [STRINGID_KAZURA_LEGEND_TIER1] = COMPOUND_STRING("““A born winner, how adorable. Teehee... I do so enjoy teaching those.””"),
+    [STRINGID_KAZURA_LEGEND_TIER2] = COMPOUND_STRING("“Ick. One of the ones who never had to climb. Hold still, insect. I'll show you the floor.”")
 
 
 };

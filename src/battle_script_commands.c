@@ -1423,14 +1423,21 @@ static void JumpIfMoveFailed(u32 adder, u32 move, u32 moveType, const u8 *failIn
         if (GetMoveEffect(move) == EFFECT_EXPLOSION || GetMoveEffect(move) == EFFECT_MISTY_EXPLOSION)
             CreateKazuradropBuffIcon(gBattlerTarget, KA_BUFF_INVINCIBLE);
     if (gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
+    {
+        gBattlerAbility = gBattleStruct->bugSpace.sourceBattler;
         gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_POHKO;
+    }
     else if (!gBattleStruct->bugSpace.hasBlocked)
     {
+        gBattlerAbility = gBattleStruct->bugSpace.sourceBattler;
         gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_First;
         gBattleStruct->bugSpace.hasBlocked = 1;
     }
     else
+    {
+        gBattlerAbility = gBattleStruct->bugSpace.sourceBattler;
         gBattlescriptCurrInstr = BattleScript_BugSpaceBlocked_Repeat;
+    }
     return;
     }
     
@@ -2571,6 +2578,35 @@ static void ApplyKazuradropTransformation(u32 battler)
 
     }
 #endif // DEADCODE: end Infinite Growth auto-trigger
+}
+
+void BS_KazuraGetLegendTier(void)
+{
+    NATIVE_ARGS();
+    u32 opp = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(gBattleStruct->bugSpace.sourceBattler)));
+    u32 tier = IsBattlerAlive(opp) ? GetKazuraLegendTier(opp) : 0;
+
+    if (tier != 0)
+        FlagSet(FLAG_KAZU_LEGENDARY_PUNISH);
+    gBattleCommunication[MULTISTRING_CHOOSER] = tier;
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_KazuraOmniboost(void)
+{
+    NATIVE_ARGS(u8 amount);
+    static const u8 stats[] = { STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF };
+    u32 battler = gBattleStruct->bugSpace.sourceBattler;
+    u32 i;
+
+    gBattlerAttacker = battler;
+    for (i = 0; i < ARRAY_COUNT(stats); i++)
+        gBattleMons[battler].statStages[stats[i]] =
+            min(MAX_STAT_STAGE, gBattleMons[battler].statStages[stats[i]] + cmd->amount);
+
+    gBattleScripting.animArg1 = (cmd->amount >= 2) ? STAT_ANIM_MULTIPLE_PLUS2 : STAT_ANIM_MULTIPLE_PLUS1;
+    gBattleScripting.animArg2 = 0;
+    gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
 static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nextInstr)
@@ -8323,11 +8359,8 @@ static bool32 DoSwitchInEffectsForBattler(u32 battler)
         return TRUE;
     }
 
-    else if (gBattleMons[battler].species == SPECIES_CASTORIA
-             && !gBattleStruct->castoria.nameResult)
+    else if (TryCastoriaNameTheft(battler, TRUE))
     {
-        gBattlerAttacker = battler;
-        BattleScriptCall(BattleScript_CastoriaNameTheft);
         return TRUE;
     }
 

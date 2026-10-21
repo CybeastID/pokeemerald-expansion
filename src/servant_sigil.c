@@ -98,7 +98,7 @@ static const struct SpriteTemplate sSpriteTemplate_CasterSigil =
 
 void CreateServantSigil(u32 battler)
 {
-    DebugPrintf("SIGIL ENTER b=%d species=%d", battler, GetBattlerVisualSpecies(battler));
+  //  DebugPrintf("SIGIL ENTER b=%d species=%d", battler, GetBattlerVisualSpecies(battler));
     if (!HasServantSigil(GetBattlerVisualSpecies(battler)))
         return;
     if (sSigilSpriteId[battler] != MAX_SPRITES)
@@ -124,11 +124,11 @@ void CreateServantSigil(u32 battler)
 
     s16 x = gSprites[healthboxId].x + POS_SIGIL_X_OFFSET;
     s16 y = gSprites[barId].y      + POS_SIGIL_Y_OFFSET;
-    DebugPrintf("SIGIL create b=%d species=%d isCaster=%d tile=%04x tileStart=%04x pal=%04x",
+    /* DebugPrintf("SIGIL create b=%d species=%d isCaster=%d tile=%04x tileStart=%04x pal=%04x",
     battler, GetBattlerVisualSpecies(battler), isCaster, tileTag,
-    GetSpriteTileStartByTag(tileTag), palTag);
+    GetSpriteTileStartByTag(tileTag), palTag); */
     u32 spriteId = CreateSprite(tmpl, x, y, 0);
-    DebugPrintf("SIGIL created spriteId=%d", spriteId);
+    // DebugPrintf("SIGIL created spriteId=%d", spriteId);
     if (spriteId == MAX_SPRITES)
         return;
     gSprites[spriteId].tBattler = battler;

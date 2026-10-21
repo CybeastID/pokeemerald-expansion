@@ -21448,6 +21448,36 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
             .chance = 33,
         }),
     },
+
+    [MOVE_POLYMORPH] =
+    {
+        .name = COMPOUND_STRING("Polymorph"),
+        .description = COMPOUND_STRING(
+            "Transforms the target into a\n"
+            "random Pokémon."),
+        .effect = EFFECT_POLYMORPH,
+        .power = 0,
+        .type = TYPE_NORMAL,
+        .accuracy = 100,
+        .pp = 5,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_STATUS,
+        .zMove = { .effect = Z_EFFECT_RECOVER_HP },
+        .ignoresProtect = TRUE,
+        .ignoresSubstitute = TRUE,
+        .mirrorMoveBanned = TRUE,
+        .mimicBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .copycatBanned = TRUE,
+        .instructBanned = TRUE,
+        .encoreBanned = TRUE,
+        .assistBanned = TRUE,
+        .contestEffect = CONTEST_EFFECT_REPETITION_NOT_BORING,
+        .contestCategory = CONTEST_CATEGORY_CUTE,
+        .battleAnimScript = gBattleAnimMove_Polymorph,
+        .validApprenticeMove = TRUE,
+    },
     
 
     // Z-Moves

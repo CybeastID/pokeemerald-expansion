@@ -3940,12 +3940,8 @@ static void TryDoEventsBeforeFirstTurn(void)
             DebugPrintf("CASTORIA_CHECK entered, nameResult=%d", gBattleStruct->castoria.nameResult);
         for (i = 0; i < gBattlersCount; i++)
         {
-            if (gBattleMons[i].species == SPECIES_CASTORIA
-                && !gBattleStruct->castoria.nameResult)
+          if (TryCastoriaNameTheft(i, FALSE))
             {
-                gBattlerAttacker = i;
-                CastoriaInitArcanum(i);
-                BattleScriptExecute(BattleScript_CastoriaNameTheft);
                 return;
             }
         }

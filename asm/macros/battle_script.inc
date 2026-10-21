@@ -1387,9 +1387,10 @@
 	.4byte \jumpInstr
 	.endm
 
-	.macro dmauthority 
+	.macro dmauthority failInstr:req
 	callnative BS_Authority
-    .endm
+	.4byte \failInstr
+	.endm
 
 	.macro dostockpilestatchangeswearoff, battler:req, statChangeInstr:req
 	callnative BS_DoStockpileStatChangesWearOff
@@ -2505,4 +2506,9 @@
 	.byte \battler
 	jumpifbyte CMP_EQUAL, gBattleCommunication + MULTIUSE_STATE, 1, \target
 	.endm
+
+	.macro kazuraomniboost amount:req
+    callnative BS_KazuraOmniboost
+    .byte \amount
+    .endm
 	

@@ -49,6 +49,9 @@ void BS_BugSpacePanelSlideIn(void);
 void BS_BugSpacePanelSlideOut(void);
 void BS_ShowKazuraDialogueBox(void);
 void BS_RestoreTextbox(void);
+void BS_KazuraGetLegendTier(void);
+void BS_KazuraOmniboost(void);
+
 // ---------------------------------------------------------------
 // Initialization and cleanup
 // ---------------------------------------------------------------
@@ -75,6 +78,8 @@ void StartKazuHpBarPurpleFade(u32 battler);
 // Call from BattleScript via BS_ShowKazuraDialogue.
 void ShowKazuraDialogueBox(const u8 *str);
 void HideKazuraDialogueBox(void);
+
+
 
 
 #endif // GUARD_KAZURADROP_BATTLE_UI_H

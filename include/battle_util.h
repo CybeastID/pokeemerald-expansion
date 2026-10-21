@@ -320,6 +320,7 @@ void ActivateUltraBurst(u32 battler);
 bool32 IsBattlerMegaEvolved(u32 battler);
 bool32 IsBattlerPrimalReverted(u32 battler);
 bool32 IsBattlerUltraBursted(u32 battler);
+bool32 IsBattlerInTeraForm(u32 battler);
 u16 GetBattleFormChangeTargetSpecies(u32 battler, enum FormChanges method);
 bool32 TryRevertPartyMonFormChange(u32 partyIndex);
 bool32 TryBattleFormChange(u32 battler, enum FormChanges method);
@@ -442,5 +443,6 @@ bool32 IsDazzlingAbility(enum Ability ability);
 bool32 IsAllowedToUseBag(void);
 bool32 IsAnyTargetTurnDamaged(u32 battlerAtk);
 bool32 IsMimikyuDisguised(u32 battler);
+u32 GetKazuraLegendTier(u32 battler);
 
 #endif // GUARD_BATTLE_UTIL_H
