@@ -23,6 +23,8 @@
 #include "constants/songs.h"
 #include "constants/weather.h"
 #include "constants/hold_effects.h"
+#include "battle_gfx_sfx_util.h"
+#include "battle_interface.h"
 
 extern const struct SpriteTemplate gThoughtBubbleSpriteTemplate;
 
@@ -2682,117 +2684,60 @@ void AnimTask_TransformMon(u8 taskId)
 
 void AnimTask_PolymorphMon(u8 taskId)
 {
-    int i, j;
-    u8 position;
-    struct BattleAnimBgData animBg;
-    u8 *dest;
-    u8 *src;
-    u16 *bgTilemap;
+    u8 battlerId = gBattleAnimTarget;
+    // We fetch the sprite ID dynamically every frame just in case 
+    // the sprite reload in Case 2 alters the index!
+    u8 spriteId = gBattlerSpriteIds[battlerId];
     u16 stretch;
-    
-    // THE MAGIC SWAP: We force the entire sequence to operate on the target
-    u8 battlerId = gBattleAnimTarget; 
 
     switch (gTasks[taskId].data[0])
     {
     case 0:
-        SetGpuReg(REG_OFFSET_MOSAIC, 0);
-        if (GetBattlerSpriteBGPriorityRank(battlerId) == 1)
-            SetAnimBgAttribute(1, BG_ANIM_MOSAIC, 1);
-        else
-            SetAnimBgAttribute(2, BG_ANIM_MOSAIC, 1);
-
-        gTasks[taskId].data[10] = gBattleAnimArgs[0];
+    // Enable hardware mosaic blurring specifically for the target's OBJ sprite
+        gSprites[spriteId].oam.mosaic = TRUE;
         gTasks[taskId].data[0]++;
         break;
     case 1:
+    // Ramp up the blur (make it pixelated)
         if (gTasks[taskId].data[2]++ > 1)
         {
             gTasks[taskId].data[2] = 0;
             gTasks[taskId].data[1]++;
             stretch = gTasks[taskId].data[1];
-            SetGpuReg(REG_OFFSET_MOSAIC, (stretch << 4) | stretch);
+            SetGpuReg(REG_OFFSET_MOSAIC, (stretch << 12) | (stretch << 8));
+            
             if (stretch == 15)
                 gTasks[taskId].data[0]++;
         }
         break;
     case 2:
-        // Forces the target to read its own newly-polymorphed RAM data and load the new sprite
-        HandleSpeciesGfxDataChange(battlerId, battlerId, gTasks[taskId].data[10]);
-        GetBgDataForTransform(&animBg, battlerId);
-
-        if (IsContest())
-            position = B_POSITION_PLAYER_LEFT;
-        else
-            position = GetBattlerPosition(battlerId);
-
-        src = gMonSpritesGfxPtr->spritesGfx[position];
-        dest = animBg.bgTiles;
-        CpuCopy32(src, dest, MON_PIC_SIZE);
-        LoadBgTiles(1, animBg.bgTiles, 0x800, animBg.tilesOffset);
-        
-        if (IsContest())
+    // THE MAGIC TRICK: The sprite is now a completely illegible, pixelated block.
+        // We natively reload the new species graphic and palette right now!
+        // THE FIX: Pass the correct pointer and battler ID arguments
         {
-            if (IsSpeciesNotUnown(gContestResources->moveAnim->species) != IsSpeciesNotUnown(gContestResources->moveAnim->targetSpecies))
-            {
-                bgTilemap = (u16 *)animBg.bgTilemap;
-                for (i = 0; i < 8; i++)
-                {
-                    for (j = 0; j < 4; j++)
-                    {
-                        u16 temp = bgTilemap[j + i * 0x20];
-                        bgTilemap[j + i * 0x20] = bgTilemap[(7 - j) + i * 0x20];
-                        bgTilemap[(7 - j) + i * 0x20] = temp;
-                    }
-                }
-
-                for (i = 0; i < 8; i++)
-                {
-                    for (j = 0; j < 8; j++)
-                    {
-                       bgTilemap[j + i * 0x20] ^= 0x400;
-                    }
-                }
-            }
-
-            if (IsSpeciesNotUnown(gContestResources->moveAnim->targetSpecies))
-                gSprites[gBattlerSpriteIds[battlerId]].affineAnims = gAffineAnims_BattleSpriteContest;
-            else
-                gSprites[gBattlerSpriteIds[battlerId]].affineAnims = gAffineAnims_BattleSpriteOpponentSide;
-
-            StartSpriteAffineAnim(&gSprites[gBattlerSpriteIds[battlerId]], BATTLER_AFFINE_NORMAL);
+            struct Pokemon *mon = &GetBattlerParty(battlerId)[gBattlerPartyIndexes[battlerId]];
+            BattleLoadMonSpriteGfx(mon, battlerId);
         }
-
         gTasks[taskId].data[0]++;
         break;
     case 3:
+    // Ramp down the blur (resolve into target)
         if (gTasks[taskId].data[2]++ > 1)
         {
             gTasks[taskId].data[2] = 0;
             gTasks[taskId].data[1]--;
             stretch = gTasks[taskId].data[1];
-            SetGpuReg(REG_OFFSET_MOSAIC, (stretch << 4) | stretch);
-
+            SetGpuReg(REG_OFFSET_MOSAIC, (stretch << 12) | (stretch << 8));
+            
             if (stretch == 0)
                 gTasks[taskId].data[0]++;
         }
         break;
     case 4:
+        gSprites[spriteId].oam.mosaic = FALSE;
         SetGpuReg(REG_OFFSET_MOSAIC, 0);
-        if (GetBattlerSpriteBGPriorityRank(battlerId) == 1)
-            SetAnimBgAttribute(1, BG_ANIM_MOSAIC, 0);
-        else
-            SetAnimBgAttribute(2, BG_ANIM_MOSAIC, 0);
-
-        if (!IsContest())
-        {
-            if (!IsOnPlayerSide(battlerId))
-            {
-                if (gTasks[taskId].data[10] == SPECIES_GFX_CHANGE_TRANSFORM)
-                    SetBattlerShadowSpriteCallback(battlerId, gBattleSpritesDataPtr->battlerData[battlerId].transformSpecies);
-            }
-        }
-
+        // Force the healthbox to instantly update to Mimikyu's name/HP
+          UpdateHealthboxAttribute(gHealthboxSpriteIds[battlerId], GetBattlerMon(battlerId), HEALTHBOX_ALL);
         DestroyAnimVisualTask(taskId);
         break;
     }
