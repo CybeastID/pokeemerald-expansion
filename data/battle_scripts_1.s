@@ -206,13 +206,32 @@ BattleScript_EffectDoodleMoveEnd:
 	.4byte BattleScript_EffectAuthority               @ EFFECT_DMS_PREROGATIVE
 
 BattleScript_EffectAuthority::
-    dmauthority
-    printstring STRINGID_AUTHORITYWEAKENTARGET
-    waitmessage B_WAIT_TIME_LONG
+	attackcanceler
+	accuracycheck BattleScript_ButItFailed, MOVE_DMS_PREROGATIVE
+	dmauthority BattleScript_ButItFailed
+	jumpifbyte CMP_NOT_EQUAL, gBattleCommunication + MULTISTRING_CHOOSER, 0, BattleScript_AuthorityContrary
+	printstring STRINGID_AUTHORITYWEAKENTARGET
 	waitmessage B_WAIT_TIME_LONG
-    printstring STRINGID_AUTHORITYSTRENGTHENUSER
-    waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_AUTHORITYSTRENGTHENUSER
 	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_MoveEnd
+
+BattleScript_AuthorityContrary::
+	jumpifbyte CMP_EQUAL, gBattleCommunication + MULTISTRING_CHOOSER, 3, BattleScript_AuthorityContraryBoth
+	jumpifbyte CMP_EQUAL, gBattleCommunication + MULTISTRING_CHOOSER, 2, BattleScript_AuthorityContraryUser
+	printstring STRINGID_AUTHORITYCONTRARYTARGET
+	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_MoveEnd
+BattleScript_AuthorityContraryUser:
+	printstring STRINGID_AUTHORITYCONTRARYUSER
+	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_MoveEnd
+BattleScript_AuthorityContraryBoth:
+	printstring STRINGID_AUTHORITYCONTRARYUSER
+	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_AUTHORITYCONTRARYTARGET
+	waitmessage B_WAIT_TIME_LONG
+	goto BattleScript_MoveEnd
 
 BattleScript_EffectGlaiveRush::
 	call BattleScript_EffectHit_Ret
@@ -9028,9 +9047,7 @@ BattleScript_KazuradropTransform::
 	callnative BS_BugSpacePanelSlideIn
 	callnative BS_RestoreAttacker
 	callnative BS_RestoreTextbox
-@	printstring STRINGID_PKMNINFINITEGROWTHSTART
 	waitmessage B_WAIT_TIME_LONG
-	
 	return
 
 BattleScript_KazuradropTransformReturn::
@@ -9045,7 +9062,37 @@ BattleScript_BugSpaceStart::
 	call BattleScript_AbilityPopUp
 	printstring STRINGID_BUGSPACESTART
 	waitmessage B_WAIT_TIME_LONG
+	call BattleScript_KazuraLegendPunish
 	end3
+
+BattleScript_KazuraLegendPunish::
+   callnative BS_KazuraGetLegendTier
+   jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, 0, BattleScript_KazuraLegendNone
+   jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, 2, BattleScript_KazuraLegendTier2
+   kazuradialogue STRINGID_KAZURA_LEGEND_TIER1
+   waitmessage B_WAIT_TIME_LONG
+   printstring STRINGID_KAZURADROP_CQPUNISH
+   waitmessage B_WAIT_TIME_LONG
+   kazuraomniboost 1
+   playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+   waitanimation
+   return
+
+BattleScript_KazuraLegendTier2::
+   kazuradialogue STRINGID_KAZURA_LEGEND_TIER2
+   waitmessage B_WAIT_TIME_LONG
+   printstring STRINGID_KAZURADROP_CQPUNISH
+   waitmessage B_WAIT_TIME_LONG
+   kazuraomniboost 2
+   playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+   waitanimation
+
+BattleScript_KazuraLegendNone::
+   return
+
+BattleScript_KazuraLegendPunishSwitchIn::
+   call BattleScript_KazuraLegendPunish
+   end3
 
 BattleScript_BugSpacePassiveOHKO::
 	kazuradialogue STRINGID_BUGSPACEPASSIVEOHKO, 1
@@ -9124,6 +9171,10 @@ BattleScript_CastoriaNameTheft::
 	callnative BS_DoCastoriaNameChoice
 	end2
 
+BattleScript_CastoriaNameTheftExecute::
+	call BattleScript_CastoriaNameTheft
+	end2
+
 BattleScript_CastoriaNameTheftResult::
 	callnative BS_JumpCastoriaNameResult
 
@@ -9133,7 +9184,7 @@ BattleScript_CastoriaTrueName::
 	callnative BS_ApplyCastoriaNameResult
 	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
 	waitanimation
-	end2
+	return
 
 BattleScript_CastoriaFalseName::
 	printstring STRINGID_CASTORIA_FALSE_NAME
@@ -9141,7 +9192,7 @@ BattleScript_CastoriaFalseName::
 	callnative BS_ApplyCastoriaNameResult
 	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
 	waitanimation
-	end2
+	return
 
 BattleScript_CastoriaBackedOut::
 	printstring STRINGID_CASTORIA_BACKED_OUT
@@ -9149,7 +9200,7 @@ BattleScript_CastoriaBackedOut::
 	callnative BS_ApplyCastoriaNameResult
 	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
 	waitanimation
-	end2
+	return
 
 BattleScript_CastoriaTrueNameCommand::
 	callnative BS_CastoriaPrepareWorstMove
@@ -9162,3 +9213,30 @@ BattleScript_CastoriaMaxMoveExpire::
     printstring STRINGID_CASTORIA_DYNAMAX_EXPIRE
     waitmessage B_WAIT_TIME_LONG
     end2
+
+BattleScript_EffectPolymorph::
+    attackcanceler
+    tryrevertweatherform
+    flushtextbox
+    tryendneutralizinggas
+    flushtextbox
+    
+    @ 1. Wobbuffet internally becomes Mimikyu silently
+    callnative BS_PolymorphTarget
+    jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_TRANSFORM_FAILED, BattleScript_PolymorphFailed
+    
+    @ 2. Plays the Frankenstein script (Beam hits -> Blob consumes Target -> Target emerges as Mimikyu)
+    attackanimation
+    waitanimation
+    
+    @ 3. Print the text!
+    printstring STRINGID_PKMNPOLYMORPHED
+    waitmessage B_WAIT_TIME_LONG
+    printstring STRINGID_CASTORIA_YOURECUTER
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_PolymorphFailed:
+    printstring STRINGID_BUTITFAILED
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd

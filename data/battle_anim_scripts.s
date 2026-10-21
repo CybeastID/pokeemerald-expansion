@@ -38167,3 +38167,49 @@ gBattleAnimMove_TrashCrushOld::
 	createsprite gSimplePaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_BG, 3, 16, 0, RGB_WHITE
 	end
 	
+gBattleAnimMove_Polymorph::
+    @ --- 1. SIGNAL BEAM START ---
+    loadspritegfx ANIM_TAG_GLOWY_RED_ORB
+    loadspritegfx ANIM_TAG_GLOWY_GREEN_ORB
+    loadspritegfx ANIM_TAG_DUCK
+    createvisualtask AnimTask_ShakeMon, 5, ANIM_ATTACKER, 0, 2, 25, 1
+    delay 6
+    panse SE_M_BUBBLE_BEAM, SOUND_PAN_ATTACKER, SOUND_PAN_TARGET, +1, 0
+    createvisualtask AnimTask_StartSinAnimTimer, 5, 100
+    
+    @ Fire the first wave of orbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    
+    @ --- 2. IMPACT & TRANSFORM INITIATION ---
+    @ The beam hits! Target shakes.
+    createvisualtask AnimTask_ShakeMon, 5, ANIM_TARGET, 3, 0, 25, 1
+    createsprite gComplexPaletteBlendSpriteTemplate, ANIM_ATTACKER, 2, F_PAL_TARGET, 8, 5, RGB_RED, 8, RGB(1, 30, 0), 8
+    
+    @ Setup the Transform background and sounds ON THE TARGET
+    playsewithpan SE_M_TELEPORT, SOUND_PAN_TARGET
+    
+    @ Trigger the custom purple blob task (See Step 2 below)
+    createvisualtask AnimTask_PolymorphMon, 2, SPECIES_GFX_CHANGE_TRANSFORM
+    
+    @ --- 3. FINISH FIRING THE BEAM ---
+    @ The purple blob is currently consuming Wobbuffet while these orbs hit
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    call SignalBeamOrbs
+    
+    @ --- 4. CLEANUP ---
+    waitforvisualfinish     @ Waits for BOTH the orbs and the purple blob to finish
+    end
