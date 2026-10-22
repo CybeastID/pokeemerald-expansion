@@ -40,6 +40,7 @@
 #include "pokemon.h"
 #include "random.h"
 #include "battle_controllers.h"
+#include "daycare.h"
 
 #define CHOICE_STATE_INIT       0
 #define CHOICE_STATE_WAIT       1
@@ -460,10 +461,92 @@ static u32 ScaleHpToNewMax(u32 hp, u32 oldMax, u32 newMax)
     return hp == 0 ? 1 : hp;
 }
 
-// Saves original moves/PP during polymorph so TMs aren't lost on revert
-static u16 sPolymorphedSavedMoves[PARTY_SIZE][MAX_MON_MOVES];
-static u8 sPolymorphedSavedPP[PARTY_SIZE][MAX_MON_MOVES];
-static u8 sPolymorphedSavedNickname[2][PARTY_SIZE][POKEMON_NAME_LENGTH + 1];
+void GiveMonPolymorphMoveset(struct Pokemon *mon, u16 species)
+{
+    u16 pool[250]; 
+    u16 poolCount = 0;
+    u16 finalMoves[MAX_MON_MOVES] = {MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE};
+    u8 level = GetMonData(mon, MON_DATA_LEVEL);
+    u16 move, i, j;
+    bool8 alreadyInPool;
+
+    // 1. GATHER LEVEL-UP MOVES
+    if (gSpeciesInfo[species].levelUpLearnset != NULL)
+    {
+        for (i = 0; gSpeciesInfo[species].levelUpLearnset[i].move != LEVEL_UP_MOVE_END; i++)
+        {
+            if (gSpeciesInfo[species].levelUpLearnset[i].level <= level)
+            {
+                move = gSpeciesInfo[species].levelUpLearnset[i].move;
+                alreadyInPool = FALSE;
+                for (j = 0; j < poolCount; j++)
+                {
+                    if (pool[j] == move)
+                    {
+                        alreadyInPool = TRUE;
+                        break;
+                    }
+                }
+                if (!alreadyInPool && poolCount < ARRAY_COUNT(pool))
+                    pool[poolCount++] = move;
+            }
+        }
+    }
+
+    // 2. GATHER TEACHABLE MOVES & EGG MOVES
+    for (move = 1; move < MOVES_COUNT; move++)
+    {
+        if (CanLearnTeachableMove(species, move) || SpeciesCanLearnEggMove(species, move))
+        {
+            alreadyInPool = FALSE;
+            for (j = 0; j < poolCount; j++)
+            {
+                if (pool[j] == move)
+                {
+                    alreadyInPool = TRUE;
+                    break;
+                }
+            }
+            if (!alreadyInPool && poolCount < ARRAY_COUNT(pool))
+                pool[poolCount++] = move;
+        }
+    }
+
+    // 3. RANDOMLY SELECT 4 UNIQUE MOVES
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        if (poolCount == 0)
+            break; 
+
+        u16 randIdx = Random() % poolCount;
+        finalMoves[i] = pool[randIdx];
+
+        // Remove the chosen move from the pool by swapping it with the last element
+        pool[randIdx] = pool[poolCount - 1];
+        poolCount--;
+    }
+
+    // 4. ASSIGN MOVES & RESTORE PP
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        SetMonData(mon, MON_DATA_MOVE1 + i, &finalMoves[i]);
+        
+        if (finalMoves[i] != MOVE_NONE)
+        {
+            u8 maxPP = CalculatePPWithBonus(finalMoves[i], GetMonData(mon, MON_DATA_PP_BONUSES), i);
+            SetMonData(mon, MON_DATA_PP1 + i, &maxPP);
+        }
+    }
+}
+
+struct PolymorphBackup {
+    u16 moves[MAX_MON_MOVES];
+    u8 pp[MAX_MON_MOVES];
+    u8 nickname[POKEMON_NAME_LENGTH + 1];
+    u32 exp;
+};
+
+static struct PolymorphBackup sPolymorphBackup[2][PARTY_SIZE];
 
 void BS_PolymorphTarget(void)
 {
@@ -478,7 +561,11 @@ void BS_PolymorphTarget(void)
     u32 oldHp = GetMonData(mon, MON_DATA_HP);
     u32 oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
     bool32 alreadyPolymorphed;
-    u32 newSpecies, newHp, i;
+    u32 newSpecies, newHp, newExp, i;
+    
+    // ADD THESE: Grab the current Level and EXP before morphing
+    u8 currentLevel = GetMonData(mon, MON_DATA_LEVEL);
+    u32 oldExp = GetMonData(mon, MON_DATA_EXP);
 
     gBattlescriptCurrInstr = cmd->nextInstr;
 
@@ -501,27 +588,35 @@ void BS_PolymorphTarget(void)
     // Only the first cast records the true originals; later casts must not overwrite them.
     if (!alreadyPolymorphed)
     {
+        sPolymorphBackup[side][partyIndex].exp = oldExp; // Save the raw EXP
         if (GetBattlerPartyState(target)->changedSpecies == SPECIES_NONE)
             GetBattlerPartyState(target)->changedSpecies = oldSpecies;
-        GetMonData(mon, MON_DATA_NICKNAME, sPolymorphedSavedNickname[side][partyIndex]);
+        GetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[side][partyIndex].nickname);
         for (i = 0; i < MAX_MON_MOVES; i++)
         {
-            sPolymorphedSavedMoves[partyIndex][i] = GetMonData(mon, MON_DATA_MOVE1 + i);
-            sPolymorphedSavedPP[partyIndex][i] = GetMonData(mon, MON_DATA_PP1 + i);
+            sPolymorphBackup[side][partyIndex].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i);
+            sPolymorphBackup[side][partyIndex].pp[i] = GetMonData(mon, MON_DATA_PP1 + i);
         }
     }
     GetBattlerPartyState(target)->polymorphed = TRUE;
 
     SetMonData(mon, MON_DATA_SPECIES, &newSpecies);
     gBattleMons[target].species = newSpecies;
+
+    // Calculate and assign the exact EXP needed to maintain the current level on the new curve
+    newExp = gExperienceTables[gSpeciesInfo[newSpecies].growthRate][currentLevel];
+    SetMonData(mon, MON_DATA_EXP, &newExp);
+
     RecalcBattlerStats(target, mon, FALSE);
 
     newHp = ScaleHpToNewMax(oldHp, oldMaxHp, GetMonData(mon, MON_DATA_MAX_HP));
     SetMonData(mon, MON_DATA_HP, &newHp);
     gBattleMons[target].hp = newHp;
 
+    PREPARE_SPECIES_BUFFER(gBattleTextBuff2, oldSpecies)
+
      // Give the target the new species' moveset (not its old moves)
-    GiveMonInitialMoveset(mon);
+    GiveMonPolymorphMoveset(mon, newSpecies);
      for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
         gBattleMons[target].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, NULL);;
@@ -531,12 +626,11 @@ void BS_PolymorphTarget(void)
     gDisableStructs[target].disableTimer = 0;
     gDisableStructs[target].mimickedMoves = 0;
     gDisableStructs[target].usedMoves = 0;
+    gBattleStruct->choicedMove[target] = MOVE_NONE;
     BtlController_EmitResetActionMoveSelection(target, B_COMM_TO_CONTROLLER, RESET_MOVE_SELECTION);
     MarkBattlerForControllerExec(target);
     
-    const u8 *newName;           // ADDED: Buffer for the new name
-    
-    if (StringCompare(sPolymorphedSavedNickname[side][partyIndex],
+    if (StringCompare(sPolymorphBackup[side][partyIndex].nickname,
                       GetSpeciesName(GetBattlerPartyState(target)->changedSpecies)) == 0)
     {
         const u8 *newName = GetSpeciesName(newSpecies);
@@ -555,7 +649,8 @@ bool32 TryRestorePolymorphedMon(u32 partyIndex)
     struct PartyState *state = &gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex];
     struct Pokemon *mon = &gPlayerParty[partyIndex];
     u32 original, formHp, formMaxHp, newHp;
-
+    // FIX: Set side explicitly since this function iterates over the player's party
+    u32 side = B_SIDE_PLAYER;
     if (!state->polymorphed)
         return FALSE;
 
@@ -573,14 +668,16 @@ bool32 TryRestorePolymorphedMon(u32 partyIndex)
     // Restore original moves/PP so TMs aren't permanently lost
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
-        SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphedSavedMoves[partyIndex][i]);
-        SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphedSavedPP[partyIndex][i]);
+        SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphBackup[side][partyIndex].moves[i]);
+        SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphBackup[side][partyIndex].pp[i]);
     }
     // RESTORE original nickname
-    SetMonData(mon, MON_DATA_NICKNAME, sPolymorphedSavedNickname[B_SIDE_PLAYER][partyIndex]);
+    SetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[side][partyIndex].nickname);
 
     CalculateMonStats(mon);
     newHp = ScaleHpToNewMax(formHp, formMaxHp, GetMonData(mon, MON_DATA_MAX_HP));
     SetMonData(mon, MON_DATA_HP, &newHp);
+    u32 savedExp = sPolymorphBackup[side][partyIndex].exp;
+    SetMonData(mon, MON_DATA_EXP, &savedExp);
     return TRUE;
 }
