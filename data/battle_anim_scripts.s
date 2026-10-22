@@ -38194,7 +38194,7 @@ gBattleAnimMove_Polymorph::
     playsewithpan SE_M_TELEPORT, SOUND_PAN_TARGET
     
     @ Trigger the custom purple blob task (See Step 2 below)
-    createvisualtask AnimTask_PolymorphMon, 2, SPECIES_GFX_CHANGE_TRANSFORM
+    createvisualtask AnimTask_PolymorphMon, 2, SPECIES_GFX_CHANGE_FORM_CHANGE
     
     @ --- 3. FINISH FIRING THE BEAM ---
     @ The purple blob is currently consuming Wobbuffet while these orbs hit

@@ -39,6 +39,7 @@
 #include "menu.h"
 #include "pokemon.h"
 #include "random.h"
+#include "battle_controllers.h"
 
 #define CHOICE_STATE_INIT       0
 #define CHOICE_STATE_WAIT       1
@@ -462,19 +463,22 @@ static u32 ScaleHpToNewMax(u32 hp, u32 oldMax, u32 newMax)
 // Saves original moves/PP during polymorph so TMs aren't lost on revert
 static u16 sPolymorphedSavedMoves[PARTY_SIZE][MAX_MON_MOVES];
 static u8 sPolymorphedSavedPP[PARTY_SIZE][MAX_MON_MOVES];
+static u8 sPolymorphedSavedNickname[2][PARTY_SIZE][POKEMON_NAME_LENGTH + 1];
 
 void BS_PolymorphTarget(void)
 {
     NATIVE_ARGS();
     u32 target = gBattlerTarget;
     u32 monId = gBattlerPartyIndexes[target];
+    u32 side = GetBattlerSide(target);
+    u32 partyIndex = gBattlerPartyIndexes[target];
     struct Pokemon *party = GetBattlerParty(target);
     struct Pokemon *mon = &party[monId];
     u32 oldSpecies = gBattleMons[target].species;
     u32 oldHp = GetMonData(mon, MON_DATA_HP);
     u32 oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
-    u32 newSpecies;
-    u32 newHp;
+    bool32 alreadyPolymorphed;
+    u32 newSpecies, newHp, i;
 
     gBattlescriptCurrInstr = cmd->nextInstr;
 
@@ -491,10 +495,21 @@ void BS_PolymorphTarget(void)
         return;
     }
 
+    alreadyPolymorphed = GetBattlerPartyState(target)->polymorphed;
     newSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
 
-    if (GetBattlerPartyState(target)->changedSpecies == SPECIES_NONE)
-        GetBattlerPartyState(target)->changedSpecies = oldSpecies;
+    // Only the first cast records the true originals; later casts must not overwrite them.
+    if (!alreadyPolymorphed)
+    {
+        if (GetBattlerPartyState(target)->changedSpecies == SPECIES_NONE)
+            GetBattlerPartyState(target)->changedSpecies = oldSpecies;
+        GetMonData(mon, MON_DATA_NICKNAME, sPolymorphedSavedNickname[side][partyIndex]);
+        for (i = 0; i < MAX_MON_MOVES; i++)
+        {
+            sPolymorphedSavedMoves[partyIndex][i] = GetMonData(mon, MON_DATA_MOVE1 + i);
+            sPolymorphedSavedPP[partyIndex][i] = GetMonData(mon, MON_DATA_PP1 + i);
+        }
+    }
     GetBattlerPartyState(target)->polymorphed = TRUE;
 
     SetMonData(mon, MON_DATA_SPECIES, &newSpecies);
@@ -505,14 +520,6 @@ void BS_PolymorphTarget(void)
     SetMonData(mon, MON_DATA_HP, &newHp);
     gBattleMons[target].hp = newHp;
 
-      // Save original moves before replacing with new species' moveset
-    u32 partyIndex = gBattlerPartyIndexes[target];
-    for (u32 i = 0; i < MAX_MON_MOVES; i++)
-    {
-        sPolymorphedSavedMoves[partyIndex][i] = GetMonData(mon, MON_DATA_MOVE1 + i);
-        sPolymorphedSavedPP[partyIndex][i] = GetMonData(mon, MON_DATA_PP1 + i, NULL);
-    }
-
      // Give the target the new species' moveset (not its old moves)
     GiveMonInitialMoveset(mon);
      for (u32 i = 0; i < MAX_MON_MOVES; i++)
@@ -520,8 +527,23 @@ void BS_PolymorphTarget(void)
         gBattleMons[target].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, NULL);;
         gBattleMons[target].pp[i] = GetMonData(mon, MON_DATA_PP1 + i, NULL);
     }
+    gDisableStructs[target].disabledMove = MOVE_NONE;
+    gDisableStructs[target].disableTimer = 0;
+    gDisableStructs[target].mimickedMoves = 0;
+    gDisableStructs[target].usedMoves = 0;
+    BtlController_EmitResetActionMoveSelection(target, B_COMM_TO_CONTROLLER, RESET_MOVE_SELECTION);
+    MarkBattlerForControllerExec(target);
+    
+    const u8 *newName;           // ADDED: Buffer for the new name
+    
+    if (StringCompare(sPolymorphedSavedNickname[side][partyIndex],
+                      GetSpeciesName(GetBattlerPartyState(target)->changedSpecies)) == 0)
+    {
+        const u8 *newName = GetSpeciesName(newSpecies);
 
-    PREPARE_SPECIES_BUFFER(gBattleTextBuff1, newSpecies)
+        SetMonData(mon, MON_DATA_NICKNAME, newName);
+        StringCopy(gBattleMons[target].nickname, newName);
+    }
 
     PREPARE_SPECIES_BUFFER(gBattleTextBuff1, newSpecies)
 
@@ -554,6 +576,8 @@ bool32 TryRestorePolymorphedMon(u32 partyIndex)
         SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphedSavedMoves[partyIndex][i]);
         SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphedSavedPP[partyIndex][i]);
     }
+    // RESTORE original nickname
+    SetMonData(mon, MON_DATA_NICKNAME, sPolymorphedSavedNickname[B_SIDE_PLAYER][partyIndex]);
 
     CalculateMonStats(mon);
     newHp = ScaleHpToNewMax(formHp, formMaxHp, GetMonData(mon, MON_DATA_MAX_HP));

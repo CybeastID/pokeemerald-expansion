@@ -2717,6 +2717,7 @@ void AnimTask_PolymorphMon(u8 taskId)
         {
             struct Pokemon *mon = &GetBattlerParty(battlerId)[gBattlerPartyIndexes[battlerId]];
             BattleLoadMonSpriteGfx(mon, battlerId);
+            HandleSpeciesGfxDataChange(battlerId, battlerId, SPECIES_GFX_CHANGE_FORM_CHANGE);
         }
         gTasks[taskId].data[0]++;
         break;
