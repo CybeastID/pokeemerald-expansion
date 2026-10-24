@@ -52,6 +52,9 @@ static u8 sChoiceState;
 static const u8 sText_FrancisXavier[] = _("F. Xavier");
 
 // ---------------------------------------------------------------
+// FUNCTION PROTOTYPES
+u32 EvaluateMoveThreat(u16 move, u16 species);
+// ---------------------------------------------------------------
 // NEW WINDOW
 // ---------------------------------------------------------------
 
@@ -95,9 +98,16 @@ static void PrintCastoriaChoiceText(void)
     CopyWindowToVram(sCastoriaChoiceWindowId, COPYWIN_FULL);
 }
 
+
 void BS_DoCastoriaNameChoice(void)
 {
+
     NATIVE_ARGS();
+#if TESTING
+gBattleStruct->castoria.nameResult = CASTORIA_NAME_BACKED_OUT;
+gBattlescriptCurrInstr = BattleScript_CastoriaNameTheftResult;
+return;
+#endif
     u32 battler = gBattlerAttacker;
 
     switch (sChoiceState)
@@ -388,9 +398,8 @@ void CastoriaInitArcanum(u32 battler)
         MOVE_MOONBLAST,       // Evocation
         MOVE_LIGHT_SCREEN,    // Illusion
         MOVE_DAZZLING_GLEAM,  // Evocation
-        // MOVE_POLYMORPH,    // Transformation
+        MOVE_POLYMORPH,    // Transformation
         MOVE_FIRE_BLAST,        // Evocation
-        MOVE_SPLASH,          // Do nothing to fill space
     };
 
     for (u8 i = 0; i < CASTORIA_ARCANUM_COUNT; i++)
@@ -433,24 +442,144 @@ bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall)
     return TRUE;
 }
 
+
+// ---------------------------------------------------------------
+// Polymorph logic
+// ---------------------------------------------------------------
+
+
+static u32 sPolymorphRejectBattler;
+
+#define POLYMORPH_TOP_CANDIDATES    5
+#define POLYMORPH_PENALTY 120
+
+
+// How bad a species is for the player's mon, judged from Castoria's own moves
+// (higher = crueler).
+static u32 ScorePolymorphCruelty(u32 species, u32 castoriaBattler, struct Pokemon *targetMon)
+{
+
+    struct PolymorphEVSpread
+{
+    u16 hp;
+    u16 atk;
+    u16 def;
+    u16 spAtk;
+    u16 spDef;
+    u16 speed;
+};
+    enum Type t1 = gSpeciesInfo[species].types[0];
+    enum Type t2 = gSpeciesInfo[species].types[1];
+    u32 casterSpeed = gSpeciesInfo[gBattleMons[castoriaBattler].species].baseSpeed;
+    u32 effSum = 0, weightSum = 0, avgEff, score, slot;
+    enum Ability ability;
+
+    // 1. Type exposure to every damaging move she has, Arcanum included.
+    for (slot = 0; slot < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT; slot++)
+    {
+        u16 move = CastoriaGetMoveAtSlot(castoriaBattler, slot);
+        u32 power, eff;
+
+        if (move == MOVE_NONE || gMovesInfo[move].category == DAMAGE_CATEGORY_STATUS)
+            continue;
+        power = gMovesInfo[move].power != 0 ? gMovesInfo[move].power : 60;
+        eff = GetTypeModifier(gMovesInfo[move].type, t1);
+        if (t2 != t1)
+            eff = (eff * GetTypeModifier(gMovesInfo[move].type, t2)) >> 12;
+        effSum += power * eff;
+        weightSum += power;
+    }
+    avgEff = weightSum != 0 ? effSum / weightSum : 4096;
+    score = (avgEff * 50) / 4096;   // 0.5x -> 25, neutral -> 50, 2x -> 100
+
+    // 2. Slower than her is worse for the player.
+    if (casterSpeed > gSpeciesInfo[species].baseSpeed)
+        score += casterSpeed - gSpeciesInfo[species].baseSpeed;
+
+    // 3. Self-crippling abilities.
+    u8 abilityNum = GetMonData(targetMon, MON_DATA_ABILITY_NUM);
+    ability = GetAbilityBySpecies(species, abilityNum);
+    if (ability == ABILITY_TRUANT || ability == ABILITY_SLOW_START || ability == ABILITY_DEFEATIST)
+        score += 40;
+
+    struct PolymorphEVSpread targetEV = {
+        .hp = GetMonData(targetMon, MON_DATA_HP_EV),
+        .atk = GetMonData(targetMon, MON_DATA_ATK_EV),
+        .def = GetMonData(targetMon, MON_DATA_DEF_EV),
+        .spAtk = GetMonData(targetMon, MON_DATA_SPATK_EV),
+        .spDef = GetMonData(targetMon, MON_DATA_SPDEF_EV),
+        .speed = GetMonData(targetMon, MON_DATA_SPEED_EV)
+    };
+
+    // HP: target invested in HP → give them a fragile mon (low base HP)
+    if (targetEV.hp > 0)
+    {
+        u32 hpDeficit = 200 - gSpeciesInfo[species].baseHP;
+        if (hpDeficit > 0)
+            score += (hpDeficit * targetEV.hp) / 252 / 4;
+    }
+
+    // Atk: target physically invested → give them a physical wall (high Def)
+    if (targetEV.atk > 0)
+        score += (gSpeciesInfo[species].baseDefense * targetEV.atk) / 252 / 4;
+
+    // Def: target defensively invested → give them a physical breaker (high Atk)
+    if (targetEV.def > 0)
+        score += (gSpeciesInfo[species].baseAttack * targetEV.def) / 252 / 4;
+
+    // SpAtk: target specially invested → give them a special wall (high SpDef)
+    if (targetEV.spAtk > 0)
+        score += (gSpeciesInfo[species].baseSpDefense * targetEV.spAtk) / 252 / 4;
+
+    // SpDef: target specially defensive → give them a special breaker (high SpAtk)
+    if (targetEV.spDef > 0)
+        score += (gSpeciesInfo[species].baseSpAttack * targetEV.spDef) / 252 / 4;
+
+    // Speed: target speed invested → give them something slower
+    if (targetEV.speed > 0)
+    {
+        s32 speedDiff = (s32)gSpeciesInfo[gBattleMons[castoriaBattler].species].baseSpeed
+                      - (s32)gSpeciesInfo[species].baseSpeed;
+        if (speedDiff > 0)
+            score += (speedDiff * targetEV.speed) / 252 / 4;
+    }
+
+    return score;
+}
+
 static bool32 ShouldRejectPolymorphSpecies(u32 species)
 {
+    u32 targetBattler = sPolymorphRejectBattler;
+    bool32 playerSide = IsOnPlayerSide(targetBattler);
+
+    // Universal rejections for both sides
     if (species == SPECIES_NONE
      || !IsSpeciesEnabled(species)
      || species == SPECIES_SHEDINJA
-     || species == gBattleMons[gBattlerTarget].species
-     || species > SPECIES_FALINKS_MEGA)   // custom/boss species (Castoria, Raze Kirlia, Kazuradrop, EGG)
+     || species == gBattleMons[targetBattler].species
+     || species > SPECIES_FALINKS_MEGA)   // custom/boss species guard
         return TRUE;
 
-    return gSpeciesInfo[species].isMegaEvolution
-        || gSpeciesInfo[species].isPrimalReversion
-        || gSpeciesInfo[species].isUltraBurst
-        || gSpeciesInfo[species].isGigantamax
-        || gSpeciesInfo[species].isTeraForm
-        || gSpeciesInfo[species].isLegendary
-        || gSpeciesInfo[species].isMythical
-        || gSpeciesInfo[species].isParadox
-        || gSpeciesInfo[species].isUltraBeast;
+    bool32 isHighTier = gSpeciesInfo[species].isMegaEvolution
+                     || gSpeciesInfo[species].isPrimalReversion
+                     || gSpeciesInfo[species].isUltraBurst
+                     || gSpeciesInfo[species].isGigantamax
+                     || gSpeciesInfo[species].isTeraForm
+                     || gSpeciesInfo[species].isLegendary
+                     || gSpeciesInfo[species].isMythical
+                     || gSpeciesInfo[species].isParadox
+                     || gSpeciesInfo[species].isUltraBeast;
+
+    if (playerSide)
+    {
+        // PLAYER TARGETING (The Game Master): Reject high-tier monsters to force downgrades
+        return isHighTier;
+    }
+    else
+    {
+        // ALLY / SELF TARGETING (The Chaos Wish): REJECT weak/normal mons, ONLY allow absolute powerhouses
+        return !isHighTier;
+    }
 }
 
 static u32 ScaleHpToNewMax(u32 hp, u32 oldMax, u32 newMax)
@@ -459,6 +588,344 @@ static u32 ScaleHpToNewMax(u32 hp, u32 oldMax, u32 newMax)
         return hp; // fainted stays fainted; avoid divide-by-zero
     hp = (hp * newMax) / oldMax;
     return hp == 0 ? 1 : hp;
+}
+
+
+
+struct MoveScore {
+    u16 move;
+    u32 score;
+};
+
+static EWRAM_DATA struct
+{
+    struct MoveScore pool[250];
+    u16 count;
+} sPolyScratch;
+
+// Castoria buys 4 moves to hit the exact target budget
+void ConstructPolymorphMoveset(struct Pokemon *mon, u16 species, u32 moveBudget)
+{
+    struct MoveScore *pool = sPolyScratch.pool;
+    u16 poolCount = 0;
+    sPolyScratch.count = 0; 
+    u16 finalMoves[MAX_MON_MOVES] = {MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE};
+    u8 level = GetMonData(mon, MON_DATA_LEVEL);
+    u16 move, i, j;
+    bool8 alreadyInPool;
+
+    // 1. GATHER ALL LEGAL MOVES (Same logic as before, but we score them immediately)
+    if (gSpeciesInfo[species].levelUpLearnset != NULL)
+    {
+        for (i = 0; gSpeciesInfo[species].levelUpLearnset[i].move != LEVEL_UP_MOVE_END; i++)
+        {
+            if (gSpeciesInfo[species].levelUpLearnset[i].level <= level)
+            {
+                move = gSpeciesInfo[species].levelUpLearnset[i].move;
+                alreadyInPool = FALSE;
+                for (j = 0; j < poolCount; j++)
+                {
+                    if (pool[j].move == move) { alreadyInPool = TRUE; break; }
+                }
+                if (!alreadyInPool && poolCount < 250)
+                {
+                    pool[poolCount].move = move;
+                    pool[poolCount].score = EvaluateMoveThreat(move, species);
+                    poolCount++;
+                }
+            }
+        }
+    }
+
+    for (move = 1; move < MOVES_COUNT; move++)
+    {
+        if (CanLearnTeachableMove(species, move) || SpeciesCanLearnEggMove(species, move))
+        {
+            alreadyInPool = FALSE;
+            for (j = 0; j < poolCount; j++)
+            {
+                if (pool[j].move == move) { alreadyInPool = TRUE; break; }
+            }
+            if (!alreadyInPool && poolCount < 250)
+            {
+                pool[poolCount].move = move;
+                pool[poolCount].score = EvaluateMoveThreat(move, species);
+                poolCount++;
+            }
+        }
+    }
+
+    // 2. GREEDY SHOPPING ALGORITHM
+    u32 remainingBudget = moveBudget;
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        if (poolCount == 0) break;
+
+        // Ideal cost for this specific slot to smoothly spend the remaining funds
+        u32 targetSlotScore = remainingBudget / (MAX_MON_MOVES - i);
+        u16 bestIndex = 0;
+        u32 bestDiff = 0xFFFFFFFF;
+
+        // Find the move whose score is closest to our target for this slot
+        for (j = 0; j < poolCount; j++)
+        {
+            u32 diff = (pool[j].score > targetSlotScore) ? (pool[j].score - targetSlotScore) : (targetSlotScore - pool[j].score);
+            if (diff < bestDiff)
+            {
+                bestDiff = diff;
+                bestIndex = j;
+            }
+        }
+
+        finalMoves[i] = pool[bestIndex].move;
+        
+        // Deduct from budget (preventing underflow)
+        if (remainingBudget >= pool[bestIndex].score)
+            remainingBudget -= pool[bestIndex].score;
+        else
+            remainingBudget = 0;
+
+        // Remove chosen move from pool
+        pool[bestIndex] = pool[poolCount - 1];
+        poolCount--;
+    }
+
+    // 3. ASSIGN MOVES & RESTORE PP
+    for (i = 0; i < MAX_MON_MOVES; i++)
+    {
+        SetMonData(mon, MON_DATA_MOVE1 + i, &finalMoves[i]);
+        if (finalMoves[i] != MOVE_NONE)
+        {
+            u8 maxPP = CalculatePPWithBonus(finalMoves[i], GetMonData(mon, MON_DATA_PP_BONUSES), i);
+            SetMonData(mon, MON_DATA_PP1 + i, &maxPP);
+        }
+    }
+}
+
+// Pillar 2: Moveset Valuation
+u32 EvaluateMoveThreat(u16 move, u16 species)
+{
+    if (move == MOVE_NONE) return 0;
+    
+    u32 score = 0;
+    // Note: pokeemerald-expansion uses gMovesInfo for move data
+    u8 type = gMovesInfo[move].type;
+    u8 power = gMovesInfo[move].power;
+    u8 accuracy = gMovesInfo[move].accuracy;
+    
+    if (power > 0)
+    {
+        // Expected Value: Power * Accuracy percentage
+        score = (power * (accuracy == 0 ? 100 : accuracy)) / 100;
+        
+        // Apply STAB premium
+        if (type == gSpeciesInfo[species].types[0] || type == gSpeciesInfo[species].types[1])
+            score = (score * 15) / 10;
+    }
+    else
+    {
+        // Status Move Tiers
+        switch (gMovesInfo[move].effect)
+        {
+            case EFFECT_RESTORE_HP:
+            case EFFECT_MORNING_SUN:
+            case EFFECT_SYNTHESIS:
+            case EFFECT_MOONLIGHT:
+            case EFFECT_ROOST:
+                score = 45; break;
+            case EFFECT_ATTACK_UP_2:
+            case EFFECT_SPECIAL_ATTACK_UP_2:
+            case EFFECT_DRAGON_DANCE:
+            case EFFECT_QUIVER_DANCE:
+            case EFFECT_SHELL_SMASH:
+                score = 50; break;
+            case EFFECT_NON_VOLATILE_STATUS:
+            case EFFECT_YAWN:
+                score = 40; break;
+            case EFFECT_PROTECT:
+            case EFFECT_SPIKES:
+            case EFFECT_STEALTH_ROCK:
+                score = 30; break;
+            default:
+                score = 15; break; // Generic debuffs/utility
+        }
+    }
+    return score;
+}
+
+// Pillar 1: Hardware & Min-Max Tax
+u32 EvaluateSpeciesHardware(u16 species)
+{
+    u32 hp = gSpeciesInfo[species].baseHP;
+    u32 atk = gSpeciesInfo[species].baseAttack;
+    u32 def = gSpeciesInfo[species].baseDefense;
+    u32 spa = gSpeciesInfo[species].baseSpAttack;
+    u32 spd = gSpeciesInfo[species].baseSpDefense;
+    u32 spe = gSpeciesInfo[species].baseSpeed;
+    
+    u32 bst = hp + atk + def + spa + spd + spe;
+    u32 mean = bst / 6;
+    
+    u32 variance = 0;
+    variance += (hp > mean) ? (hp - mean) : (mean - hp);
+    variance += (atk > mean) ? (atk - mean) : (mean - atk);
+    variance += (def > mean) ? (def - mean) : (mean - def);
+    variance += (spa > mean) ? (spa - mean) : (mean - spa);
+    variance += (spd > mean) ? (spd - mean) : (mean - spd);
+    variance += (spe > mean) ? (spe - mean) : (mean - spe);
+    
+    // Total Threat = BST + 50% of the stat deviation
+    return bst + (variance / 2);
+}
+
+// Calculates total score of a specific Mon instance (Stats + Moves)
+u32 CalculateMonTotalThreat(struct Pokemon *mon)
+{
+    u16 species = GetMonData(mon, MON_DATA_SPECIES);
+    u32 score = EvaluateSpeciesHardware(species);
+    
+    for (int i = 0; i < MAX_MON_MOVES; i++)
+    {
+        u16 move = GetMonData(mon, MON_DATA_MOVE1 + i);
+        score += EvaluateMoveThreat(move, species);
+    }
+    return score;
+}
+#if 0
+/* u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMoveBudget)
+{
+    u32 currentThreat = CalculateMonTotalThreat(playerMon);
+    sPolymorphRejectBattler = gBattlerTarget;
+    
+    // Castoria's exact target for this player's mon
+    u32 targetThreat = (currentThreat > POLYMORPH_PENALTY) ? (currentThreat - POLYMORPH_PENALTY) : 100;
+    
+    // THE GOLDEN RATIO: Hardware cannot consume more than 65% of the budget.
+    // This guarantees at least 35% of the budget is purely dedicated to lethal moves.
+    u32 maxHardwareBudget = (targetThreat * 65) / 100;
+    u32 minHardwareBudget = (targetThreat * 40) / 100;
+    
+    u16 bestSpecies = SPECIES_NONE;
+    u32 bestHardwareScore = 0;
+    u32 highestCrueltyIndex = 0;
+
+    // Roll 30 candidates to find the meanest one within the Golden Ratio
+    for (int i = 0; i < 30; i++)
+    {
+        u16 testSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
+        u32 hardwareScore = EvaluateSpeciesHardware(testSpecies);
+        
+        // Enforce the ratio: Must leave enough room for a real moveset, but not be completely frail
+        if (hardwareScore >= minHardwareBudget && hardwareScore <= maxHardwareBudget)
+        {
+            u32 crueltyIndex = 10; 
+            
+            // Example: Prioritize giving the player a species weak to Castoria's likely STAB
+            u8 type1 = gSpeciesInfo[testSpecies].types[0];
+            u8 type2 = gSpeciesInfo[testSpecies].types[1];
+            if (type1 == TYPE_DRAGON || type1 == TYPE_DARK) crueltyIndex += 20;
+            if (type2 == TYPE_DRAGON || type2 == TYPE_DARK) crueltyIndex += 20;
+
+            if (crueltyIndex > highestCrueltyIndex || bestSpecies == SPECIES_NONE)
+            {
+                highestCrueltyIndex = crueltyIndex;
+                bestSpecies = testSpecies;
+                bestHardwareScore = hardwareScore;
+            }
+        }
+    }
+    
+    // Fallback: If RNG fails to find a perfect ratio, force an average mid-tier mon 
+    // to ensure there is always a healthy move budget.
+    if (bestSpecies == SPECIES_NONE)
+    {
+        bestSpecies = SPECIES_RATICATE; // Or any reliable baseline species
+        bestHardwareScore = EvaluateSpeciesHardware(bestSpecies);
+    }
+        
+    // Hand the remaining funds (guaranteed to be ~35-60% of the total threat) to the Move Constructor
+    *outMoveBudget = (targetThreat > bestHardwareScore) ? (targetThreat - bestHardwareScore) : 150;
+    
+    return bestSpecies;
+} */
+#endif
+
+struct PolymorphCandidate
+{
+    u16 species;
+    u16 score;
+};
+
+u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMoveBudget)
+{
+    struct PolymorphCandidate top[POLYMORPH_TOP_CANDIDATES];
+
+    u32 currentThreat = CalculateMonTotalThreat(playerMon);
+    u32 targetThreat = (currentThreat > POLYMORPH_PENALTY) ? (currentThreat - POLYMORPH_PENALTY) : 100;
+    u32 minHardwareBudget = (targetThreat * 40) / 100;
+    u32 maxHardwareBudget = (targetThreat * 65) / 100;
+    u32 topCount = 0;
+    u32 i, hardware;
+    u16 chosen;
+    u16 score;
+
+    sPolymorphRejectBattler = gBattlerTarget;
+
+    u16 samples[60];
+    u32 sampleScores[60];
+    u32 sampleCount = 0;
+    u32 attempts = 0;
+
+     // Monte Carlo: sample up to 60 valid species from 600 RNG attempts.
+    // Prevents the same top-scoring species from dominating every cast.
+    while (sampleCount < 60 && attempts < 600)
+    {
+        attempts++;
+        u16 testSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
+        hardware = EvaluateSpeciesHardware(testSpecies);
+
+        if (hardware < minHardwareBudget || hardware > maxHardwareBudget)
+            continue;
+
+        score = ScorePolymorphCruelty(testSpecies, gBattlerAttacker, playerMon);
+
+        samples[sampleCount] = testSpecies;
+        sampleScores[sampleCount] = score;
+        sampleCount++;
+    }
+
+    if (sampleCount == 0)
+    {
+        chosen = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
+    }
+    else
+    {
+        // Pick the best-scoring sample
+        u32 bestIdx = 0;
+        for (i = 1; i < sampleCount; i++)
+        {
+            if (sampleScores[i] > sampleScores[bestIdx])
+                bestIdx = i;
+        }
+        chosen = samples[bestIdx];
+#if TESTING
+        DebugPrintf("POLY chosen=%u (%s) hw=%u cruelty=%u samples=%u attempts=%u",
+                    chosen, GetSpeciesName(chosen), hardware, sampleScores[bestIdx], sampleCount, attempts);
+#endif
+    }
+
+    if (topCount == 0) // nothing fit the band: any legal species
+        chosen = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
+    else
+        chosen = top[RandomUniform(RNG_POLYMORPH, 0, topCount - 1)].species;
+
+    hardware = EvaluateSpeciesHardware(chosen);
+    *outMoveBudget = (targetThreat > hardware) ? (targetThreat - hardware) : 150;
+#if TESTING
+    DebugPrintf("POLY cur=%d target=%d band=%d-%d chosen=%d", currentThreat, targetThreat,
+                minHardwareBudget, maxHardwareBudget, chosen);
+#endif
+    return chosen;
 }
 
 void GiveMonPolymorphMoveset(struct Pokemon *mon, u16 species)
@@ -546,7 +1013,7 @@ struct PolymorphBackup {
     u32 exp;
 };
 
-static struct PolymorphBackup sPolymorphBackup[2][PARTY_SIZE];
+static EWRAM_DATA struct PolymorphBackup sPolymorphBackup[2][PARTY_SIZE] = {0};
 
 void BS_PolymorphTarget(void)
 {
@@ -561,7 +1028,7 @@ void BS_PolymorphTarget(void)
     u32 oldHp = GetMonData(mon, MON_DATA_HP);
     u32 oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
     bool32 alreadyPolymorphed;
-    u32 newSpecies, newHp, newExp, i;
+    u32 newSpecies, newHp, newExp, i, moveBudget;
     
     // ADD THESE: Grab the current Level and EXP before morphing
     u8 currentLevel = GetMonData(mon, MON_DATA_LEVEL);
@@ -583,8 +1050,11 @@ void BS_PolymorphTarget(void)
     }
 
     alreadyPolymorphed = GetBattlerPartyState(target)->polymorphed;
-    newSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
-
+    sPolymorphRejectBattler = target;
+    if (IsOnPlayerSide(target))
+        newSpecies = CastoriaSelectPolymorphTargetAndBudget(mon, &moveBudget);
+    else
+        newSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
     // Only the first cast records the true originals; later casts must not overwrite them.
     if (!alreadyPolymorphed)
     {
@@ -615,9 +1085,11 @@ void BS_PolymorphTarget(void)
 
     PREPARE_SPECIES_BUFFER(gBattleTextBuff2, oldSpecies)
 
-     // Give the target the new species' moveset (not its old moves)
-    GiveMonPolymorphMoveset(mon, newSpecies);
-     for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    if (IsOnPlayerSide(target))
+        ConstructPolymorphMoveset(mon, newSpecies, moveBudget);  // budget-aware, cruel
+    else
+        GiveMonPolymorphMoveset(mon, newSpecies);                 // random, chaotic
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
         gBattleMons[target].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, NULL);;
         gBattleMons[target].pp[i] = GetMonData(mon, MON_DATA_PP1 + i, NULL);
@@ -671,13 +1143,13 @@ bool32 TryRestorePolymorphedMon(u32 partyIndex)
         SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphBackup[side][partyIndex].moves[i]);
         SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphBackup[side][partyIndex].pp[i]);
     }
-    // RESTORE original nickname
+    // RESTORE original nickname and XP values.
     SetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[side][partyIndex].nickname);
-
+    u32 savedExp = sPolymorphBackup[side][partyIndex].exp;
+    SetMonData(mon, MON_DATA_EXP, &savedExp);
     CalculateMonStats(mon);
     newHp = ScaleHpToNewMax(formHp, formMaxHp, GetMonData(mon, MON_DATA_MAX_HP));
     SetMonData(mon, MON_DATA_HP, &newHp);
-    u32 savedExp = sPolymorphBackup[side][partyIndex].exp;
-    SetMonData(mon, MON_DATA_EXP, &savedExp);
+
     return TRUE;
 }
