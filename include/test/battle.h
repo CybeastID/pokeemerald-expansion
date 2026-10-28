@@ -1142,6 +1142,8 @@ struct MoveContext
     bool8 explicitTarget;
     struct RiggedRNG rng;
     bool8 explicitRNG;
+    u8 arcanumSlot;
+    bool8 explicitArcanumSlot;
 };
 
 struct ItemContext

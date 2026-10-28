@@ -6,6 +6,7 @@
 #include "battle_setup.h"
 #include "battle_gimmick.h"
 #include "battle_z_move.h"
+#include "castoria_name_theft.h"
 #include "event_data.h"
 #include "fieldmap.h"
 #include "item_menu.h"
@@ -2506,7 +2507,20 @@ void MoveGetIdAndSlot(s32 battlerId, struct MoveContext *ctx, u32 *moveId, u32 *
     u32 i;
     struct Pokemon *mon = CurrentMon(battlerId);
 
-    if (ctx->explicitMove)
+    if (ctx->explicitArcanumSlot)
+    {
+        INVALID_IF(ctx->explicitMove || ctx->explicitMoveSlot, "arcanumSlot cannot be combined with move or moveSlot");
+        INVALID_IF(IsAITest(), "arcanumSlot is not supported in AI tests");
+        INVALID_IF((battlerId & BIT_SIDE) != B_SIDE_OPPONENT
+                   || GetMonData(mon, MON_DATA_SPECIES) != SPECIES_CASTORIA,
+                   "arcanumSlot requires an opponent Castoria");
+        INVALID_IF(ctx->arcanumSlot >= CASTORIA_ARCANUM_COUNT, "Invalid arcanumSlot: %d", ctx->arcanumSlot);
+        INVALID_IF(ctx->explicitGimmick && ctx->gimmick != GIMMICK_NONE, "arcanumSlot cannot use a gimmick");
+        *moveId = Test_GetCastoriaArcanumMove(ctx->arcanumSlot);
+        INVALID_IF(*moveId == MOVE_NONE, "Empty arcanumSlot: %d", ctx->arcanumSlot);
+        *moveSlot = MAX_MON_MOVES + ctx->arcanumSlot;
+    }
+    else if (ctx->explicitMove)
     {
         INVALID_IF(ctx->move == MOVE_NONE || ctx->move >= MOVES_COUNT, "Illegal move: %d", ctx->move);
         for (i = 0; i < MAX_MON_MOVES; i++)

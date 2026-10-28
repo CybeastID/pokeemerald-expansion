@@ -23,6 +23,7 @@
 #include "party_menu.h"
 #include "pokeball.h"
 #include "pokemon.h"
+#include "castoria_name_theft.h"
 #include "random.h"
 #include "reshow_battle_screen.h"
 #include "sound.h"
@@ -452,7 +453,11 @@ static void OpponentHandleChooseMove(u32 battler)
             chosenMoveIndex = gAiBattleData->chosenMoveIndex[battler];
             gBattlerTarget = gAiBattleData->chosenTarget[battler];
 
-            u32 chosenMove = moveInfo->moves[chosenMoveIndex];
+             u32 chosenMove;
+            if (chosenMoveIndex >= MAX_MON_MOVES)
+                chosenMove = CastoriaGetMoveAtSlot(battler, chosenMoveIndex);
+            else
+                chosenMove = moveInfo->moves[chosenMoveIndex];
             if (GetBattlerMoveTargetType(battler, chosenMove) & MOVE_TARGET_USER)
                 gBattlerTarget = battler;
             if (GetBattlerMoveTargetType(battler, chosenMove) & MOVE_TARGET_BOTH)
@@ -482,8 +487,14 @@ static void OpponentHandleChooseMove(u32 battler)
         u32 target;
         do
         {
-            chosenMoveIndex = Random() & (MAX_MON_MOVES - 1);
-            move = moveInfo->moves[chosenMoveIndex];
+            if (gBattleMons[battler].species == SPECIES_CASTORIA)
+                chosenMoveIndex = Random() % (MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT);
+            else
+                chosenMoveIndex = Random() & (MAX_MON_MOVES - 1);
+            if (gBattleMons[battler].species == SPECIES_CASTORIA && chosenMoveIndex >= MAX_MON_MOVES)
+                move = CastoriaGetMoveAtSlot(battler, chosenMoveIndex);
+            else
+                move = moveInfo->moves[chosenMoveIndex];
         } while (move == MOVE_NONE);
 
         if (GetBattlerMoveTargetType(battler, move) & MOVE_TARGET_USER)

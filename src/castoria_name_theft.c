@@ -391,34 +391,33 @@ u8 CastoriaFindWorstMove(u32 castoriaBattler, u32 targetBattler)
 // Arcanum — extra magical move slots for Castoria
 // ---------------------------------------------------------------
 
+// Illusion, Evocation, Transformation themed starter set.
+static const u16 sArcanumPool[4] = {
+    MOVE_FIREBALL,      // Evocation
+    MOVE_MAGEARMOR,     // Abjuration
+    MOVE_MAGICMISSILE,  // Evocation
+    MOVE_POLYMORPH,     // Transformation
+};
+STATIC_ASSERT(ARRAY_COUNT(sArcanumPool) == CASTORIA_ARCANUM_COUNT, ArcanumPoolSize);
+
 void CastoriaInitArcanum(u32 battler)
 {
-    // Illusion, Evocation, Transformation themed starter set
-    static const u16 sArcanumPool[] = {
-        MOVE_MOONBLAST,       // Evocation
-        MOVE_LIGHT_SCREEN,    // Illusion
-        MOVE_DAZZLING_GLEAM,  // Evocation
-        MOVE_POLYMORPH,    // Transformation
-        MOVE_FIRE_BLAST,        // Evocation
-    };
-
     for (u8 i = 0; i < CASTORIA_ARCANUM_COUNT; i++)
         gBattleStruct->castoria.arcanumMoves[i] = sArcanumPool[i];
 }
 
+#if TESTING
+u16 Test_GetCastoriaArcanumMove(u32 slot)
+{
+    if (slot >= CASTORIA_ARCANUM_COUNT || slot >= ARRAY_COUNT(sArcanumPool))
+        return MOVE_NONE;
+    return sArcanumPool[slot];
+}
+#endif
+
 u16 CastoriaGetMoveAtSlot(u32 battler, u8 slot)
 {
-    if (slot < MAX_MON_MOVES)
-        return gBattleMons[battler].moves[slot];
-
-    if (gBattleMons[battler].species == SPECIES_CASTORIA)
-    {
-        u8 arcanumSlot = slot - MAX_MON_MOVES;
-        if (arcanumSlot < CASTORIA_ARCANUM_COUNT)
-            return gBattleStruct->castoria.arcanumMoves[arcanumSlot];
-    }
-
-    return MOVE_NONE;
+    return GetBattlerMoveAtSlot(battler, slot);
 }
 
 bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall)

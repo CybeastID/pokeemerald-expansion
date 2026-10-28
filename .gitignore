@@ -91,3 +91,4 @@ TEMPSCRIPTS/verify_mid.py
 graphics/special/CasterUI/Caster16.aseprite
 sound/voicegroups/vs_alice.inc.bak
 src/data/moves_info.h.bak
+TEMPSCRIPTS/*

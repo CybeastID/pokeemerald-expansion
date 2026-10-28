@@ -342,6 +342,17 @@ Used when the battler chooses Fight. Either the move ID (e.g. `MOVE_TACKLE` or m
 ```
 If the battler does not have an explicit Moves specified the moveset will be populated based on the `MOVE`s it uses.
 
+### Arcanum slots (scripted tests only)
+
+`MOVE(opponent, arcanumSlot: 0)` selects the first spell in an opponent
+Castoria's Arcanum pool (logical battle slot 4). The index is zero-based
+within the pool. It does not add the spell to her regular moveset or give
+it regular PP. Normal target, hit, and RNG options still apply.
+
+Do not combine `arcanumSlot` with a move ID, `moveSlot`, or a nonzero
+gimmick. Arcanum selection is not supported by AI expectation/score tests.
+The pool accessor used to prepare these actions exists only under `TESTING`.
+
 ### `FORCED_MOVE`
 `FORCED_MOVE(battler)`
 Used when the battler chooses Fight and then their move is chosen for them, e.g. when affected by Encore.

@@ -275,7 +275,7 @@ enum BugSpaceThresholdTier
     BUGSPACE_TIER_PASSIVE_OHKO,   // Floor reached - end-of-turn passive OHKO active
 };
 
-// Must match CASTORIA_ARCANUM_COUNT from castoria_name_theft.h
+
 #define CASTORIA_ARCANUM_COUNT 4
 
 struct CastoriaBattleData
@@ -1294,9 +1294,29 @@ static inline bool32 IsBattlerInvalidForSpreadMove(u32 battlerAtk, u32 battlerDe
         || (battlerDef == BATTLE_PARTNER(battlerAtk) && (moveTarget == MOVE_TARGET_BOTH));
 }
 
+// Only valid while resolving the active action; called moves may change gCurrMovePos.
+static inline bool32 IsArcanumAction(u32 battler)
+{
+    return !IsOnPlayerSide(battler)
+        && gBattleMons[battler].species == SPECIES_CASTORIA
+        && gChosenMovePos >= MAX_MON_MOVES
+        && gChosenMovePos < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT;
+}
+
+static inline u16 GetBattlerMoveAtSlot(u32 battler, u32 slot)
+{
+    if (slot < MAX_MON_MOVES)
+        return gBattleMons[battler].moves[slot];
+    if (!IsOnPlayerSide(battler)
+     && gBattleMons[battler].species == SPECIES_CASTORIA
+     && slot < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT)
+        return gBattleStruct->castoria.arcanumMoves[slot - MAX_MON_MOVES];
+    return MOVE_NONE;
+}
+
 static inline u32 GetChosenMoveFromPosition(u32 battler)
 {
-    return gBattleMons[battler].moves[gBattleStruct->chosenMovePositions[battler]];
+    return GetBattlerMoveAtSlot(battler, gBattleStruct->chosenMovePositions[battler]);
 }
 
 static inline void SetPassiveDamageAmount(u32 battler, s32 value)

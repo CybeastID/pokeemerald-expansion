@@ -26,6 +26,7 @@
 #include "battle_bg.h"
 #include "graphics.h"
 #include "servant_sigil.h"
+#include "test_runner.h"
 
 // =====================================================================
 // Graphics
@@ -841,13 +842,24 @@ void BS_ShowKazuraDialogueBox(void)
 
     if (gBattleStruct->bugSpace.kazuraDialogState == 0)
     {
+#if TESTING
+        if (gTestRunnerEnabled)
+        {
+            TestRunner_Battle_RecordMessage(gBattleStringsTable[cmd->stringId]);
+            if (gTestRunnerHeadless)
+            {
+                gBattlescriptCurrInstr = cmd->nextInstr;
+                return;
+            }
+        }
+#endif
         ShowKazuraDialogueBox(gBattleStringsTable[cmd->stringId]);
         gBattleStruct->bugSpace.kazuraDialogState = 1;
         return;
     }
     if (IsTextPrinterActive(sKazuraDialogWindowId))
         return;
-    if (!JOY_NEW(A_BUTTON))
+    if (!gTestRunnerEnabled && !JOY_NEW(A_BUTTON))
         return;
     HideKazuraDialogueBox();
     gBattleStruct->bugSpace.kazuraDialogState = 0;

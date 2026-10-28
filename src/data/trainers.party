@@ -17028,3 +17028,73 @@ Modest Nature
 - Bug Buzz
 - Quiver Dance  
 - Stomp
+
+/* Koanko's everyday team. Beauty is temporary artwork. */
+=== TRAINER_KOANKO ===
+Name: Koanko
+Class: Koanko
+Pic: Beauty
+Gender: Female
+Music: Elite Four
+Double Battle: No
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
+
+Whimsicott
+Level: 100
+
+Alcremie
+Level: 100
+Gigantamax: Yes
+
+Glaceon
+Level: 100
+
+Vanilluxe
+Level: 100
+
+Audino @ Heavy-Duty Boots
+Level: 100
+Ability: Regenerator
+Nature: Impish
+EVs: 252 HP / 252 Def / 4 SpD
+- Knock Off
+- Encore
+- Thunder Wave
+- Wish
+
+Blissey @ Heavy-Duty Boots
+Level: 100
+Ability: Natural Cure
+- Soft-Boiled
+- Seismic Toss
+- Toxic
+- Stealth Rock
+
+/* Conjured team. Special boss mechanics will be added separately. */
+=== TRAINER_KOANKO2 ===
+Name: Koanko
+Class: Koanko
+Pic: Beauty
+Gender: Female
+Music: Elite Four
+Double Battle: No
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
+
+Smeargle
+Level: 100
+
+Jirachi
+Level: 101
+
+SPECIES_CALYREX_ICE
+Level: 102
+
+Eternatus
+Level: 103
+
+SPECIES_DIALGA_ORIGIN
+Level: 104
+
+Arceus
+Level: 105
+

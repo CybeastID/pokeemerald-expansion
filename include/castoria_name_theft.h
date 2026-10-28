@@ -62,6 +62,10 @@ void BS_JumpCastoriaNameResult(void);
 // Populates CastoriaBattleData.arcanumMoves[] with the default spell pool.
 void CastoriaInitArcanum(u32 battler);
 
+#if TESTING
+u16 Test_GetCastoriaArcanumMove(u32 slot);
+#endif
+
 // Returns the move ID for any logical slot (0-3 normal, 4-7 arcanum).
 // Returns MOVE_NONE for invalid slots or non-Castoria battlers.
 u16 CastoriaGetMoveAtSlot(u32 battler, u8 slot);

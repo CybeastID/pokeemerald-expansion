@@ -497,6 +497,13 @@ void HandleAction_UseMove(void)
         gDisableStructs[gBattlerAttacker].encoreTimer = 0;
         gBattleStruct->moveTarget[gBattlerAttacker] = GetBattleMoveTarget(gCurrentMove, NO_TARGET_OVERRIDE);
     }
+
+    // Castoria Arcanum: slots 4+ are virtual and never exist in moves[]
+    else if (gCurrMovePos >= MAX_MON_MOVES)
+    {
+        gCurrentMove = gChosenMove = gChosenMoveByBattler[gBattlerAttacker];
+    }
+
     else if (gBattleMons[gBattlerAttacker].moves[gCurrMovePos] != gChosenMoveByBattler[gBattlerAttacker])
     {
         gCurrentMove = gChosenMove = gBattleMons[gBattlerAttacker].moves[gCurrMovePos];
@@ -1470,10 +1477,23 @@ u32 TrySetCantSelectMoveBattleScript(u32 battler)
 {
     u32 limitations = 0;
     u8 moveId = gBattleResources->bufferB[battler][2] & ~RET_GIMMICK;
-    u32 move = gBattleMons[battler].moves[moveId];
+    u32 move = GetBattlerMoveAtSlot(battler, moveId);
     enum HoldEffect holdEffect = GetBattlerHoldEffect(battler);
     u16 *choicedMove = &gBattleStruct->choicedMove[battler];
-    enum BattleMoveEffects moveEffect = GetMoveEffect(move);
+    enum BattleMoveEffects moveEffect;
+
+    if (move == MOVE_NONE)
+    {
+        if (gBattleTypeFlags & BATTLE_TYPE_PALACE)
+        {
+            gPalaceSelectionBattleScripts[battler] = BattleScript_SelectingNotAllowedPlaceholderInPalace;
+            gProtectStructs[battler].palaceUnableToUseMove = TRUE;
+            return 0;
+        }
+        gSelectionBattleScripts[battler] = BattleScript_SelectingNotAllowedPlaceholder;
+        return 1;
+    }
+    moveEffect = GetMoveEffect(move);
 
     if (GetConfig(CONFIG_ENCORE_TARGET) >= GEN_5
      && DYNAMAX_BYPASS_CHECK && GetActiveGimmick(battler) != GIMMICK_Z_MOVE && gDisableStructs[battler].encoredMove != move && gDisableStructs[battler].encoredMove != MOVE_NONE)
@@ -1699,7 +1719,7 @@ u32 TrySetCantSelectMoveBattleScript(u32 battler)
         }
     }
 
-    if (gBattleMons[battler].pp[moveId] == 0)
+    if (moveId < MAX_MON_MOVES && gBattleMons[battler].pp[moveId] == 0)
     {
         if (gBattleTypeFlags & BATTLE_TYPE_PALACE)
         {
@@ -2220,7 +2240,8 @@ static enum MoveCanceler CancelerObedience(struct BattleContext *ctx)
 
 static enum MoveCanceler CancelerPowerPoints(struct BattleContext *ctx)
 {
-    if (gBattleMons[ctx->battlerAtk].pp[gCurrMovePos] == 0
+    if (gCurrMovePos < MAX_MON_MOVES
+     && gBattleMons[ctx->battlerAtk].pp[gCurrMovePos] == 0
      && ctx->currentMove != MOVE_STRUGGLE
      && !gSpecialStatuses[ctx->battlerAtk].dancerUsedMove
      && !gBattleMons[ctx->battlerAtk].volatiles.multipleTurns)
@@ -2587,7 +2608,8 @@ static enum MoveCanceler CancelerStanceChangeTwo(struct BattleContext *ctx)
 static enum MoveCanceler CancelerAttackstring(struct BattleContext *ctx)
 {
     BattleScriptCall(BattleScript_Attackstring);
-    if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove)
+    if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove
+     && !IsArcanumAction(gBattlerAttacker))
         gLastPrintedMoves[gBattlerAttacker] = gChosenMove;
     return MOVE_STEP_BREAK;
 }
@@ -2624,25 +2646,30 @@ static enum MoveCanceler CancelerPPDeduction(struct BattleContext *ctx)
     }
 
     // For item Metronome, echoed voice
-    if (ctx->currentMove != gLastResultingMoves[ctx->battlerAtk] || WasUnableToUseMove(ctx->battlerAtk))
+    if (!IsArcanumAction(ctx->battlerAtk)
+     && (ctx->currentMove != gLastResultingMoves[ctx->battlerAtk] || WasUnableToUseMove(ctx->battlerAtk)))
         gBattleStruct->metronomeItemCounter[ctx->battlerAtk] = 0;
 
-    if (gBattleMons[ctx->battlerAtk].pp[movePosition] > ppToDeduct)
-        gBattleMons[ctx->battlerAtk].pp[movePosition] -= ppToDeduct;
-    else
-        gBattleMons[ctx->battlerAtk].pp[movePosition] = 0;
-
-    if (MOVE_IS_PERMANENT(ctx->battlerAtk, movePosition))
+    if (movePosition < MAX_MON_MOVES)   // Arcanum slots (4+) cost MP, not PP
     {
-        BtlController_EmitSetMonData(
-            ctx->battlerAtk,
-            B_COMM_TO_CONTROLLER,
-            REQUEST_PPMOVE1_BATTLE + movePosition,
-            0,
-            sizeof(gBattleMons[ctx->battlerAtk].pp[movePosition]),
-            &gBattleMons[ctx->battlerAtk].pp[movePosition]);
-        MarkBattlerForControllerExec(ctx->battlerAtk);
+        if (gBattleMons[ctx->battlerAtk].pp[movePosition] > ppToDeduct)
+            gBattleMons[ctx->battlerAtk].pp[movePosition] -= ppToDeduct;
+        else
+            gBattleMons[ctx->battlerAtk].pp[movePosition] = 0;
+
+        if (MOVE_IS_PERMANENT(ctx->battlerAtk, movePosition))
+        {
+            BtlController_EmitSetMonData(
+                ctx->battlerAtk,
+                B_COMM_TO_CONTROLLER,
+                REQUEST_PPMOVE1_BATTLE + movePosition,
+                0,
+                sizeof(gBattleMons[ctx->battlerAtk].pp[movePosition]),
+                &gBattleMons[ctx->battlerAtk].pp[movePosition]);
+            MarkBattlerForControllerExec(ctx->battlerAtk);
+        }
     }
+    // else: charge the Arcanum MP cost here once the MP pool exists
 
     if (gBattleStruct->submoveAnnouncement != SUBMOVE_NO_EFFECT)
     {
@@ -3520,7 +3547,7 @@ bool32 CanAbilityBlockMove(u32 battlerAtk, u32 battlerDef, enum Ability abilityA
             battleScriptBlocksMove = BattleScript_SoundproofProtected;
         break;
     case ABILITY_GOOD_AS_GOLD:
-        if (IsBattleMoveStatus(move))
+        if (IsBattleMoveStatus(move) && move != MOVE_POLYMORPH)
         {
             if (!(GetBattlerMoveTargetType(battlerAtk, move) & (MOVE_TARGET_OPPONENTS_FIELD | MOVE_TARGET_ALL_BATTLERS)))
                 battleScriptBlocksMove = BattleScript_GoodAsGoldActivates;
@@ -3990,6 +4017,11 @@ bool32 TryFieldEffects(enum FieldEffectCases caseId)
 u32 GetKazuraLegendTier(u32 battler)   // battler must be on the player's side
 {
     u16 species = GetMonData(&gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);
+
+    // Mega Evolution does not promote a sub-legendary into the stronger tier.
+    // Preserve other forms (e.g. fused Calyrex) when determining the tier.
+    if (gSpeciesInfo[species].isMegaEvolution)
+        species = GET_BASE_SPECIES_ID(species);
 
     if (!(gSpeciesInfo[species].isLegendary
        || gSpeciesInfo[species].isMythical
@@ -4710,6 +4742,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     gBattleStruct->bugSpace.bpDecayRate = 10;
                     gBattleStruct->bugSpace.bpDecayRatePhase2 = 15;
                     CreateBugSpacePanel(battler);
+                    gEffectBattler = gBattlerAbility = battler;
                     BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);
                     effect++;
                 }

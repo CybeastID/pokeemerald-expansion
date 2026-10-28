@@ -2,6 +2,7 @@
 #include "main.h"
 #include "malloc.h"
 #include "battle.h"
+#include "castoria_name_theft.h"
 #include "battle_anim.h"
 #include "battle_ai_util.h"
 #include "battle_ai_main.h"
@@ -416,7 +417,7 @@ u32 BattleAI_ChooseMoveIndex(u32 battler)
     chosenMoveIndex = ChooseMoveOrAction(battler);
 
     if (gBattleStruct->gimmick.usableGimmick[battler] != GIMMICK_NONE)
-        ReconsiderGimmick(battler, gBattlerTarget, gBattleMons[battler].moves[chosenMoveIndex]);
+        ReconsiderGimmick(battler, gBattlerTarget, GetBattlerMoveAtSlot(battler, chosenMoveIndex));
 
     // Clear protect structures, some flags may be set during AI calcs
     // e.g. pranksterElevated from GetBattleMovePriority
@@ -681,7 +682,7 @@ void SetAiLogicDataForTurn(struct AiLogicData *aiData)
         // This can potentially be cleaned up more
         BattleAI_SetupAIData(0xF, battlerAtk);
         u32 chosenMoveIndex = ChooseMoveOrAction(battlerAtk);
-        gAiLogicData->predictedMove[battlerAtk] = gBattleMons[battlerAtk].moves[chosenMoveIndex];
+        gAiLogicData->predictedMove[battlerAtk] = GetBattlerMoveAtSlot(battlerAtk, chosenMoveIndex);
         aiData->predictingMove = RandomPercentage(RNG_AI_PREDICT_MOVE, PREDICT_MOVE_CHANCE);
     }
 
@@ -793,6 +794,52 @@ static u32 ChooseMoveOrAction_Singles(u32 battler)
             }
         }
     }
+     // Castoria Arcanum: evaluate extra spell slots (4-7) as potential move choices
+    if (!IsOnPlayerSide(battler) && gBattleMons[battler].species == SPECIES_CASTORIA)
+    {
+        s32 bestNormalScore = gAiThinkingStruct->score[consideredMoveArray[0]];
+        u8 bestArcanumSlot = 0xFF;
+        s32 bestArcanumScore = 0;
+
+        for (i = MAX_MON_MOVES; i < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT; i++)
+        {
+            u16 move = CastoriaGetMoveAtSlot(battler, i);
+            if (move == MOVE_NONE)
+                continue;
+
+            // Simple arcanum scoring: type effectiveness vs target
+            s32 score = 0;
+            enum Type moveType = GetMoveType(move);
+            enum Type targetType1 = gBattleMons[opposingBattler].types[0];
+            enum Type targetType2 = gBattleMons[opposingBattler].types[1];
+
+            u32 eff1 = GetTypeModifier(moveType, targetType1);
+            u32 eff2 = (targetType2 != targetType1) ? GetTypeModifier(moveType, targetType2) : 0;
+            u32 totalEff = (eff1 * eff2) >> 12;
+
+            if (totalEff > 256)     // super effective
+                score = 100;
+            else if (totalEff == 256)  // neutral
+                score = 50;
+            else if (totalEff < 256)   // not very effective
+                score = 10;
+            else                      // immune
+                score = 0;
+
+            if (score > bestArcanumScore)
+            {
+                bestArcanumScore = score;
+                bestArcanumSlot = i;
+            }
+        }
+
+        // If an arcanum move beats the best normal move, use it instead
+        if (bestArcanumSlot != 0xFF && bestArcanumScore > bestNormalScore)
+        {
+            return bestArcanumSlot;
+        }
+    }
+
     return consideredMoveArray[Random() % numOfBestMoves];
 }
 

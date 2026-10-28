@@ -69,29 +69,58 @@ bool32 AI_IsBattlerGrounded(u32 battler)
     return IsBattlerGrounded(battler, gAiLogicData->abilities[battler], gAiLogicData->holdEffects[battler]);
 }
 
-u32 AI_GetDamage(u32 battlerAtk, u32 battlerDef, u32 moveIndex, enum DamageCalcContext calcContext, struct AiLogicData *aiData)
+static struct SimulatedDamage AI_GetSlotDamage(u32 battlerAtk, u32 battlerDef, u32 moveIndex, struct AiLogicData *aiData)
+{
+    struct SimulatedDamage damage = {0};
+    u32 move = GetBattlerMoveAtSlot(battlerAtk, moveIndex);
+    if (move == MOVE_NONE)
+        return damage;
+    if (moveIndex < MAX_MON_MOVES)
+        return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex];
+    uq4_12_t effectiveness;
+    return AI_CalcDamageSaveBattlers(move, battlerAtk, battlerDef, &effectiveness, USE_GIMMICK, NO_GIMMICK);
+}
+
+static u32 AI_SelectDamageRoll(u32 battlerAtk, u32 battlerDef, enum DamageCalcContext calcContext, struct SimulatedDamage damage)
 {
     if (calcContext == AI_ATTACKING && BattlerHasAi(battlerAtk))
     {
 
         if ((gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_RISKY) && !(gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_CONSERVATIVE)) // Risky assumes it deals max damage
-            return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].maximum;
+            return damage.maximum;
         if ((gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_CONSERVATIVE) && !(gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_RISKY)) // Conservative assumes it deals min damage
-            return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].minimum;
-        return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].median; // Default assumes it deals median damage
+            return damage.minimum;
+        return damage.median; // Default assumes it deals median damage
     }
     else if (calcContext == AI_DEFENDING && BattlerHasAi(battlerDef))
     {
         if ((gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_RISKY) && !(gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_CONSERVATIVE)) // Risky assumes it takes min damage
-            return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].minimum;
+            return damage.minimum;
         if ((gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_CONSERVATIVE) && !(gAiThinkingStruct->aiFlags[battlerAtk] & AI_FLAG_RISKY)) // Conservative assumes it takes max damage
-            return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].maximum;
-        return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].median; // Default assumes it takes median damage
+            return damage.maximum;
+        return damage.median; // Default assumes it takes median damage
     }
     else
     {
-        return aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex].median;
+        return damage.median;
     }
+}
+
+u32 AI_GetDamage(u32 battlerAtk, u32 battlerDef, u32 moveIndex, enum DamageCalcContext calcContext, struct AiLogicData *aiData)
+{
+    return AI_SelectDamageRoll(battlerAtk, battlerDef, calcContext, AI_GetSlotDamage(battlerAtk, battlerDef, moveIndex, aiData));
+}
+
+u32 AI_GetDamageForMove(u32 battlerAtk, u32 battlerDef, u32 move, enum DamageCalcContext calcContext, struct AiLogicData *aiData)
+{
+    if (move == MOVE_NONE || move >= MOVES_COUNT)
+        return 0;
+    u32 slot = GetMoveSlot(GetMovesArray(battlerAtk), move);
+    if (slot < MAX_MON_MOVES)
+        return AI_GetDamage(battlerAtk, battlerDef, slot, calcContext, aiData);
+    uq4_12_t effectiveness;
+    struct SimulatedDamage damage = AI_CalcDamageSaveBattlers(move, battlerAtk, battlerDef, &effectiveness, USE_GIMMICK, NO_GIMMICK);
+    return AI_SelectDamageRoll(battlerAtk, battlerDef, calcContext, damage);
 }
 
 bool32 AI_IsFaster(u32 battlerAi, u32 battlerDef, u32 aiMove, u32 playerMove, enum ConsiderPriority considerPriority)
@@ -116,7 +145,7 @@ bool32 AI_IsPartyMonSlower(u32 battlerAi, u32 battlerDef, struct BattlePokemon s
 
 u32 GetAIChosenMove(u32 battlerId)
 {
-    return (gBattleMons[battlerId].moves[gAiBattleData->chosenMoveIndex[battlerId]]);
+    return GetBattlerMoveAtSlot(battlerId, gAiBattleData->chosenMoveIndex[battlerId]);
 }
 
 bool32 AI_RandLessThan(u32 val)
@@ -2356,14 +2385,13 @@ u32 CountNegativeStatStages(u32 battlerId)
 bool32 CanIndexMoveFaintTarget(u32 battlerAtk, u32 battlerDef, u32 moveIndex, enum DamageCalcContext calcContext)
 {
     s32 dmg;
-    u16 *moves = gBattleMons[battlerAtk].moves;
 
     if (IsDoubleBattle() && battlerDef == BATTLE_PARTNER(battlerAtk))
-        dmg = gAiLogicData->simulatedDmg[battlerAtk][battlerDef][moveIndex].maximum; // Attacking partner, be careful
+        dmg = AI_GetSlotDamage(battlerAtk, battlerDef, moveIndex, gAiLogicData).maximum; // Attacking partner, be careful
     else
         dmg = AI_GetDamage(battlerAtk, battlerDef, moveIndex, calcContext, gAiLogicData);
 
-    if (gBattleMons[battlerDef].hp <= dmg && !CanEndureHit(battlerAtk, battlerDef, moves[moveIndex]))
+    if (gBattleMons[battlerDef].hp <= dmg && !CanEndureHit(battlerAtk, battlerDef, GetBattlerMoveAtSlot(battlerAtk, moveIndex)))
         return TRUE;
     return FALSE;
 }
@@ -2371,10 +2399,9 @@ bool32 CanIndexMoveFaintTarget(u32 battlerAtk, u32 battlerDef, u32 moveIndex, en
 bool32 CanIndexMoveBringToThreshold(u32 battlerAtk, u32 battlerDef, u32 moveIndex, enum DamageCalcContext calcContext, u32 thresholdPercent)
 {
     s32 dmg;
-    u16 *moves = gBattleMons[battlerAtk].moves;
 
     if (IsDoubleBattle() && battlerDef == BATTLE_PARTNER(battlerAtk))
-        dmg = gAiLogicData->simulatedDmg[battlerAtk][battlerDef][moveIndex].maximum;
+        dmg = AI_GetSlotDamage(battlerAtk, battlerDef, moveIndex, gAiLogicData).maximum;
     else
         dmg = AI_GetDamage(battlerAtk, battlerDef, moveIndex, calcContext, gAiLogicData);
 

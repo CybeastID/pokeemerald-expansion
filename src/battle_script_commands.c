@@ -6577,11 +6577,14 @@ static void Cmd_moveend(void)
                 u32 moveIndex = gBattleStruct->chosenMovePositions[gBattlerAttacker];
 
                 gBattleStruct->tryGrudge = FALSE;
-                gBattleMons[gBattlerAttacker].pp[moveIndex] = 0;
-                BattleScriptCall(BattleScript_GrudgeTakesPp);
-                BtlController_EmitSetMonData(gBattlerAttacker, B_COMM_TO_CONTROLLER, moveIndex + REQUEST_PPMOVE1_BATTLE, 0, sizeof(gBattleMons[gBattlerAttacker].pp[moveIndex]), &gBattleMons[gBattlerAttacker].pp[moveIndex]);
-                MarkBattlerForControllerExec(gBattlerAttacker);
-                PREPARE_MOVE_BUFFER(gBattleTextBuff1, gBattleMons[gBattlerAttacker].moves[moveIndex])
+                if (moveIndex < MAX_MON_MOVES)
+                {
+                    gBattleMons[gBattlerAttacker].pp[moveIndex] = 0;
+                    BattleScriptCall(BattleScript_GrudgeTakesPp);
+                    BtlController_EmitSetMonData(gBattlerAttacker, B_COMM_TO_CONTROLLER, moveIndex + REQUEST_PPMOVE1_BATTLE, 0, sizeof(gBattleMons[gBattlerAttacker].pp[moveIndex]), &gBattleMons[gBattlerAttacker].pp[moveIndex]);
+                    MarkBattlerForControllerExec(gBattlerAttacker);
+                    PREPARE_MOVE_BUFFER(gBattleTextBuff1, gBattleMons[gBattlerAttacker].moves[moveIndex])
+                }
             }
             gBattleScripting.moveendState++;
             break;
@@ -6832,7 +6835,8 @@ static void Cmd_moveend(void)
                 SWAP(gBattlerAttacker, gBattlerTarget, temp);
             }
 
-            if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove)
+            if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove
+             && !IsArcanumAction(gBattlerAttacker))
             {
                 gDisableStructs[gBattlerAttacker].usedMoves |= 1u << gCurrMovePos;
                 gBattleStruct->lastMoveTarget[gBattlerAttacker] = gBattlerTarget;
@@ -6847,13 +6851,16 @@ static void Cmd_moveend(void)
                 {
                     if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove)
                     {
-                        gLastMoves[gBattlerAttacker] = gChosenMove;
                         RecordKnownMove(gBattlerAttacker, gChosenMove);
-                        gLastResultingMoves[gBattlerAttacker] = gCurrentMove;
-                        gLastUsedMoveType[gBattlerAttacker] = GetBattleMoveType(gCurrentMove);
+                        if (!IsArcanumAction(gBattlerAttacker))
+                        {
+                            gLastMoves[gBattlerAttacker] = gChosenMove;
+                            gLastResultingMoves[gBattlerAttacker] = gCurrentMove;
+                            gLastUsedMoveType[gBattlerAttacker] = GetBattleMoveType(gCurrentMove);
+                        }
                     }
                 }
-                else
+                else if (!IsArcanumAction(gBattlerAttacker))
                 {
                     gLastMoves[gBattlerAttacker] = MOVE_UNAVAILABLE;
                     gLastResultingMoves[gBattlerAttacker] = MOVE_UNAVAILABLE;
@@ -6873,7 +6880,8 @@ static void Cmd_moveend(void)
                     {
                         gLastLandedMoves[gBattlerTarget] = gCurrentMove;
                         gLastHitByType[gBattlerTarget] = GetBattleMoveType(gCurrentMove);
-                        if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove)
+                        if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove
+                         && !IsArcanumAction(gBattlerAttacker))
                         {
                             gLastUsedMove = gCurrentMove;
                             if (IsMaxMove(gCurrentMove))
@@ -6889,7 +6897,8 @@ static void Cmd_moveend(void)
             gBattleScripting.moveendState++;
             break;
         case MOVEEND_MIRROR_MOVE: // mirror move
-            if (!(gAbsentBattlerFlags & (1u << gBattlerAttacker))
+            if (!IsArcanumAction(gBattlerAttacker)
+                && !(gAbsentBattlerFlags & (1u << gBattlerAttacker))
                 && !IsMoveMirrorMoveBanned(originallyUsedMove)
                 && gHitMarker & HITMARKER_OBEYS
                 && gBattlerAttacker != gBattlerTarget
@@ -7471,10 +7480,13 @@ static void Cmd_moveend(void)
             gBattleScripting.moveendState++;
             break;
         case MOVEEND_SAME_MOVE_TURNS:
-            if (gCurrentMove != gLastResultingMoves[gBattlerAttacker] || (gHitMarker & HITMARKER_UNABLE_TO_USE_MOVE) || !IsAnyTargetAffected())
-                gBattleStruct->metronomeItemCounter[gBattlerAttacker] = 0;
-            else if (gCurrentMove == gLastResultingMoves[gBattlerAttacker] && gSpecialStatuses[gBattlerAttacker].parentalBondState != PARENTAL_BOND_1ST_HIT)
-                gBattleStruct->metronomeItemCounter[gBattlerAttacker]++;
+            if (!IsArcanumAction(gBattlerAttacker))
+            {
+                if (gCurrentMove != gLastResultingMoves[gBattlerAttacker] || (gHitMarker & HITMARKER_UNABLE_TO_USE_MOVE) || !IsAnyTargetAffected())
+                    gBattleStruct->metronomeItemCounter[gBattlerAttacker] = 0;
+                else if (gCurrentMove == gLastResultingMoves[gBattlerAttacker] && gSpecialStatuses[gBattlerAttacker].parentalBondState != PARENTAL_BOND_1ST_HIT)
+                    gBattleStruct->metronomeItemCounter[gBattlerAttacker]++;
+            }
             gBattleScripting.moveendState++;
             break;
         case MOVEEND_CLEAR_BITS: // Clear/Set bits for things like using a move for all targets and all hits.
@@ -11750,7 +11762,8 @@ static void Cmd_mimicattackcopy(void)
 {
     CMD_ARGS(const u8 *failInstr);
 
-    if (gLastMoves[gBattlerTarget] == MOVE_UNAVAILABLE
+    if (gCurrMovePos >= MAX_MON_MOVES
+     || gLastMoves[gBattlerTarget] == MOVE_UNAVAILABLE
      || gLastMoves[gBattlerTarget] == MOVE_NONE
      || gBattleMons[gBattlerAttacker].volatiles.transformed
      || IsMoveMimicBanned(gLastMoves[gBattlerTarget]))
@@ -12060,7 +12073,8 @@ static void Cmd_copymovepermanently(void)
 
     gChosenMove = MOVE_UNAVAILABLE;
 
-    if (!(gBattleMons[gBattlerAttacker].volatiles.transformed)
+    if (gCurrMovePos < MAX_MON_MOVES
+        && !(gBattleMons[gBattlerAttacker].volatiles.transformed)
         && gLastPrintedMoves[gBattlerTarget] != MOVE_UNAVAILABLE
         && !IsMoveSketchBanned(gLastPrintedMoves[gBattlerTarget]))
     {
@@ -18035,24 +18049,21 @@ void BS_TryInstruct(void)
     }
     else
     {
-        gSpecialStatuses[gBattlerTarget].instructedChosenTarget = gBattleStruct->moveTarget[gBattlerTarget] | 0x4;
-        gCalledMove = move;
         u32 moveIndex;
         for (moveIndex = 0; moveIndex < MAX_MON_MOVES; moveIndex++)
         {
-            if (gBattleMons[gBattlerTarget].moves[moveIndex] == gCalledMove)
-            {
-                gCurrMovePos = moveIndex;
-                moveIndex = MAX_MON_MOVES;
+            if (gBattleMons[gBattlerTarget].moves[moveIndex] == move)
                 break;
-            }
         }
-        if (moveIndex != MAX_MON_MOVES || gBattleMons[gBattlerTarget].pp[gCurrMovePos] == 0)
+        if (moveIndex == MAX_MON_MOVES || gBattleMons[gBattlerTarget].pp[moveIndex] == 0)
         {
             gBattlescriptCurrInstr = cmd->failInstr;
         }
         else
         {
+            gCurrMovePos = moveIndex;
+            gCalledMove = move;
+            gSpecialStatuses[gBattlerTarget].instructedChosenTarget = gBattleStruct->moveTarget[gBattlerTarget] | 0x4;
             gBattleScripting.battler = gBattlerAttacker; // for message
             gEffectBattler = gBattleStruct->lastMoveTarget[gBattlerTarget];
             gBattlescriptCurrInstr = cmd->nextInstr;

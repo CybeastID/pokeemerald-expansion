@@ -21478,6 +21478,72 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .battleAnimScript = gBattleAnimMove_Polymorph,
         .validApprenticeMove = TRUE,
     },
+
+        [MOVE_FIREBALL] =
+    {
+        .name = COMPOUND_STRING("Fireball"),
+        .description = COMPOUND_STRING(
+            "A fiery explosion that\n"
+            "incinerates everything it strikes."),
+        .effect = EFFECT_HIT,
+        .power = 110,
+        .type = TYPE_FIRE,
+        .accuracy = 85,
+        .pp = 5,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_SPECIAL,
+        .zMove = { .effect = Z_EFFECT_NONE },
+        .mirrorMoveBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .assistBanned = TRUE,
+        .battleAnimScript = gBattleAnimMove_FireBlast,
+    },
+
+    [MOVE_MAGEARMOR] =
+    {
+        .name = COMPOUND_STRING("Mage Armor"),
+        .description = COMPOUND_STRING(
+            "A shimmering magical\n"
+            "barrier that protects the user."),
+        .effect = EFFECT_LIGHT_SCREEN,
+        .power = 0,
+        .type = TYPE_PSYCHIC,
+        .accuracy = 0,
+        .pp = 5,
+        .target = MOVE_TARGET_USER,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_STATUS,
+        .zMove = { .effect = Z_EFFECT_NONE },
+        .mirrorMoveBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .assistBanned = TRUE,
+        .battleAnimScript = gBattleAnimMove_LightScreen,
+    },
+
+    [MOVE_MAGICMISSILE] =
+    {
+        .name = COMPOUND_STRING("Magic Missile"),
+        .description = COMPOUND_STRING(
+            "A never-missing bolt of\n"
+            "magical energy."),
+        .effect = EFFECT_HIT,
+        .power = 60,
+        .type = TYPE_NORMAL,
+        .accuracy = 0,
+        .pp = 5,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_SPECIAL,
+        .zMove = { .effect = Z_EFFECT_NONE },
+        .mirrorMoveBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .assistBanned = TRUE,
+        .battleAnimScript = gBattleAnimMove_Swift,
+    },
     
 
     // Z-Moves
