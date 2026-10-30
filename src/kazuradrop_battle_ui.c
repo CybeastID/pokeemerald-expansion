@@ -14,6 +14,7 @@
 #include "battle_controllers.h"
 #include "battle_message.h"
 #include "kazuradrop_battle_ui.h"
+#include "castoria_battle_ui.h"
 #include "sprite.h"
 #include "palette.h"
 #include "string_util.h"
@@ -634,6 +635,7 @@ void DestroyBugSpacePanel(u32 battler)
 
 void ReshowKazuradropBattleUI(void)
 {
+    ReshowMageArmorIcons();
     // During ReshowBattleScreenAfterMenu / ReshowBlankBattleScreenAfterMenu,
     // battle code clears sprite data + VRAM (and effectively frees palettes/tiles).
     // Our cached "loaded" flags can be stale, so force reload paths.

@@ -283,8 +283,12 @@ struct CastoriaBattleData
     u8 nameResult;
     u8 useCommand;
     u16 timer;
-    // Arcanum: extra magical move slots (battle-only, no PP, unlimited use)
+    // Arcanum: extra magical move slots (battle-only, no regular PP).
     u16 arcanumMoves[CASTORIA_ARCANUM_COUNT];
+    u8 mageArmorPartyMask; // Enemy party members protected for this battle.
+    u8 wishCandidate; // Scratch outcome while Special AI evaluates Wish.
+    u8 wishOutcome; // Outcome committed to the chosen Wish action.
+    bool8 wishUsed; // Shared by all of Castoria's Wish outcomes, for this battle.
 };
 
 struct BugSpaceData
@@ -1301,6 +1305,18 @@ static inline bool32 IsArcanumAction(u32 battler)
         && gBattleMons[battler].species == SPECIES_CASTORIA
         && gChosenMovePos >= MAX_MON_MOVES
         && gChosenMovePos < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT;
+}
+
+static inline u32 GetBattlerMoveSlotCount(u32 battler)
+{
+    if (gBattleStruct->castoria.arcanumMoves[0] == MOVE_NONE)
+        return MAX_MON_MOVES;
+
+    if (!IsOnPlayerSide(battler)
+     && gBattleMons[battler].species == SPECIES_CASTORIA)
+        return MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT;
+
+    return MAX_MON_MOVES;
 }
 
 static inline u16 GetBattlerMoveAtSlot(u32 battler, u32 slot)

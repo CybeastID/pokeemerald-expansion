@@ -201,3 +201,43 @@ AI will predict what move the player is going to use based on what move it would
 
 ## `AI_FLAG_PP_STALL_PREVENTION`
 This flag aims to prevent the player from PP stalling the AI by switching between immunities. The AI mon's move scores will slowly decay for absorbed moves over time, eventually making its moves unpredictable. More detailed control for this behaviour can be customized in the `ai.h` config file.
+
+## `AI_FLAG_DYNAMIC_FUNC` and Arcanum
+
+`setdynamicaifunc AI_RazeluxeTrainer` registers Razeluxe's fight-specific callback.
+Registration enables `AI_FLAG_DYNAMIC_FUNC` during AI flag setup. A flag without
+a registered callback does not enable spell scoring.
+
+In singles, ordinary moves reach the callback through the existing scoring pass.
+Usable Arcanum slots are evaluated afterward through the same callback, starting
+at `AI_SCORE_DEFAULT` (100). A positive spell score must strictly exceed the best
+ordinary score to win; ordinary moves win ties. Zero or negative spell scores
+decline that candidate. Four-slot score and simulation arrays remain unchanged.
+
+Inside the callback, `BattleAI_IsScoringArcanum()` distinguishes a spell candidate
+from an ordinary move, including when both have the same move ID. Use the supplied
+`move` argument and safe damage helpers for spell rules. `movesetIndex` is not the
+spell slot, and ordinary cached effectiveness/accuracy entries do not describe it.
+Use plain score arithmetic in the spell branch; ordinary `ADJUST_SCORE` test logs
+are indexed by `movesetIndex`. The context is restored after each callback.
+
+Castoria's spell branch is at the start of `AI_RazeluxeTrainer`, before its
+ordinary-slot helpers. While Castoria is affected by Perish Song, Revivify receives
+`INT32_MAX` priority if she has an eligible fainted party member. Revivify receives
+zero when nobody can be revived, and otherwise retains its baseline when Castoria
+is not affected by Perish Song. If the active opponent has Perish Song in its actual
+moveset, Polymorph receives `INT32_MAX - 1` priority, including before Perish Song is
+revealed. This makes an eligible Revivify outrank Polymorph independently of pool
+order. Existing slot restrictions still filter spells before scoring.
+Wish replaces Magic Missile in the pool and uses the separate `MOVE_ARCANUM_WISH`
+ID; ordinary Pokemon Wish is unchanged. Only Domination is implemented: it requires
+the true-name route, zero Command Seals, and an unused Wish. It retains the supplied
+baseline score; further tactical priorities remain to be designed. Special AI stores
+a candidate outcome while scoring and commits it only if Wish wins selection.
+Execution rechecks the committed outcome after the ordinary attack canceler. A
+successful Domination restores three seals and consumes Castoria's once-per-battle
+Wish. Interrupted or failed actions do not consume it. Switching and slot changes
+do not reset the battle-wide use flag. Other named outcomes are reserved but remain
+unavailable until implemented. Wish cannot be copied or called by other moves.
+Other spells currently retain the supplied baseline. MP costs are not implemented.
+Alice's callback declines spell candidates and retains its regular-move rules.

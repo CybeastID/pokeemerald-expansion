@@ -6,6 +6,7 @@
 #include "battle_anim.h"
 #include "battle_ai_util.h"
 #include "battle_ai_main.h"
+#include "battle_script_commands.h"
 #include "battle_controllers.h"
 #include "battle_factory.h"
 #include "battle_setup.h"
@@ -44,6 +45,7 @@ static void AI_CompareDamagingMoves(u32 battlerAtk, u32 battlerDef);
 // ewram
 EWRAM_DATA const u8 *gAIScriptPtr = NULL;   // Still used in contests
 EWRAM_DATA AiScoreFunc sDynamicAiFunc = NULL;
+static EWRAM_DATA bool8 sDynamicAiScoringArcanum = FALSE;
 
 // const rom data
 static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
@@ -61,6 +63,7 @@ static s32 AI_FirstBattle(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
 static s32 AI_DoubleBattle(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
 static s32 AI_PowerfulStatus(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
 static s32 AI_DynamicFunc(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
+static s32 RunDynamicAiFunc(u32 battlerAtk, u32 battlerDef, u32 move, s32 score, bool32 isArcanum);
 static s32 AI_PredictSwitch(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
 static s32 AI_CheckPpStall(u32 battlerAtk, u32 battlerDef, u32 move, s32 score);
 
@@ -747,6 +750,12 @@ static u32 ChooseMoveOrAction_Singles(u32 battler)
     u64 flags = gAiThinkingStruct->aiFlags[battler];
     u32 opposingBattler = GetOppositeBattler(battler);
 
+    if (GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
+    {
+        gBattleStruct->castoria.wishCandidate = CASTORIA_WISH_NONE;
+        gBattleStruct->castoria.wishOutcome = CASTORIA_WISH_NONE;
+    }
+
     gAiThinkingStruct->aiLogicId = 0;
     gAiThinkingStruct->movesetIndex = 0;
     gAiLogicData->partnerMove = 0;   // no ally
@@ -794,48 +803,40 @@ static u32 ChooseMoveOrAction_Singles(u32 battler)
             }
         }
     }
-     // Castoria Arcanum: evaluate extra spell slots (4-7) as potential move choices
-    if (!IsOnPlayerSide(battler) && gBattleMons[battler].species == SPECIES_CASTORIA)
+    // Extra slots are evaluated only by the fight's registered Special AI.
+    if ((gAiThinkingStruct->aiFlags[battler] & AI_FLAG_DYNAMIC_FUNC)
+     && sDynamicAiFunc != NULL
+     && GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
     {
         s32 bestNormalScore = gAiThinkingStruct->score[consideredMoveArray[0]];
         u8 bestArcanumSlot = 0xFF;
         s32 bestArcanumScore = 0;
+        u8 bestWishOutcome = CASTORIA_WISH_NONE;
 
         for (i = MAX_MON_MOVES; i < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT; i++)
         {
+            if (!IsArcanumSlotUsable(battler, i))
+                continue;
+
             u16 move = CastoriaGetMoveAtSlot(battler, i);
             if (move == MOVE_NONE)
                 continue;
 
-            // Simple arcanum scoring: type effectiveness vs target
-            s32 score = 0;
-            enum Type moveType = GetMoveType(move);
-            enum Type targetType1 = gBattleMons[opposingBattler].types[0];
-            enum Type targetType2 = gBattleMons[opposingBattler].types[1];
-
-            u32 eff1 = GetTypeModifier(moveType, targetType1);
-            u32 eff2 = (targetType2 != targetType1) ? GetTypeModifier(moveType, targetType2) : 0;
-            u32 totalEff = (eff1 * eff2) >> 12;
-
-            if (totalEff > 256)     // super effective
-                score = 100;
-            else if (totalEff == 256)  // neutral
-                score = 50;
-            else if (totalEff < 256)   // not very effective
-                score = 10;
-            else                      // immune
-                score = 0;
+            s32 score = RunDynamicAiFunc(battler, opposingBattler, move, AI_SCORE_DEFAULT, TRUE);
 
             if (score > bestArcanumScore)
             {
                 bestArcanumScore = score;
                 bestArcanumSlot = i;
+                bestWishOutcome = move == MOVE_ARCANUM_WISH
+                    ? gBattleStruct->castoria.wishCandidate : CASTORIA_WISH_NONE;
             }
         }
 
-        // If an arcanum move beats the best normal move, use it instead
+        // Regular moves win ties, conserving spell resources.
         if (bestArcanumSlot != 0xFF && bestArcanumScore > bestNormalScore)
         {
+            gBattleStruct->castoria.wishOutcome = bestWishOutcome;
             return bestArcanumSlot;
         }
     }
@@ -6933,6 +6934,10 @@ s32 AI_TagBattlePreferFoe(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
 s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
+    // Alice has no spell-scoring policy; keep her existing regular-move rules.
+    if (BattleAI_IsScoringArcanum())
+        return 0;
+
  u32 bestDmgMove = GetBestDmgMoveFromBattler(battlerDef, battlerAtk, AI_DEFENDING);
     u8 canBeKOd = CanTargetMoveFaintAi(bestDmgMove, battlerDef, battlerAtk, 1);
     u8 isTwoHKO = CanTargetMoveFaintAi(bestDmgMove, battlerDef, battlerAtk, 2);
@@ -7240,6 +7245,37 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
 s32 AI_RazeluxeTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
+    if (BattleAI_IsScoringArcanum())
+    {
+        if (!IsOnPlayerSide(battlerAtk) && gBattleMons[battlerAtk].species == SPECIES_CASTORIA)
+        {
+            // Castoria's spell policy starts here, before ordinary-slot helpers.
+            if (move == MOVE_ARCANUM_WISH)
+            {
+                u32 outcome = CastoriaGetAvailableWishOutcome(battlerAtk);
+                gBattleStruct->castoria.wishCandidate = outcome;
+                return outcome == CASTORIA_WISH_NONE ? 0 : score;
+            }
+
+            if (move == MOVE_REVIVAL_BLESSING_2) // Revivify
+            {
+                if (GetFirstFaintedPartyIndex(battlerAtk) == PARTY_SIZE)
+                    return 0;
+
+                if (gBattleMons[battlerAtk].volatiles.perishSong)
+                    return INT32_MAX;
+            }
+
+            // Prioritize Polymorph when the opponent knows Perish Song.
+            if (move == MOVE_POLYMORPH
+             && GetMoveSlot(gBattleMons[battlerDef].moves, MOVE_PERISH_SONG) < MAX_MON_MOVES)
+                return INT32_MAX - 1;
+
+            return score;
+        }
+        return 0;
+    }
+
     u32 bestDmgMove = GetBestDmgMoveFromBattler(battlerDef, battlerAtk, AI_DEFENDING);
     u8 canBeKOd = CanTargetMoveFaintAi(bestDmgMove, battlerDef, battlerAtk, 1);
     u32 currentMoveIndex = GetIndexInMoveArray(battlerAtk, move);
@@ -7334,8 +7370,21 @@ s32 AI_RazeluxeTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
 static s32 AI_DynamicFunc(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
+    return RunDynamicAiFunc(battlerAtk, battlerDef, move, score, FALSE);
+}
+
+bool32 BattleAI_IsScoringArcanum(void)
+{
+    return sDynamicAiScoringArcanum;
+}
+
+static s32 RunDynamicAiFunc(u32 battlerAtk, u32 battlerDef, u32 move, s32 score, bool32 isArcanum)
+{
+    bool8 previousContext = sDynamicAiScoringArcanum;
+    sDynamicAiScoringArcanum = isArcanum;
     if (sDynamicAiFunc != NULL)
         score = sDynamicAiFunc(battlerAtk, battlerDef, move, score);
+    sDynamicAiScoringArcanum = previousContext;
     return score;
 }
 
@@ -7350,4 +7399,5 @@ void ScriptSetDynamicAiFunc(struct ScriptContext *ctx)
 void ResetDynamicAiFunc(void)
 {
     sDynamicAiFunc = NULL;
+    sDynamicAiScoringArcanum = FALSE;
 }

@@ -2490,6 +2490,11 @@
 	.4byte \failInstr
 	.endm
 
+	.macro trycastoriawish failInstr:req
+	callnative BS_CastoriaTryWish
+	.4byte \failInstr
+	.endm
+
 	.macro kazuradialogue stringId:req, keep=0
     callnative BS_ShowKazuraDialogueBox
     .2byte \stringId
@@ -2511,4 +2516,4 @@
     callnative BS_KazuraOmniboost
     .byte \amount
     .endm
-	
+

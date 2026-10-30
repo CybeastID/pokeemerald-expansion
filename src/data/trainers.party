@@ -17039,24 +17039,57 @@ Music: Elite Four
 Double Battle: No
 AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
 
-Whimsicott
+Whimsicott @ Focus Sash
 Level: 100
+Ability: Prankster
+Nature: Timid
+EVs: 4 HP / 252 SpA / 252 Spe
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Taunt
+- Tailwind
+- Leech Seed
+- Moonblast
 
-Alcremie
+Alcremie @ Leftovers
 Level: 100
+Ability: Sweet Veil
+Nature: Modest
+EVs: 252 HP / 252 SpA / 4 SpD
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 Gigantamax: Yes
+- Dazzling Gleam
+- Mystical Fire
+- Psychic
+- Recover
 
-Glaceon
+Glaceon @ Leftovers
 Level: 100
+Ability: Ice Body
+Nature: Modest
+EVs: 252 HP / 252 SpA / 4 Def
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Blizzard
+- Freeze-Dry
+- Shadow Ball
+- Yawn
 
-Vanilluxe
+Vanilluxe @ Never-Melt Ice
 Level: 100
+Ability: Snow Warning
+Nature: Modest
+EVs: 4 HP / 252 SpA / 252 Spe
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Blizzard
+- Flash Cannon
+- Freeze-Dry
+- Taunt
 
 Audino @ Heavy-Duty Boots
 Level: 100
 Ability: Regenerator
 Nature: Impish
 EVs: 252 HP / 252 Def / 4 SpD
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Knock Off
 - Encore
 - Thunder Wave
@@ -17065,6 +17098,9 @@ EVs: 252 HP / 252 Def / 4 SpD
 Blissey @ Heavy-Duty Boots
 Level: 100
 Ability: Natural Cure
+Nature: Calm
+EVs: 252 HP / 252 SpD / 4 Def
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Soft-Boiled
 - Seismic Toss
 - Toxic
@@ -17080,21 +17116,69 @@ Music: Elite Four
 Double Battle: No
 AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
 
-Smeargle
+Smeargle @ Focus Sash
 Level: 100
+Ability: Own Tempo
+Nature: Timid
+EVs: 252 HP / 4 SpD / 252 Spe
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Seismic Toss
+- Night Shade
+- Spore
+- Endeavor
 
-Jirachi
+Jirachi @ Steelium Z
 Level: 101
+Ability: Serene Grace
+Nature: Jolly
+EVs: 4 HP / 252 Atk / 252 Spe
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Iron Head
+- Zen Headbutt
+- Thunder Wave
+- Wish
 
-SPECIES_CALYREX_ICE
+SPECIES_CALYREX_ICE @ Leftovers
 Level: 102
+Ability: ABILITY_AS_ONE_ICE_RIDER
+Nature: Adamant
+EVs: 252 HP / 252 Atk / 4 SpD
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+Tera Type: Fire
+- Glacial Lance
+- High Horsepower
+- Tera Blast
+- Swords Dance
 
-Eternatus
+Eternatus @ Leftovers
 Level: 103
+Ability: Pressure
+Nature: Timid
+EVs: 4 HP / 252 SpA / 252 Spe
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Dynamax Cannon
+- Flamethrower
+- Sludge Bomb
+- Recover
 
-SPECIES_DIALGA_ORIGIN
+SPECIES_DIALGA_ORIGIN @ Leftovers
 Level: 104
+Ability: Pressure
+Nature: Modest
+EVs: 252 HP / 252 SpA / 4 SpD
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Roar of Time
+- Flash Cannon
+- Earth Power
+- Stealth Rock
 
 Arceus
 Level: 105
-
+Ability: Multitype
+Nature: Modest
+EVs: 252 HP / 252 SpA / 4 SpD
+IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
+- Judgment
+- Calm Mind
+- Recover
+- Earth Power

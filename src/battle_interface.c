@@ -36,6 +36,7 @@
 #include "caps.h"
 #include "event_data.h"
 #include "kazuradrop_battle_ui.h"
+// #include "castoria_name_theft.h" // Optional Mage Armor healthbox offset below.
 
 enum
 {   // Corresponds to gHealthboxElementsGfxTable (and the tables after it) in graphics.c
@@ -893,6 +894,13 @@ void GetBattlerHealthboxCoords(u8 battler, s16 *x, s16 *y)
 
     *x = sBattlerHealthboxCoords[index][position][0];
     *y = sBattlerHealthboxCoords[index][position][1];
+
+    /* Optional Mage Armor buff-row space; paired with the commented slide in
+     * castoria_battle_ui.c. Current layout uses the original healthbox position.
+    if (index == BATTLE_COORDS_SINGLES
+     && HasMageArmor(battler))
+        *y += 8;
+    */
 }
 
 void InitBattlerHealthboxCoords(u8 battler)

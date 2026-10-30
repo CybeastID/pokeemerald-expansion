@@ -1822,8 +1822,12 @@ u32 CheckMoveLimitations(u32 battler, u8 unusableMoves, u16 check)
 bool32 AreAllMovesUnusable(u32 battler)
 {
     u32 unusable = CheckMoveLimitations(battler, 0, MOVE_LIMITATIONS_ALL);
+    bool32 allUnusable = unusable == ALL_MOVES_MASK;
 
-    if (unusable == ALL_MOVES_MASK) // All moves are unusable.
+    if (allUnusable && HasUsableArcanumMove(battler))
+        allUnusable = FALSE;
+
+    if (allUnusable) // All moves are unusable.
     {
         gProtectStructs[battler].noValidMoves = TRUE;
         gSelectionBattleScripts[battler] = BattleScript_NoMovesLeft;
@@ -1833,7 +1837,7 @@ bool32 AreAllMovesUnusable(u32 battler)
         gProtectStructs[battler].noValidMoves = FALSE;
     }
 
-    return (unusable == ALL_MOVES_MASK);
+    return allUnusable;
 }
 
 u8 GetImprisonedMovesCount(u32 battler, u16 move)
@@ -8655,6 +8659,9 @@ s32 ApplyModifiersAfterDmgRoll(struct DamageContext *ctx, s32 dmg)
     DAMAGE_APPLY_MODIFIER(GetZMaxMoveAgainstProtectionModifier(ctx));
     DAMAGE_APPLY_MODIFIER(GetOtherModifiers(ctx));
 
+    if (HasMageArmor(ctx->battlerDef))
+        DAMAGE_APPLY_MODIFIER(UQ_4_12(0.7));
+
     return dmg;
 }
 
@@ -8754,6 +8761,9 @@ static inline s32 DoFutureSightAttackDamageCalcVars(struct DamageContext *ctx)
     else
         DAMAGE_APPLY_MODIFIER(UQ_4_12(1.0));
     DAMAGE_APPLY_MODIFIER(ctx->typeEffectivenessModifier);
+
+    if (HasMageArmor(ctx->battlerDef))
+        DAMAGE_APPLY_MODIFIER(UQ_4_12(0.7));
 
     if (dmg == 0)
         dmg = 1;

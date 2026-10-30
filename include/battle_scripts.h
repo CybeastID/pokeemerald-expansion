@@ -877,5 +877,6 @@ extern const u8 BattleScript_CastoriaTrueNameCommand[];
 extern const u8 BattleScript_TrainerSlideKazuradropSendoutRet[];
 extern const u8 BattleScript_KazuraLegendPunishSwitchIn[];
 extern const u8 BattleScript_EffectPolymorph[];
+extern const u8 BattleScript_EffectArcanumWish[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

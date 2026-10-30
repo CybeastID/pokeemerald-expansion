@@ -14,7 +14,7 @@
 //     - Player's active battler gets NAMELESS volatile
 //
 //   BACKED OUT (CASTORIA_NAME_BACKED_OUT)
-//     - Castoria gets +1 SpAtk only
+//     - Castoria gains permanent 30% Mage Armor resistance
 //
 
 #include "global.h"
@@ -24,6 +24,7 @@
 #include "battle_message.h"
 #include "battle_scripts.h"
 #include "castoria_name_theft.h"
+#include "castoria_battle_ui.h"
 #include "battle_ai_util.h"
 #include "constants/battle.h"
 #include "constants/battle_string_ids.h"
@@ -41,6 +42,7 @@
 #include "random.h"
 #include "battle_controllers.h"
 #include "daycare.h"
+#include "item.h"
 
 #define CHOICE_STATE_INIT       0
 #define CHOICE_STATE_WAIT       1
@@ -212,10 +214,17 @@ void BS_ApplyCastoriaNameResult(void)
         break;
 
     case CASTORIA_NAME_BACKED_OUT:
-        if (gBattleMons[battler].statStages[STAT_SPATK] < MAX_STAT_STAGE) gBattleMons[battler].statStages[STAT_SPATK]++;
+        gBattleStruct->castoria.mageArmorPartyMask |= 1u << gBattlerPartyIndexes[battler];
         break;
     }
 
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_ShowMageArmorIcon(void)
+{
+    NATIVE_ARGS();
+    CreateMageArmorIcon(gBattlerAttacker);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -394,8 +403,8 @@ u8 CastoriaFindWorstMove(u32 castoriaBattler, u32 targetBattler)
 // Illusion, Evocation, Transformation themed starter set.
 static const u16 sArcanumPool[4] = {
     MOVE_FIREBALL,      // Evocation
-    MOVE_MAGEARMOR,     // Abjuration
-    MOVE_MAGICMISSILE,  // Evocation
+    MOVE_REVIVAL_BLESSING_2, // Revivify
+    MOVE_ARCANUM_WISH,  // Once per battle; outcome selected by Special AI.
     MOVE_POLYMORPH,     // Transformation
 };
 STATIC_ASSERT(ARRAY_COUNT(sArcanumPool) == CASTORIA_ARCANUM_COUNT, ArcanumPoolSize);
@@ -418,6 +427,165 @@ u16 Test_GetCastoriaArcanumMove(u32 slot)
 u16 CastoriaGetMoveAtSlot(u32 battler, u8 slot)
 {
     return GetBattlerMoveAtSlot(battler, slot);
+}
+
+bool32 IsArcanumSlotUsable(u32 battler, u32 slot)
+{
+    u32 move;
+    u32 choicedMove;
+    enum HoldEffect holdEffect;
+    enum BattleMoveEffects effect;
+
+    if (slot < MAX_MON_MOVES
+     || slot >= MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT)
+        return FALSE;
+
+    if (gBattleStruct->castoria.arcanumMoves[0] == MOVE_NONE)
+        return FALSE;
+
+    move = GetBattlerMoveAtSlot(battler, slot);
+    if (move == MOVE_NONE)
+        return FALSE;
+
+    if (move == MOVE_ARCANUM_WISH
+     && CastoriaGetAvailableWishOutcome(battler) == CASTORIA_WISH_NONE)
+        return FALSE;
+
+    effect = GetMoveEffect(move);
+    if (effect == EFFECT_PLACEHOLDER)
+        return FALSE;
+
+    if (gDisableStructs[battler].encoreTimer
+     && gDisableStructs[battler].encoredMove != move)
+        return FALSE;
+
+    if (gDisableStructs[battler].disabledMove == move)
+        return FALSE;
+
+    if (gBattleMons[battler].volatiles.torment
+     && gLastMoves[battler] == move)
+        return FALSE;
+
+    if (gDisableStructs[battler].tauntTimer
+     && IsBattleMoveStatus(move))
+        return FALSE;
+
+    if (GetImprisonedMovesCount(battler, move))
+        return FALSE;
+
+    holdEffect = GetBattlerHoldEffect(battler);
+    choicedMove = gBattleStruct->choicedMove[battler];
+
+    if (choicedMove != MOVE_NONE
+     && choicedMove != MOVE_UNAVAILABLE
+     && choicedMove != move
+     && (IsHoldEffectChoice(holdEffect)
+         || GetBattlerAbility(battler) == ABILITY_GORILLA_TACTICS))
+        return FALSE;
+
+    if (holdEffect == HOLD_EFFECT_ASSAULT_VEST
+     && IsBattleMoveStatus(move)
+     && effect != EFFECT_ME_FIRST)
+        return FALSE;
+
+    if (((gFieldStatuses & STATUS_FIELD_GRAVITY) && IsMoveGravityBanned(move))
+     || IsHealBlockPreventingMove(battler, move)
+     || IsBelchPreventingMove(battler, move))
+        return FALSE;
+
+    if (gDisableStructs[battler].throatChopTimer
+     && IsSoundMove(move))
+        return FALSE;
+
+    if (effect == EFFECT_STUFF_CHEEKS
+     && GetItemPocket(gBattleMons[battler].item) != POCKET_BERRIES)
+        return FALSE;
+
+    if (MoveCantBeUsedTwice(move)
+     && gLastResultingMoves[battler] == move)
+        return FALSE;
+
+    return TRUE;
+}
+
+bool32 HasUsableArcanumMove(u32 battler)
+{
+    u32 slot;
+
+    for (slot = MAX_MON_MOVES;
+         slot < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT;
+         slot++)
+    {
+        if (IsArcanumSlotUsable(battler, slot))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+bool32 HasMageArmor(u32 battler)
+{
+    return gBattleStruct->castoria.mageArmorPartyMask != 0
+        && !IsOnPlayerSide(battler)
+        && (gBattleStruct->castoria.mageArmorPartyMask
+            & (1u << gBattlerPartyIndexes[battler]));
+}
+
+bool32 CastoriaCanWishFor(u32 battler, u32 outcome)
+{
+    if (battler >= gBattlersCount
+     || IsOnPlayerSide(battler)
+     || gBattleMons[battler].species != SPECIES_CASTORIA
+     || !IsBattlerAlive(battler)
+     || gBattleStruct->castoria.wishUsed)
+        return FALSE;
+
+    switch (outcome)
+    {
+    case CASTORIA_WISH_DOMINATION:
+        return gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
+            && gBattleMons[battler].volatiles.castoriaTrueNameCharges == 0;
+    default:
+        // Other named outcomes stay unavailable until their effects exist.
+        return FALSE;
+    }
+}
+
+u32 CastoriaGetAvailableWishOutcome(u32 battler)
+{
+    if (CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION))
+        return CASTORIA_WISH_DOMINATION;
+    return CASTORIA_WISH_NONE;
+}
+
+void BS_CastoriaTryWish(void)
+{
+    NATIVE_ARGS(const u8 *failInstr);
+    u32 battler = gBattlerAttacker;
+    u32 outcome = gBattleStruct->castoria.wishOutcome;
+
+    gBattleStruct->castoria.wishOutcome = CASTORIA_WISH_NONE;
+    if (!IsArcanumAction(battler)
+     || gChosenMove != MOVE_ARCANUM_WISH
+     || gCurrentMove != MOVE_ARCANUM_WISH
+     || !CastoriaCanWishFor(battler, outcome))
+    {
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
+    }
+
+    switch (outcome)
+    {
+    case CASTORIA_WISH_DOMINATION:
+        gBattleMons[battler].volatiles.castoriaTrueNameCharges = 3;
+        break;
+    default:
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
+    }
+
+    gBattleStruct->castoria.wishUsed = TRUE;
+    gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
 bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall)

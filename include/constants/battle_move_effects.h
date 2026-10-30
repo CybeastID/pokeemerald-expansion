@@ -358,6 +358,7 @@ enum __attribute__((packed)) BattleMoveEffects
     EFFECT_INFINITE_GROWTH,
     EFFECT_TRASH_CRUSH,
     EFFECT_POLYMORPH,
+    EFFECT_ARCANUM_WISH,
     NUM_BATTLE_MOVE_EFFECTS,
 };
 

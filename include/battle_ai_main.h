@@ -131,6 +131,9 @@ void Ai_InitPartyStruct(void);
 void Ai_UpdateSwitchInData(u32 battler);
 void Ai_UpdateFaintData(u32 battler);
 void SetAiLogicDataForTurn(struct AiLogicData *aiData);
+// Only TRUE inside a dynamic callback evaluating an Arcanum candidate.
+// Such callbacks must not index ordinary caches with a virtual slot.
+bool32 BattleAI_IsScoringArcanum(void);
 void ResetDynamicAiFunc(void);
 
 #endif // GUARD_BATTLE_AI_MAIN_H

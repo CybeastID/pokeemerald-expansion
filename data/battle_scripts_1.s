@@ -9198,8 +9198,11 @@ BattleScript_CastoriaBackedOut::
 	printstring STRINGID_CASTORIA_BACKED_OUT
 	waitmessage B_WAIT_TIME_LONG
 	callnative BS_ApplyCastoriaNameResult
-	playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE
+	printstring STRINGID_CASTORIA_MAGE_ARMOR
+	waitmessage B_WAIT_TIME_LONG
+	playmoveanimation MOVE_MAGEARMOR
 	waitanimation
+	callnative BS_ShowMageArmorIcon
 	return
 
 BattleScript_CastoriaTrueNameCommand::
@@ -9213,6 +9216,15 @@ BattleScript_CastoriaMaxMoveExpire::
     printstring STRINGID_CASTORIA_DYNAMAX_EXPIRE
     waitmessage B_WAIT_TIME_LONG
     end2
+
+BattleScript_EffectArcanumWish::
+    attackcanceler
+    trycastoriawish BattleScript_ButItFailed
+    attackanimation
+    waitanimation
+    printstring STRINGID_CASTORIA_WISH_DOMINATION
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
 
 BattleScript_EffectPolymorph::
     attackcanceler

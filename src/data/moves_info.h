@@ -21546,6 +21546,31 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
     },
     
 
+    [MOVE_ARCANUM_WISH] =
+    {
+        .name = COMPOUND_STRING("Wish"),
+        .description = COMPOUND_STRING(
+            "Grants the caster's chosen\n"
+            "wish. Once per battle."),
+        .effect = EFFECT_ARCANUM_WISH,
+        .power = 0,
+        .type = TYPE_PSYCHIC,
+        .accuracy = 0,
+        .pp = 1,
+        .target = MOVE_TARGET_USER,
+        .category = DAMAGE_CATEGORY_STATUS,
+        .mirrorMoveBanned = TRUE,
+        .mimicBanned = TRUE,
+        .sketchBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .copycatBanned = TRUE,
+        .instructBanned = TRUE,
+        .encoreBanned = TRUE,
+        .assistBanned = TRUE,
+        .sleepTalkBanned = TRUE,
+        .battleAnimScript = gBattleAnimMove_Wish,
+    },
+
     // Z-Moves
     [MOVE_BREAKNECK_BLITZ] =
     {
