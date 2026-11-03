@@ -580,7 +580,7 @@ const struct BattleMoveEffect gBattleMoveEffects[NUM_BATTLE_MOVE_EFFECTS] =
 
     [EFFECT_LUNAR_DANCE] =
     {
-        .battleScript = BattleScript_EffectHealingWish,
+        .battleScript = BattleScript_EffectLunarDance,
         .battleTvScore = 0, // TODO: Assign points
     },
 

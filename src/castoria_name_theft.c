@@ -41,6 +41,8 @@
 #include "pokemon.h"
 #include "random.h"
 #include "battle_controllers.h"
+#include "battle_break_bar.h"
+#include "battle_interface.h"
 #include "daycare.h"
 #include "item.h"
 
@@ -448,7 +450,8 @@ bool32 IsArcanumSlotUsable(u32 battler, u32 slot)
         return FALSE;
 
     if (move == MOVE_ARCANUM_WISH
-     && CastoriaGetAvailableWishOutcome(battler) == CASTORIA_WISH_NONE)
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION)
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_ENDURANCE))
         return FALSE;
 
     effect = GetMoveEffect(move);
@@ -545,6 +548,10 @@ bool32 CastoriaCanWishFor(u32 battler, u32 outcome)
     case CASTORIA_WISH_DOMINATION:
         return gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
             && gBattleMons[battler].volatiles.castoriaTrueNameCharges == 0;
+    case CASTORIA_WISH_ENDURANCE:
+        return (gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
+             || gBattleStruct->castoria.nameResult == CASTORIA_NAME_FALSE)
+            && GetBreakBarCount(battler) == 0;
     default:
         // Other named outcomes stay unavailable until their effects exist.
         return FALSE;
@@ -555,6 +562,7 @@ u32 CastoriaGetAvailableWishOutcome(u32 battler)
 {
     if (CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION))
         return CASTORIA_WISH_DOMINATION;
+    // Endurance has execution support; its production tactical policy is deferred.
     return CASTORIA_WISH_NONE;
 }
 
@@ -578,6 +586,15 @@ void BS_CastoriaTryWish(void)
     {
     case CASTORIA_WISH_DOMINATION:
         gBattleMons[battler].volatiles.castoriaTrueNameCharges = 3;
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_DOMINATION;
+        break;
+    case CASTORIA_WISH_ENDURANCE:
+        if (!GrantSavedBreakBar(battler))
+        {
+            gBattlescriptCurrInstr = cmd->failInstr;
+            return;
+        }
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_ENDURANCE;
         break;
     default:
         gBattlescriptCurrInstr = cmd->failInstr;

@@ -30,6 +30,7 @@
 #undef TestRunner_Battle_AfterLastTurn
 #undef TestRunner_Battle_CheckBattleRecordActionType
 #undef TestRunner_Battle_GetForcedAbility
+#undef TestRunner_Battle_AfterCleanup
 #endif
 
 #define INVALID(fmt, ...) Test_ExitWithResult(TEST_RESULT_INVALID, sourceLine, ":L%s:%d: " fmt, gTestRunnerState.test->filename, sourceLine, ##__VA_ARGS__)
@@ -341,6 +342,15 @@ static void SetImplicitSpeeds(void)
         if (!madeProgress)
             Test_ExitWithResult(TEST_RESULT_INVALID, SourceLine(0), ":LTURNs have contradictory speeds");
     }
+}
+
+void TestRunner_Battle_AfterCleanup(void)
+{
+    const struct BattleTest *test = GetBattleTest();
+
+    STATE->runAfterCleanup = TRUE;
+    InvokeTestFunction(test);
+    STATE->runAfterCleanup = FALSE;
 }
 
 static void BattleTest_Run(void *data)

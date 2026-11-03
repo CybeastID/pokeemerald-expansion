@@ -1088,6 +1088,18 @@ enum ItemEffect ItemBattleEffects(u32 itemBattler, u32 battler, enum HoldEffect 
 
     switch (holdEffect)
     {
+    case HOLD_EFFECT_BREAK_CHARM:
+        if (!GetBattlerPartyState(itemBattler)->breakBarItemUsed && GrantSavedBreakBar(itemBattler))
+        {
+            GetBattlerPartyState(itemBattler)->breakBarItemUsed = TRUE;
+            if (timing == IsOnSwitchInFirstTurnActivation)
+                BattleScriptExecute(BattleScript_BreakCharmEnd2);
+            else
+                BattleScriptCall(BattleScript_BreakCharmRet);
+            RecordItemEffectBattle(itemBattler, holdEffect);
+            effect = ITEM_EFFECT_OTHER;
+        }
+        break;
     case HOLD_EFFECT_DOUBLE_PRIZE:
         effect = TryDoublePrize(itemBattler);
         break;

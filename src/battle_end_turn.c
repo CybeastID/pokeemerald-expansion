@@ -14,6 +14,7 @@
 #include "constants/moves.h"
 #include "event_data.h"
 #include "castoria_name_theft.h"
+#include "battle_break_bar.h"
 
 static u32 GetBattlerSideForMessage(u32 side)
 {
@@ -1666,6 +1667,10 @@ static bool32 (*const sEndTurnEffectHandlers[])(u32 battler) =
 u32 DoEndTurnEffects(void)
 {
     u32 battler = MAX_BATTLERS_COUNT;
+
+    // A completed delayed-hit or instant-death event may have emptied a layer.
+    if (TryResolveBreakBarsAfterMove())
+        return TRUE;
 
     for (;;)
     {

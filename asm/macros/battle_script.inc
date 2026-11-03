@@ -2495,6 +2495,32 @@
 	.4byte \failInstr
 	.endm
 
+	.macro trysavedbreakbar battler:req, failInstr:req
+	callnative BS_TryGrantSavedBreakBar
+	.byte \battler
+	.4byte \failInstr
+	.endm
+
+	.macro fillsavedbreakbar battler:req
+	callnative BS_FillSavedBreakBar
+	.byte \battler
+	.endm
+
+	.macro animatesavedbreakbar battler:req
+	callnative BS_AnimateSavedBreakBar
+	.byte \battler
+	.endm
+
+	.macro syncsavedbreakbarhp battler:req
+	callnative BS_SyncSavedBreakBarHp
+	.byte \battler
+	.endm
+
+	.macro revealsavedbreakbar battler:req
+	callnative BS_RevealSavedBreakBar
+	.byte \battler
+	.endm
+
 	.macro kazuradialogue stringId:req, keep=0
     callnative BS_ShowKazuraDialogueBox
     .2byte \stringId

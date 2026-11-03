@@ -74,6 +74,7 @@
 #include "kazuradrop_gameover.h"
 #include "kazuradrop_battle_ui.h"
 #include "castoria_name_theft.h"
+#include "battle_break_bar.h"
 #include "gba/isagbprint.h"
 #include "constants/flags.h"
 
@@ -1981,6 +1982,12 @@ static void Cmd_adjustdamage(void)
         if (DoesSubstituteBlockMove(gBattlerAttacker, battlerDef, gCurrentMove))
             continue;
 
+        if (IsBreakBarPending(battlerDef))
+        {
+            gBattleStruct->moveDamage[battlerDef] = 0;
+            continue;
+        }
+
         if (DoesDisguiseBlockMove(battlerDef, gCurrentMove))
         {
             gSpecialStatuses[battlerDef].enduredDamage = TRUE;
@@ -2398,10 +2405,25 @@ static void Cmd_healthbarupdate(void)
     switch (cmd->updateState)
     {
     case PASSIVE_HP_UPDATE:
-        BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, min(gBattleStruct->passiveHpUpdate[battler], 10000));
-        MarkBattlerForControllerExec(battler);
+    {
+        s32 damage = ClampBreakBarPassiveDamage(battler, gBattleStruct->passiveHpUpdate[battler]);
+        if (!IsBreakBarPending(battler) && (damage != 0 || gBattleStruct->passiveHpUpdate[battler] == 0))
+        {
+            BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, min(damage, 10000));
+            MarkBattlerForControllerExec(battler);
+        }
+        break;
+    }
+    case INSTANT_DEATH_HP_UPDATE:
+        if (!IsBreakBarPending(battler))
+        {
+            BtlController_EmitHealthBarUpdate(battler, B_COMM_TO_CONTROLLER, min(gBattleMons[battler].hp, 10000));
+            MarkBattlerForControllerExec(battler);
+        }
         break;
     case MOVE_DAMAGE_HP_UPDATE:
+        if (IsBreakBarPending(battler))
+            break;
         if (IsDoubleSpreadMove())
         {
             DoublesHPBarReduction();
@@ -2452,9 +2474,23 @@ static void Cmd_healthbarupdate(void)
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
-static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
+static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr, bool32 instantDeath)
 {
-    if (gBattleStruct->passiveHpUpdate[battler] < 0)
+    s32 requested = gBattleStruct->passiveHpUpdate[battler];
+    s32 change = instantDeath ? requested : ClampBreakBarPassiveDamage(battler, requested);
+    if (IsBreakBarPending(battler) || (!instantDeath && requested != 0 && change == 0))
+    {
+        gBattleStruct->passiveHpUpdate[battler] = 0;
+        gBattlescriptCurrInstr = nextInstr;
+        return;
+    }
+    gBattleStruct->passiveHpUpdate[battler] = change;
+    if (instantDeath)
+    {
+        gBattleMons[battler].hp = 0;
+        gProtectStructs[battler].assuranceDoubled = TRUE;
+    }
+    else if (gBattleStruct->passiveHpUpdate[battler] < 0)
     {
         // Negative damage is HP gain
         gBattleMons[battler].hp += -gBattleStruct->passiveHpUpdate[battler];
@@ -2471,6 +2507,7 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
         gProtectStructs[battler].assuranceDoubled = TRUE;
     }
 
+    QueueBreakBar(battler);
     // Send updated HP
     BtlController_EmitSetMonData(
         battler,
@@ -2489,10 +2526,9 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
 // MoveDamageDataHpUpdate. It clamped moveDamage so HP never dropped below 10%, then set
 // kazuradropTransformed = TRUE to push BattleScript_KazuradropTransform after the damage was
 // dealt. This only worked for direct move damage (Destiny Bond, Perish Song, passive end-of-turn
-// damage all bypassed it). Replaced by the gate in Cmd_tryfaintmon, which catches *any* source
-// of lethal damage at the faint checkpoint: when Kazuradrop hits 0 HP the gate pushes
-// BattleScript_KazuradropTransform (which calls ApplyKazuradropTransformation) and returns,
-// skipping the entire faint machinery. The HP bar now drains fully to 0 (Break Bar behaviour)
+// damage all bypassed it). The faint gate now queues eligible bar losses and skips faint
+// processing. MOVEEND_BREAK_BARS dispatches the phase after the complete move; ordinary
+// passive damage is instead floored at 1 HP. The HP bar drains fully to 0 for attacks
 // rather than stopping at 10%. Kept for posterity / git history; do not read as live.
 
 // Kazuradrop transformation: clamp damage at 10% HP, then trigger full restore + double max HP + accelerate decay + swap to Sakura Five moves
@@ -2537,8 +2573,6 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr)
 static void ApplyKazuradropTransformation(u32 battler)
 {
     u32 i;
-     // Restore HP bar to normal red (break bar phase is over)
-    SetKazuradropHpBarPalette(battler, FALSE);
     // Double max HP
     gBattleMons[battler].maxHP *= 2;
     // Full restore
@@ -2611,6 +2645,12 @@ void BS_KazuraOmniboost(void)
 
 static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nextInstr)
 {
+    if (IsBreakBarPending(battler))
+    {
+        gBattleStruct->moveDamage[battler] = 0;
+        gBattlescriptCurrInstr = nextInstr;
+        return;
+    }
     if (gBattleStruct->moveResultFlags[gBattlerTarget] & MOVE_RESULT_NO_EFFECT)
     {
         gBattlescriptCurrInstr = nextInstr;
@@ -2769,6 +2809,7 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
 
     // Note: While physicalDmg/specialDmg below are only distinguished between for Counter/Mirror Coat,
     //       they are used in combination as general damage trackers for other purposes.
+    QueueBreakBar(battler);
     if (IsBattleMovePhysical(gCurrentMove))
     {
         gProtectStructs[battler].physicalDmg = gBattleStruct->moveDamage[battler] + 1;
@@ -2797,7 +2838,10 @@ static void Cmd_datahpupdate(void)
     switch (cmd->updateState)
     {
     case PASSIVE_HP_UPDATE:
-        PassiveDataHpUpdate(battler, cmd->nextInstr);
+        PassiveDataHpUpdate(battler, cmd->nextInstr, FALSE);
+        break;
+    case INSTANT_DEATH_HP_UPDATE:
+        PassiveDataHpUpdate(battler, cmd->nextInstr, TRUE);
         break;
     case MOVE_DAMAGE_HP_UPDATE:
         MoveDamageDataHpUpdate(battler, cmd->battler, cmd->nextInstr);
@@ -4617,6 +4661,13 @@ static void Cmd_tryfaintmon(void)
     }
     else
     {
+        // A consumed bar is a phase transition, before any actual-faint effects.
+        if (QueueBreakBar(battler))
+        {
+            gBattlescriptCurrInstr = cmd->nextInstr;
+            return;
+        }
+
         if (gDisableStructs[battler].neutralizingGas
          && !(gAbsentBattlerFlags & (1u << battler))
          && !IsBattlerAlive(battler))
@@ -4632,19 +4683,6 @@ static void Cmd_tryfaintmon(void)
 
         if (cmd->battler == BS_TARGET && gCurrentMove != MOVE_NONE)
             TryUpdateEvolutionTracker(IF_DEFEAT_X_WITH_ITEMS, 1, MOVE_NONE);
-
-        // Kazuradrop Break Bar: intercept faint, trigger transformation instead
-        if (!IsBattlerAlive(battler)
-            && gBattleStruct->bugSpace.active
-            && battler == gBattleStruct->bugSpace.sourceBattler
-            && !(gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
-            && !gBattleMons[battler].volatiles.transformed)
-        {
-            BattleScriptPush(cmd->nextInstr);
-            BattleScriptPush(BattleScript_KazuradropTransformReturn);
-            gBattlescriptCurrInstr = BattleScript_KazuradropTransform;
-            return;
-        }
 
         gBattlerFainted = battler;
         if (gBattleStruct->bugSpace.active && gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
@@ -5264,7 +5302,8 @@ static u32 CountAliveMonsForBattlerSide(u32 battler)
     for (u32 partyMon = 0; partyMon < PARTY_SIZE; partyMon++)
     {
         if (GetMonData(&party[partyMon], MON_DATA_SPECIES)
-         && GetMonData(&party[partyMon], MON_DATA_HP) > 0
+         && (GetMonData(&party[partyMon], MON_DATA_HP) > 0
+          || gBattleStruct->partyState[GetBattlerSide(battler)][partyMon].breakBarPending)
          && !GetMonData(&party[partyMon], MON_DATA_IS_EGG))
             aliveMons++;
     }
@@ -5293,10 +5332,12 @@ bool32 NoAliveMonsForPlayer(void)
         if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) && !GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG)
             && (!(gBattleTypeFlags & BATTLE_TYPE_ARENA) || !(gBattleStruct->arenaLostPlayerMons & (1u << i))))
         {
-            HP_count += GetMonData(&gPlayerParty[i], MON_DATA_HP);
+            HP_count += GetMonData(&gPlayerParty[i], MON_DATA_HP)
+                + gBattleStruct->partyState[B_SIDE_PLAYER][i].breakBarPending;
         }
         // Get the number of fainted mons or eggs (not empty slots) in the first three party slots.
-        if (i < 3 && ((GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) && !GetMonData(&gPlayerParty[i], MON_DATA_HP))
+        if (i < 3 && ((GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) && !GetMonData(&gPlayerParty[i], MON_DATA_HP)
+                   && !gBattleStruct->partyState[B_SIDE_PLAYER][i].breakBarPending)
          || GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG)))
             ineligibleMonsCount++;
     }
@@ -5331,7 +5372,8 @@ static bool32 NoAliveMonsForOpponent(void)
         if (GetMonData(&gEnemyParty[i], MON_DATA_SPECIES) && !GetMonData(&gEnemyParty[i], MON_DATA_IS_EGG)
          && (!(gBattleTypeFlags & BATTLE_TYPE_ARENA) || !(gBattleStruct->arenaLostOpponentMons & (1u << i))))
         {
-            HP_count += GetMonData(&gEnemyParty[i], MON_DATA_HP);
+            HP_count += GetMonData(&gEnemyParty[i], MON_DATA_HP)
+                + gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarPending;
         }
     }
 
@@ -7037,8 +7079,8 @@ static void Cmd_moveend(void)
 
                     enum BattleMoveEffects chosenEffect = GetMoveEffect(gChosenMove);
 
-                    if (gBattleMons[gBattlerAttacker].hp
-                     && gBattleMons[gBattlerTarget].hp
+                    if (IsBattlerAlive(gBattlerAttacker)
+                     && IsBattlerAlive(gBattlerTarget)
                      && (chosenEffect == EFFECT_SLEEP_TALK || chosenEffect == EFFECT_SNORE || !(gBattleMons[gBattlerAttacker].status1 & STATUS1_SLEEP))
                      && !(gBattleMons[gBattlerAttacker].status1 & STATUS1_FREEZE))
                     {
@@ -7652,6 +7694,9 @@ static void Cmd_returnatktoball(void)
 {
     CMD_ARGS();
 
+    if (IsBreakBarPending(gBattlerAttacker) && TryBreakBar(gBattlerAttacker, gBattlescriptCurrInstr))
+        return;
+
     if (!(gHitMarker & HITMARKER_FAINTED(gBattlerAttacker)))
     {
         BtlController_EmitReturnMonToBall(gBattlerAttacker, B_COMM_TO_CONTROLLER, FALSE);
@@ -8130,6 +8175,8 @@ static void Cmd_openpartyscreen(void)
             hitmarkerFaintBits = PARTY_ACTION_SEND_OUT;
 
         battler = GetBattlerForBattleScript(cmd->battler);
+        if (IsBreakBarPending(battler) && TryBreakBar(battler, gBattlescriptCurrInstr))
+            return;
         if (gSpecialStatuses[battler].faintedHasReplacement)
         {
             gBattlescriptCurrInstr = cmd->nextInstr;
@@ -8389,18 +8436,16 @@ static bool32 DoSwitchInEffectsForBattler(u32 battler)
         BattleScriptCall(BattleScript_HealingWishActivates);
         gBattleStruct->battlerState[battler].storedHealingWish = FALSE;
     }
-    else if ((gBattleStruct->battlerState[battler].storedLunarDance)
-        && (GetConfig(CONFIG_HEALING_WISH_SWITCH) < GEN_8
-            || gBattleMons[battler].hp != gBattleMons[battler].maxHP
-            || gBattleMons[battler].status1 != 0
-            || gBattleMons[battler].pp[0] < CalculatePPWithBonus(gBattleMons[battler].moves[0], gBattleMons[battler].ppBonuses, 0)
-            || gBattleMons[battler].pp[1] < CalculatePPWithBonus(gBattleMons[battler].moves[1], gBattleMons[battler].ppBonuses, 1)
-            || gBattleMons[battler].pp[2] < CalculatePPWithBonus(gBattleMons[battler].moves[2], gBattleMons[battler].ppBonuses, 2)
-            || gBattleMons[battler].pp[3] < CalculatePPWithBonus(gBattleMons[battler].moves[3], gBattleMons[battler].ppBonuses, 3)))
+    else if (gBattleStruct->battlerState[battler].storedLunarDance)
     {
         gBattlerAttacker = battler;
         BattleScriptCall(BattleScript_LunarDanceActivates);
         gBattleStruct->battlerState[battler].storedLunarDance = FALSE;
+    }
+    else if (GetBattlerHoldEffect(battler) == HOLD_EFFECT_BREAK_CHARM
+          && ItemBattleEffects(battler, battler, HOLD_EFFECT_BREAK_CHARM, IsOnSwitchInActivation))
+    {
+        return TRUE;
     }
     else if (EmergencyExitCanBeTriggered(battler))
     {
@@ -8629,6 +8674,8 @@ static void Cmd_returntoball(void)
     CMD_ARGS(u8 battler, bool8 changingForm);
 
     u32 battler = GetBattlerForBattleScript(cmd->battler);
+    if (IsBreakBarPending(battler) && TryBreakBar(battler, gBattlescriptCurrInstr))
+        return;
     BtlController_EmitReturnMonToBall(battler, B_COMM_TO_CONTROLLER, TRUE);
     MarkBattlerForControllerExec(battler);
 
@@ -10231,6 +10278,7 @@ static void Cmd_setatkhptozero(void)
         return;
 
     gBattleMons[gBattlerAttacker].hp = 0;
+    QueueBreakBar(gBattlerAttacker);
     BtlController_EmitSetMonData(gBattlerAttacker, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, sizeof(gBattleMons[gBattlerAttacker].hp), &gBattleMons[gBattlerAttacker].hp);
     MarkBattlerForControllerExec(gBattlerAttacker);
 

@@ -754,6 +754,9 @@ enum StringID
     STRINGID_PKMNPOLYMORPHED,
     STRINGID_CASTORIA_MAGE_ARMOR,
     STRINGID_CASTORIA_WISH_DOMINATION,
+    STRINGID_CASTORIA_WISH_ENDURANCE,
+    STRINGID_BREAK_CHARM_ACTIVATES,
+    STRINGID_LUNAR_DANCE_BREAK_BAR,
     STRINGID_COUNT
 };
 
@@ -761,6 +764,12 @@ enum StringID
 // used to determine which of a set of messages to print.
 // They are assigned to the MULTISTRING_CHOOSER byte of gBattleCommunication
 // and read when e.g. the command printfromtable is used.
+
+enum CastoriaWishStringID
+{
+    B_MSG_CASTORIA_WISH_DOMINATION,
+    B_MSG_CASTORIA_WISH_ENDURANCE,
+};
 
 // gStatUpStringIds and gStatDownStringIds
 enum StatChangedStringID

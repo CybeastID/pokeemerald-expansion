@@ -3,6 +3,8 @@
 
 #include "battle_controllers.h"
 
+#define B_HEALTHBAR_PIXELS 48
+
 // used for sBattlerCoords and sBattlerHealthboxCoords
 enum BattleCoordTypes
 {
@@ -93,7 +95,10 @@ enum
 #define TAG_KAZU_INVINCIBLE_ICON 0xD7B2
 #define TAG_KAZU_BUFF_PAL       0xD7B3
 #define TAG_KAZU_NUMBER 0xD7B4
-#define TAG_KAZU_HP_BAR_PAL 0xD7B5
+#define TAG_BREAK_BAR_PLAYER_LEFT_PAL 0xD7B5
+#define TAG_BREAK_BAR_OPPONENT_LEFT_PAL 0xD7BB
+#define TAG_BREAK_BAR_PLAYER_RIGHT_PAL 0xD7BC
+#define TAG_BREAK_BAR_OPPONENT_RIGHT_PAL 0xD7BD
 #define TAG_KAZU_ALTEREGO          0xD7B6
 #define TAG_KAZU_ALTEREGO_PAL      0xD7B7
 #define TAG_CASTER_SIGIL          0xD7B8
@@ -125,6 +130,8 @@ enum BattleCoordTypes GetBattlerCoordsIndex(u32 battler);
 u8 CreateBattlerHealthboxSprites(u8 battler);
 u8 CreateSafariPlayerHealthboxSprites(void);
 void SetBattleBarStruct(u8 battler, u8 healthboxSpriteId, s32 maxVal, s32 oldVal, s32 receivedValue);
+// Draw a growing Break Bar over a preserved red base, without changing HP.
+bool32 DrawHealthbarOverlay(u32 battler, u32 baseHp, u32 baseMaxHp, u32 overlayPixels);
 void SetHealthboxSpriteInvisible(u8 healthboxSpriteId);
 void SetHealthboxSpriteVisible(u8 healthboxSpriteId);
 void DummyBattleInterfaceFunc(u8 healthboxSpriteId, bool8 isDoubleBattleBattlerOnly);

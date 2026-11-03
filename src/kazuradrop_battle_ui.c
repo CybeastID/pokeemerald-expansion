@@ -59,10 +59,6 @@ static const u16 sKazuraBoxPal[] =
 static const u8 ALIGNED(4) sKazuraBoxTilemap[] =
     INCBIN_U8("graphics/battle_interface/textboxkaztiled.bin");
 
-// Purple HP bar palette for Kazuradrop's break bar
-static const u16 sKazuHpBarPurplePal[] =
-    INCBIN_U16("graphics/battle_interface/hpbar_purple.gbapal");
-
 // // 12x12 Alter Ego sigil in a 16x16 box (own palette)
 // static const u8 ALIGNED(4) sKazuAlterEgoSigilGfx[] =
 //     INCBIN_U8("graphics/special/kazfightui/Class16.4bpp");
@@ -134,11 +130,6 @@ static const struct OamData sOamData_Number =
 #define tFlashTimer data[4]
 #define tSlideBack  data[5]
 #define tIconType   data[6]
-// healthbox sprite's data[5] = its health-bar child sprite ID
-// (same slot as tSlideBack, but that alias is only used on the panel
-// sprite — different sprite, so no conflict)
-#define hMain_HealthBarSpriteId     data[5]
-
 // =====================================================================
 // Panel layout constants
 // =====================================================================
@@ -182,8 +173,6 @@ static const struct OamData sOamData_Number =
 #define KAZ_TILE_HVFLIP        0x0C00
 
 
-#define KAZU_HP_BAR_FADE_FRAMES 16
-
 // // Alter Ego sigil: healthbox left edge, on the HP-bar row (16x16).
 // // X from healthbox main (overlap left border); Y derived from the bar in the
 // // callback so it lands on the HP row without hardcoding the bar's offset.
@@ -199,7 +188,6 @@ static u8 sBugSpacePanelSpriteId[MAX_BATTLERS_COUNT];
 static u8 sGutsSpriteId[MAX_BATTLERS_COUNT];
 static u8 sInvincibleSpriteId[MAX_BATTLERS_COUNT];
 static bool32 sKazuBuffIconsLoaded = FALSE;
-static bool32 sKazuHpBarPalLoaded = FALSE;
 static u8 sNumberSpriteId[MAX_BATTLERS_COUNT];
 static u8 sKazuraDialogWindowId;
 static u8 sAlterEgoSpriteId[MAX_BATTLERS_COUNT];
@@ -470,7 +458,6 @@ void InitKazuradropBattleIcons(void)
         InitServantSigils();
     }
     sKazuBuffIconsLoaded = FALSE;
-    sKazuHpBarPalLoaded = FALSE;
 }
 
 void FreeKazuradropBattleIconGfx(void)
@@ -539,10 +526,6 @@ void CreateBugSpacePanel(u32 battler)
 
     sBugSpacePanelSpriteId[battler] = spriteId;
     // Number will be written once the slide-in completes (see callback)
-
-    // Activate purple HP bar for Kazuradrop's break bar
-    if (!(gBattleStruct->bugSpace.moveSwapActive & (1u << battler)))
-        SetKazuradropHpBarPalette(battler, TRUE);
 
     if (GetSpriteTileStartByTag(TAG_KAZU_NUMBER) == 0xFFFF)
     LoadSpriteSheet(&sSpriteSheet_KazuNumber);
@@ -650,7 +633,6 @@ void ReshowKazuradropBattleUI(void)
     }
 
     sKazuBuffIconsLoaded = FALSE;
-    sKazuHpBarPalLoaded = FALSE;
 
     if (gBattleStruct == NULL)
         return;
@@ -975,130 +957,6 @@ void HideKazuraDialogueBox(void)
     RemoveWindow(sKazuraDialogWindowId);
     sKazuraDialogWindowId = 0xFF;
 }
-
-// =====================================================================
-// HP bar palette override (purple break bar → red after break)
-// =====================================================================
-
-// Accessor alias — matches the same field used in battle_interface.c
-// healthbox sprite's data[5] holds the healthbar sprite ID.
-
-static const struct SpritePalette sSpritePalette_KazuHpBarPurple =
-    { sKazuHpBarPurplePal, TAG_KAZU_HP_BAR_PAL };
-
-static void BlendTwoPalettes(const u16 *src, const u16 *dst, u16 *out, u32 coeff /* 0-16 */)
-{
-    u32 i;
-    for (i = 0; i < 16; i++)
-    {
-        s32 sr = src[i] & 0x1F, sg = (src[i] >> 5) & 0x1F, sb = (src[i] >> 10) & 0x1F;
-        s32 dr = dst[i] & 0x1F, dg = (dst[i] >> 5) & 0x1F, db = (dst[i] >> 10) & 0x1F;
-        s32 r = sr + (((dr - sr) * (s32)coeff) / KAZU_HP_BAR_FADE_FRAMES);
-        s32 g = sg + (((dg - sg) * (s32)coeff) / KAZU_HP_BAR_FADE_FRAMES);
-        s32 b = sb + (((db - sb) * (s32)coeff) / KAZU_HP_BAR_FADE_FRAMES);
-        out[i] = (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10);
-    }
-}
-
-void LoadKazuradropHpBarPalette(void)
-{
-    // DebugPrintf("LKHBP called, sKazuHpBarPalLoaded=%d, preExistingSlot=%d", sKazuHpBarPalLoaded, IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
-    if (!sKazuHpBarPalLoaded)
-    {
-        LoadSpritePalette(&sSpritePalette_KazuHpBarPurple);
-        sKazuHpBarPalLoaded = TRUE;
-    }
-    // DebugPrintf("LKHBP done, slotAfter=%d", IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL));
-}
-
-void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple)
-{
-    // Ensure the purple palette is loaded if we need it
-    if (usePurple)
-        LoadKazuradropHpBarPalette();
-
-    // Get the healthbar sprite ID for this battler
-    u8 healthboxSpriteId = gHealthboxSpriteIds[battler];
-    if (healthboxSpriteId == MAX_SPRITES)
-        return;
-
-    u8 healthbarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
-    if (healthbarSpriteId == MAX_SPRITES)
-        return;
-
-    if (usePurple)
-    {
-        // Switch to the purple palette slot
-        // Find which OBJ palette slot TAG_KAZU_HP_BAR_PAL was loaded into
-        u8 palSlot = IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL);
-        // DebugPrintf("SKHBP purple branch palSlot=%d", palSlot);
-        if (palSlot != 0xFF)
-        {
-            gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
-            StartKazuHpBarPurpleFade(battler);
-        }
-    }
-    else
-    {
-        // Restore the original healthbar palette
-        u8 palSlot = IndexOfSpritePaletteTag(TAG_HEALTHBAR_PAL);
-        // DebugPrintf("SKHBP restore branch palSlot=%d", palSlot);
-        if (palSlot != 0xFF)
-            gSprites[healthbarSpriteId].oam.paletteNum = palSlot;
-    }
-    // DebugPrintf("SKHBP final oam.paletteNum=%d", gSprites[healthbarSpriteId].oam.paletteNum);
-    UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], GetBattlerMon(battler), HEALTHBOX_HEALTH_BAR);
-}
-
-static void Task_KazuHpBarPurpleFade(u8 taskId)
-{
-    u32 battler = gTasks[taskId].data[0];
-    u32 frame = gTasks[taskId].data[1];
-    u16 fadeBuf[16];
-    u8 healthboxSpriteId = gHealthboxSpriteIds[battler];
-    u8 healthbarSpriteId, palSlot;
-
-    // DebugPrintf("KHBPF tick battler=%d frame=%d", battler, frame);
-
-    if (healthboxSpriteId == MAX_SPRITES)
-    {
-        // DebugPrintf("KHBPF abort: healthboxSpriteId==MAX_SPRITES");
-        DestroyTask(taskId);
-        return;
-    }
-    healthbarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
-    if (healthbarSpriteId == MAX_SPRITES)
-    {
-        // DebugPrintf("KHBPF abort: healthbarSpriteId==MAX_SPRITES");
-        DestroyTask(taskId);
-        return;
-    }
-    palSlot = gSprites[healthbarSpriteId].oam.paletteNum;
-    // DebugPrintf("KHBPF healthbarSpriteId=%d palSlot=%d", healthbarSpriteId, palSlot);
-
-    BlendTwoPalettes(gBattleInterface_BallDisplayPal, sKazuHpBarPurplePal, fadeBuf, frame);
-    // DebugPrintf("KHBPF fadeBuf[10]=%04x fadeBuf[11]=%04x (coeff=%d)", fadeBuf[10], fadeBuf[11], frame);
-    LoadPalette(fadeBuf, OBJ_PLTT_ID(palSlot), PLTT_SIZE_4BPP);
-
-    frame++;
-    if (frame > KAZU_HP_BAR_FADE_FRAMES)
-    {
-        // DebugPrintf("KHBPF done, destroying task");
-        DestroyTask(taskId);
-        return;
-    }
-    gTasks[taskId].data[1] = frame;
-}
-
-void StartKazuHpBarPurpleFade(u32 battler)
-{
-    u8 taskId = CreateTask(Task_KazuHpBarPurpleFade, 0);
-    // DebugPrintf("KHBPF started, taskId=%d battler=%d", taskId, battler);
-    gTasks[taskId].data[0] = battler;
-    gTasks[taskId].data[1] = 0;
-}
-
-#undef hMain_HealthBarSpriteId
 
 // =====================================================================
 // Undefine data field aliases

@@ -3,6 +3,7 @@
 
 // should they be included here or included individually by every file?
 #include "constants/battle_end_turn.h"
+#include "battle_break_bar.h"
 #include "constants/abilities.h"
 #include "constants/battle.h"
 #include "constants/form_change_types.h"
@@ -636,6 +637,8 @@ struct BattlerState
     // End of Word
 };
 
+struct BreakBarConfig;
+
 struct PartyState
 {
     u32 intrepidSwordBoost:1;
@@ -648,8 +651,15 @@ struct PartyState
     u32 changedSpecies:11; // For forms when multiple mons can change into the same pokemon.
     u32 sentOut:1;
     u16 polymorphed: 1;
-    u32 padding:8;
+    u32 breakBarsRemaining:3;
+    u32 breakBarPending:1;
+    u32 breakBarItemUsed:1;
+    u32 padding:3;
     u16 usedHeldItem;
+    const struct BreakBarConfig *breakBarConfig;
+    u16 breakBarSavedHp[BREAK_BAR_MAX_EXTRA_BARS];
+    u16 breakBarSavedMaxHp[BREAK_BAR_MAX_EXTRA_BARS];
+    u8 breakBarFillPixels;
 };
 
 struct EventStates
@@ -1183,16 +1193,21 @@ extern bool8 gLastUsedBallMenuPresent;
 extern u8 gPartyCriticalHits[PARTY_SIZE];
 extern u8 gCategoryIconSpriteId;
 
+static inline bool32 IsBreakBarPending(u32 battler)
+{
+    return gBattleStruct != NULL && battler < gBattlersCount
+        && gBattlerPartyIndexes[battler] < PARTY_SIZE
+        && gBattleStruct->partyState[battler & BIT_SIDE][gBattlerPartyIndexes[battler]].breakBarPending;
+}
+
 static inline bool32 IsBattlerAlive(u32 battler)
 {
-    if (gBattleMons[battler].hp == 0)
-        return FALSE;
-    else if (battler >= gBattlersCount)
+    if (battler >= gBattlersCount)
         return FALSE;
     else if (gAbsentBattlerFlags & (1u << battler))
         return FALSE;
     else
-        return TRUE;
+        return gBattleMons[battler].hp != 0 || IsBreakBarPending(battler);
 }
 
 static inline bool32 IsBattlerTurnDamaged(u32 battler)

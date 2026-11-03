@@ -803,6 +803,7 @@ struct BattleTestRunnerState
     bool8 runWhen:1;
     bool8 runScene:1;
     bool8 runThen:1;
+    bool8 runAfterCleanup:1;
     bool8 runFinally:1;
     bool8 runningFinally:1;
     bool8 hasTornDownBattle:1;
@@ -1283,6 +1284,12 @@ void QueueStatus(u32 sourceLine, struct BattlePokemon *battler, struct StatusEve
 /* Then */
 
 #define THEN for (; gBattleTestRunnerState->runThen; gBattleTestRunnerState->runThen = FALSE)
+
+/* After Cleanup*/
+
+#define AFTER_CLEANUP \
+    for (; gBattleTestRunnerState->runAfterCleanup; \
+           gBattleTestRunnerState->runAfterCleanup = FALSE)
 
 /* Finally */
 

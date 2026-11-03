@@ -1609,8 +1609,8 @@ BattleScript_AutotomizeWeightLoss::
 
 BattleScript_FinalGambit::
 	setatkhptozero
-	healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE
-	datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+	healthbarupdate BS_ATTACKER, INSTANT_DEATH_HP_UPDATE
+	datahpupdate BS_ATTACKER, INSTANT_DEATH_HP_UPDATE
 	tryfaintmon BS_ATTACKER
 	return
 
@@ -2060,6 +2060,21 @@ BattleScript_EffectMetalBurst::
 	adjustdamage
 	goto BattleScript_HitFromAtkAnimation
 
+BattleScript_EffectLunarDance::
+	attackcanceler
+	jumpifbattletype BATTLE_TYPE_ARENA, BattleScript_ButItFailed
+	jumpifcantswitch SWITCH_IGNORE_ESCAPE_PREVENTION | BS_ATTACKER, BattleScript_ButItFailed
+	attackanimation
+	waitanimation
+	instanthpdrop
+	setatkhptozero
+	tryfaintmon BS_ATTACKER
+	callnative BS_ResolveBreakBars
+	storehealingwish BS_ATTACKER
+	jumpiffainted BS_ATTACKER, TRUE, BattleScript_EffectHealingWishEnd
+	moveendall
+	goto BattleScript_MoveSwitch
+
 BattleScript_EffectHealingWish::
 	attackcanceler
 	jumpifcantswitch SWITCH_IGNORE_ESCAPE_PREVENTION | BS_ATTACKER, BattleScript_ButItFailed
@@ -2098,6 +2113,14 @@ BattleScript_HealingWishActivates::
 BattleScript_LunarDanceActivates::
 	setbyte cMULTISTRING_CHOOSER, 1
 	restoremovepp
+	call BattleScript_EffectHealingWishRestore
+	trysavedbreakbar BS_ATTACKER, BattleScript_LunarDanceBarEnd
+	fillsavedbreakbar BS_ATTACKER
+	animatesavedbreakbar BS_ATTACKER
+	printstring STRINGID_LUNAR_DANCE_BREAK_BAR
+	waitmessage B_WAIT_TIME_LONG
+BattleScript_LunarDanceBarEnd:
+	return
 BattleScript_EffectHealingWishRestore:
 	printfromtable gHealingWishStringIds
 	waitmessage B_WAIT_TIME_LONG
@@ -5181,8 +5204,8 @@ BattleScript_EncoredNoMore::
 BattleScript_DestinyBondTakesLife::
 	printstring STRINGID_PKMNTOOKFOE
 	waitmessage B_WAIT_TIME_LONG
-	healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE
-	datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+	healthbarupdate BS_ATTACKER, INSTANT_DEATH_HP_UPDATE
+	datahpupdate BS_ATTACKER, INSTANT_DEATH_HP_UPDATE
 	tryfaintmon BS_ATTACKER
 	return
 
@@ -5293,8 +5316,8 @@ BattleScript_StickyWebOnSwitchInEnd:
 BattleScript_PerishSongTakesLife::
 	printstring STRINGID_PKMNPERISHCOUNTFELL
 	waitmessage B_WAIT_TIME_LONG
-	healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE
-	datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+	healthbarupdate BS_ATTACKER, INSTANT_DEATH_HP_UPDATE
+	datahpupdate BS_ATTACKER, INSTANT_DEATH_HP_UPDATE
 	tryfaintmon BS_ATTACKER
 	end2
 
@@ -9050,6 +9073,16 @@ BattleScript_KazuradropTransform::
 	waitmessage B_WAIT_TIME_LONG
 	return
 
+BattleScript_BreakBarRefill::
+    callnative BS_RefillBreakBar
+    healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
+    datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
+    return
+
+BattleScript_BreakBarReturn::
+    restoretarget
+    return
+
 BattleScript_KazuradropTransformReturn::
 	critmessage
 	waitmessage B_WAIT_TIME_LONG
@@ -9095,15 +9128,19 @@ BattleScript_KazuraLegendPunishSwitchIn::
    end3
 
 BattleScript_BugSpacePassiveOHKO::
-	kazuradialogue STRINGID_BUGSPACEPASSIVEOHKO, 1
-	playmoveanimation MOVE_HURRICANE
-	kazuradialogue STRINGID_BUGSPACEPASSIVEFAINT, 1
-	healthbarupdate BS_TARGET, PASSIVE_HP_UPDATE
-	datahpupdate BS_TARGET, PASSIVE_HP_UPDATE
-	waitmessage B_WAIT_TIME_LONG
-	tryfaintmon BS_TARGET
-	callnative BS_TrySetKazGameOverFromBattle
-	end2
+    kazuradialogue STRINGID_BUGSPACEPASSIVEOHKO, 1
+    playmoveanimation MOVE_HURRICANE
+    kazuradialogue STRINGID_BUGSPACEPASSIVEFAINT, 1
+
+    callnative BS_StartKazuraStackBreaker
+    callnative BS_AnimateKazuraStackBreaker
+
+    datahpupdate BS_TARGET, INSTANT_DEATH_HP_UPDATE
+
+    waitmessage B_WAIT_TIME_LONG
+    tryfaintmon BS_TARGET
+    callnative BS_TrySetKazGameOverFromBattle
+    end2
 
 BattleScript_BugSpaceMinimize::
 	kazuradialogue STRINGID_TAUNTEDBYKAZURAMINIMIZE
@@ -9222,9 +9259,41 @@ BattleScript_EffectArcanumWish::
     trycastoriawish BattleScript_ButItFailed
     attackanimation
     waitanimation
+    jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_ENDURANCE, BattleScript_CastoriaWishEndurance
     printstring STRINGID_CASTORIA_WISH_DOMINATION
     waitmessage B_WAIT_TIME_LONG
     goto BattleScript_MoveEnd
+
+BattleScript_CastoriaWishEndurance::
+    fillsavedbreakbar BS_ATTACKER
+    animatesavedbreakbar BS_ATTACKER
+    printstring STRINGID_CASTORIA_WISH_ENDURANCE
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_CastoriaEnduranceBreak::
+BattleScript_RestoreSavedBreakBar::
+    callnative BS_RestoreSavedBreakBar
+    syncsavedbreakbarhp BS_TARGET
+    revealsavedbreakbar BS_TARGET
+    return
+
+BattleScript_ResolveBreakBarsEnd2::
+    callnative BS_ResolveBreakBars
+    end2
+
+BattleScript_BreakCharmEnd2::
+    call BattleScript_BreakCharmRet
+    end2
+
+BattleScript_BreakCharmRet::
+    playanimation BS_SCRIPTING, B_ANIM_HELD_ITEM_EFFECT
+    waitanimation
+    fillsavedbreakbar BS_SCRIPTING
+    animatesavedbreakbar BS_SCRIPTING
+    printstring STRINGID_BREAK_CHARM_ACTIVATES
+    waitmessage B_WAIT_TIME_LONG
+    return
 
 BattleScript_EffectPolymorph::
     attackcanceler

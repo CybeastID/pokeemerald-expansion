@@ -13,6 +13,7 @@
 #include "constants/battle_string_ids.h"
 #include "kazuradrop_battle_ui.h"
 #include "castoria_battle_ui.h"
+#include "battle_break_bar.h"
 
 void AllocateBattleResources(void)
 {
@@ -58,6 +59,7 @@ void FreeBattleResources(void)
 
     gFieldStatuses = 0;
     DestroyAllKazuradropBuffIcons();
+    FreeBreakBarGraphics();
     FreeMageArmorIcons();
     if (gBattleResources != NULL)
     {

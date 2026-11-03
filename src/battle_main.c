@@ -3938,7 +3938,7 @@ static void TryDoEventsBeforeFirstTurn(void)
         break;
     case FIRST_TURN_EVENTS_CASTORIA_CHECK:
     {
-            DebugPrintf("CASTORIA_CHECK entered, nameResult=%d", gBattleStruct->castoria.nameResult);
+            // DebugPrintf("CASTORIA_CHECK entered, nameResult=%d", gBattleStruct->castoria.nameResult);
         for (i = 0; i < gBattlersCount; i++)
         {
           if (TryCastoriaNameTheft(i, FALSE))
@@ -5625,6 +5625,74 @@ static void HandleEndTurn_MonFled(void)
     gBattleMainFunc = HandleEndTurn_FinishBattle;
 }
 
+
+static void RestorePlayerBreakBarHp(void)
+{
+    u32 consolidatedHp[PARTY_SIZE] = {0};
+    bool32 hasBreakBars[PARTY_SIZE] = {FALSE};
+
+    // Capture HP before form restoration and stat recalculation.
+    for (u32 slot = 0; slot < PARTY_SIZE; slot++)
+    {
+        struct PartyState *state =
+            &gBattleStruct->partyState[B_SIDE_PLAYER][slot];
+
+        if (state->breakBarConfig == NULL)
+            continue;
+
+        hasBreakBars[slot] = TRUE;
+
+        // The party stores the active layer, including switched-out mons.
+        consolidatedHp[slot] = GetMonData(
+            &gPlayerParty[slot], MON_DATA_HP);
+
+        // Prefer the live battle HP for mons still on the field.
+        for (u32 battler = 0; battler < gBattlersCount; battler++)
+        {
+            if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+                continue;
+
+            if (gBattlerPartyIndexes[battler] != slot)
+                continue;
+
+            if (gAbsentBattlerFlags & (1u << battler))
+                continue;
+
+            consolidatedHp[slot] = gBattleMons[battler].hp;
+            break;
+        }
+
+        // Only surviving, explicitly saved layers contribute HP.
+        for (u32 layer = 0; layer < state->breakBarsRemaining; layer++)
+        {
+            if (state->breakBarSavedMaxHp[layer] != 0)
+                consolidatedHp[slot] += state->breakBarSavedHp[layer];
+        }
+    }
+
+    // Restore ordinary stats and forms before writing final HP.
+    for (u32 slot = 0; slot < PARTY_SIZE; slot++)
+    {
+        bool32 changedForm = TryRevertPartyMonFormChange(slot);
+
+        if (!changedForm
+         && (B_RECALCULATE_STATS >= GEN_5 || hasBreakBars[slot]))
+            CalculateMonStats(&gPlayerParty[slot]);
+    }
+
+    // Apply consolidated HP, capped at ordinary Max HP.
+    for (u32 slot = 0; slot < PARTY_SIZE; slot++)
+    {
+        if (!hasBreakBars[slot])
+            continue;
+
+        u32 maxHp = GetMonData(&gPlayerParty[slot], MON_DATA_MAX_HP);
+        u16 hp = min(consolidatedHp[slot], maxHp);
+
+        SetMonData(&gPlayerParty[slot], MON_DATA_HP, &hp);
+    }
+}
+
 static void HandleEndTurn_FinishBattle(void)
 {
     u32 i, battler;
@@ -5706,15 +5774,19 @@ static void HandleEndTurn_FinishBattle(void)
             if (GetActiveGimmick(battler) == GIMMICK_DYNAMAX)
                 UndoDynamax(battler);
         }
-
-        for (i = 0; i < PARTY_SIZE; i++)
+    #if 0   // Calculation replaced by new helper to do Break Bar things.
+        /* for (i = 0; i < PARTY_SIZE; i++)
         {
             bool32 changedForm = TryRevertPartyMonFormChange(i);
 
             // Recalculate the stats of every party member before the end
             if (!changedForm && B_RECALCULATE_STATS >= GEN_5)
                 CalculateMonStats(&gPlayerParty[i]);
-        }
+        } */
+    #endif
+        RestorePlayerBreakBarHp();
+        if (gTestRunnerEnabled)
+    TestRunner_Battle_AfterCleanup();
         // Clear battle mon species to avoid a bug on the next battle that causes
         // healthboxes loading incorrectly due to it trying to create a Mega Indicator
         // if the previous battler would've had it.

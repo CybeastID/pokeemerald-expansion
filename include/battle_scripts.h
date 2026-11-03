@@ -477,6 +477,9 @@ extern const u8 BattleScript_BattlerFormChangeWithStringEnd3[];
 extern const u8 BattleScript_DampPreventsAftermath[];
 extern const u8 BattleScript_HealingWishActivates[];
 extern const u8 BattleScript_LunarDanceActivates[];
+extern const u8 BattleScript_EffectLunarDance[];
+extern const u8 BattleScript_BreakCharmEnd2[];
+extern const u8 BattleScript_BreakCharmRet[];
 extern const u8 BattleScript_ShellTrapSetUp[];
 extern const u8 BattleScript_StealthRockActivates[];
 extern const u8 BattleScript_CouldntFullyProtect[];
@@ -878,5 +881,10 @@ extern const u8 BattleScript_TrainerSlideKazuradropSendoutRet[];
 extern const u8 BattleScript_KazuraLegendPunishSwitchIn[];
 extern const u8 BattleScript_EffectPolymorph[];
 extern const u8 BattleScript_EffectArcanumWish[];
+extern const u8 BattleScript_BreakBarRefill[];
+extern const u8 BattleScript_BreakBarReturn[];
+extern const u8 BattleScript_CastoriaEnduranceBreak[];
+extern const u8 BattleScript_RestoreSavedBreakBar[];
+extern const u8 BattleScript_ResolveBreakBarsEnd2[];
 
 #endif // GUARD_BATTLE_SCRIPTS_H

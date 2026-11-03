@@ -16,6 +16,7 @@
 #include "battle_anim.h"
 #include "data.h"
 #include "kazuradrop_battle_ui.h"
+#include "battle_break_bar.h"
 
 // this file's functions
 static void CB2_ReshowBattleScreenAfterMenu(void);
@@ -167,6 +168,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         FillAroundBattleWindows();
         // menu close/return reshow path wipes sprites/OBJ tiles; recreate ours
         ReshowKazuradropBattleUI();
+        ReshowBreakBars();
         break;
     }
 
@@ -252,6 +254,7 @@ static void CB2_ReshowBlankBattleScreenAfterMenu(void)
         FillAroundBattleWindows();
         // menu close/return reshow path wipes sprites/OBJ tiles; recreate ours
         ReshowKazuradropBattleUI();
+        ReshowBreakBars();
         break;
     }
 

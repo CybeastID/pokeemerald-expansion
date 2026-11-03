@@ -15057,6 +15057,20 @@ const struct Item gItemsInfo[] =
         .iconPic = gItemIcon_PokeshiDoll,
         .iconPalette = gItemIconPalette_PokeshiDoll,
     },
+    [ITEM_BREAK_CHARM] =
+    {
+        .name = ITEM_NAME("Break Charm"),
+        .price = 30000,
+        .holdEffect = HOLD_EFFECT_BREAK_CHARM,
+        .description = COMPOUND_STRING("Grants an extra HP\nbar once per battle\nwhen held."),
+        .pocket = POCKET_ITEMS,
+        .sortType = ITEM_TYPE_HELD_ITEM,
+        .type = ITEM_USE_BAG_MENU,
+        .fieldUseFunc = ItemUseOutOfBattle_CannotUse,
+        .flingPower = 30,
+        .iconPic = gItemIcon_ClearAmulet,
+        .iconPalette = gItemIconPalette_ClearAmulet,
+    },
 };
 
 #undef ITEM_NAME

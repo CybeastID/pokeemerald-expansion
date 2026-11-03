@@ -1,6 +1,7 @@
 #include "global.h"
 #include "malloc.h"
 #include "battle.h"
+#include "battle_break_bar.h"
 #include "pokemon.h"
 #include "battle_controllers.h"
 #include "battle_interface.h"
@@ -35,7 +36,6 @@
 #include "constants/items.h"
 #include "caps.h"
 #include "event_data.h"
-#include "kazuradrop_battle_ui.h"
 // #include "castoria_name_theft.h" // Optional Mage Armor healthbox offset below.
 
 enum
@@ -732,7 +732,7 @@ u8 CreateBattlerHealthboxSprites(u8 battler)
     gBattleStruct->ballSpriteIds[0] = MAX_SPRITES;
     gBattleStruct->ballSpriteIds[1] = MAX_SPRITES;
     gBattleStruct->moveInfoSpriteId = MAX_SPRITES;
-    DebugPrintf("CBHS battler=%d species=%d isKazu=%d", battler, gBattleMons[battler].species, gBattleMons[battler].species == SPECIES_KAZURADROP);
+   // DebugPrintf("CBHS battler=%d species=%d isKazu=%d", battler, gBattleMons[battler].species, gBattleMons[battler].species == SPECIES_KAZURADROP);
     return healthboxLeftSpriteId;
 }
 
@@ -2114,7 +2114,6 @@ void UpdateHealthboxAttribute(u8 healthboxSpriteId, struct Pokemon *mon, u8 elem
 }
 
 #define B_EXPBAR_PIXELS 64
-#define B_HEALTHBAR_PIXELS 48
 
 s32 MoveBattleBar(u8 battler, u8 healthboxSpriteId, u8 whichBar, u8 unused)
 {
@@ -2170,21 +2169,11 @@ static void MoveBattleBarGraphically(u8 battler, u8 whichBar)
                             &gBattleSpritesDataPtr->battleBars[battler].currValue,
                             array, B_HEALTHBAR_PIXELS / 8);
 
-        DebugPrintf("MBBG battler=%d species=%d isKazu=%d", battler, gBattleMons[battler].species, gBattleMons[battler].species == SPECIES_KAZURADROP);
-
-        if (gBattleMons[battler].species == SPECIES_KAZURADROP)
-        {
-            u8 healthbarSpriteId = gSprites[gBattleSpritesDataPtr->battleBars[battler].healthboxSpriteId].hMain_HealthBarSpriteId;
-            u8 curPalNum = gSprites[healthbarSpriteId].oam.paletteNum;
-            u8 kazuPalSlot = IndexOfSpritePaletteTag(TAG_KAZU_HP_BAR_PAL);
-            DebugPrintf("MBBG kazu healthbarSpriteId=%d curPalNum=%d kazuPalSlot=%d match=%d", healthbarSpriteId, curPalNum, kazuPalSlot, curPalNum == kazuPalSlot);
-            if (curPalNum == kazuPalSlot)
-                barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;
-            else if (gBattleStruct->bugSpace.moveSwapActive & (1u << battler))
-                barElementId = HEALTHBOX_GFX_HP_BAR_RED;      // post-break: intentional red
-            else
-                barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;    // Bug Space not active yet: normal greenDebugPrintf("MBBG kazu chose barElementId=%d", barElementId);
-        }
+        RefreshBreakBarPalette(battler, FALSE);
+        if (GetBreakBarCount(battler) != 0)
+            barElementId = HEALTHBOX_GFX_HP_BAR_GREEN; // Fill colors come from this layer's palette.
+        else if (IsBreakBarBase(battler))
+            barElementId = HEALTHBOX_GFX_HP_BAR_RED;
         else if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 50 / 100)) // more than 50 % hp
             barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;
         else if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 20 / 100)) // more than 20% hp
@@ -2225,6 +2214,49 @@ static void MoveBattleBarGraphically(u8 battler, u8 whichBar)
         }
         break;
     }
+}
+
+bool32 DrawHealthbarOverlay(u32 battler, u32 baseHp, u32 baseMaxHp, u32 overlayPixels)
+{
+    if (battler >= gBattlersCount || baseMaxHp == 0 || baseHp > baseMaxHp
+     || overlayPixels > B_HEALTHBAR_PIXELS)
+        return FALSE;
+
+    u32 healthbox = gHealthboxSpriteIds[battler];
+    if (healthbox >= MAX_SPRITES || !gSprites[healthbox].inUse
+     || gSprites[healthbox].hMain_Battler != battler)
+        return FALSE;
+    u32 healthbar = gSprites[healthbox].hMain_HealthBarSpriteId;
+    if (healthbar >= MAX_SPRITES || !gSprites[healthbar].inUse
+     || gSprites[healthbar].oam.tileNum + 8 > TOTAL_OBJ_TILE_COUNT)
+        return FALSE;
+
+    u32 basePixels = min(baseHp * B_HEALTHBAR_PIXELS / baseMaxHp, B_HEALTHBAR_PIXELS);
+    if (baseHp != 0 && basePixels == 0)
+        basePixels = 1;
+
+    for (u32 i = 0; i < B_HEALTHBAR_PIXELS / 8; i++)
+    {
+        u32 baseInTile = min(basePixels, 8);
+        u32 overlayInTile = min(overlayPixels, 8);
+        const u8 *redTile = GetHealthboxElementGfxPtr(HEALTHBOX_GFX_HP_BAR_RED) + baseInTile * TILE_SIZE_4BPP;
+        const u8 *purpleTile = GetHealthboxElementGfxPtr(HEALTHBOX_GFX_HP_BAR_GREEN) + overlayInTile * TILE_SIZE_4BPP;
+        u32 tile[TILE_SIZE_4BPP / sizeof(u32)];
+        u8 *tileBytes = (u8 *)tile;
+
+        for (u32 byte = 0; byte < TILE_SIZE_4BPP; byte++)
+        {
+            u32 column = (byte % 4) * 2;
+            u32 mask = overlayInTile >= column + 2 ? 0xFF
+                     : overlayInTile > column ? 0x0F : 0;
+            tileBytes[byte] = (redTile[byte] & ~mask) | (purpleTile[byte] & mask);
+        }
+        CpuCopy32(tile, (void *)(OBJ_VRAM0
+            + (gSprites[healthbar].oam.tileNum + 2 + i) * TILE_SIZE_4BPP), TILE_SIZE_4BPP);
+        basePixels -= baseInTile;
+        overlayPixels -= overlayInTile;
+    }
+    return TRUE;
 }
 
 static s32 CalcNewBarValue(s32 maxValue, s32 oldValue, s32 receivedValue, s32 *currValue, u8 scale, u16 toAdd)

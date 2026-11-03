@@ -55,6 +55,18 @@
 #include "constants/pokemon.h"
 #include "kazuradrop_battle_ui.h"
 #include "castoria_name_theft.h"
+#include "battle_break_bar.h"
+
+static const struct BreakBarConfig sKazuradropBreakBar =
+{
+    .phases[BREAK_BAR_PURPLE - 1] =
+    {
+        .onBreakScript = BattleScript_KazuradropTransform,
+        .afterBreakScript = BattleScript_KazuradropTransformReturn,
+    },
+    .extraBars = 1,
+    .flags = BREAK_BAR_IGNORE_WHILE_TRANSFORMED,
+};
 
 /*
 NOTE: The data and functions in this file up until (but not including) sSoundMovesTable
@@ -960,6 +972,9 @@ void HandleAction_NothingIsFainted(void)
 void HandleAction_ActionFinished(void)
 {
     u32 i, j;
+    if (gActionsByTurnOrder[gCurrentTurnActionNumber] == B_ACTION_USE_MOVE
+     && TryResolveBreakBarsAfterMove())
+        return;
     bool32 afterYouActive = gSpecialStatuses[gBattlerByTurnOrder[gCurrentTurnActionNumber + 1]].afterYou;
     gBattleStruct->monToSwitchIntoId[gBattlerByTurnOrder[gCurrentTurnActionNumber]] = gSelectedMonPartyId = PARTY_SIZE;
     gCurrentTurnActionNumber++;
@@ -1965,6 +1980,7 @@ bool32 HandleFaintedMonActions(void)
             {
                 gBattlerFainted = gBattlerTarget = gBattleStruct->eventState.faintedActionBattler;
                 if (gBattleMons[gBattleStruct->eventState.faintedActionBattler].hp == 0
+                 && !IsBreakBarPending(gBattleStruct->eventState.faintedActionBattler)
                  && !(gBattleStruct->givenExpMons & (1u << gBattlerPartyIndexes[gBattleStruct->eventState.faintedActionBattler]))
                  && !(gAbsentBattlerFlags & (1u << gBattleStruct->eventState.faintedActionBattler)))
                 {
@@ -2009,6 +2025,7 @@ bool32 HandleFaintedMonActions(void)
             {
                 gBattlerFainted = gBattlerTarget = gBattleStruct->eventState.faintedActionBattler;
                 if (gBattleMons[gBattleStruct->eventState.faintedActionBattler].hp == 0
+                 && !IsBreakBarPending(gBattleStruct->eventState.faintedActionBattler)
                  && !(gAbsentBattlerFlags & (1u << gBattleStruct->eventState.faintedActionBattler)))
                 {
                     BattleScriptExecute(BattleScript_HandleFaintedMon);
@@ -4745,6 +4762,9 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     gBattleStruct->bugSpace.bpThreshold = 160;
                     gBattleStruct->bugSpace.bpDecayRate = 10;
                     gBattleStruct->bugSpace.bpDecayRatePhase2 = 15;
+                    if (!gBattleMons[battler].volatiles.transformed
+                     && GetBattlerPartyState(battler)->breakBarConfig == NULL)
+                        ActivateBreakBar(battler, &sKazuradropBreakBar);
                     CreateBugSpacePanel(battler);
                     gEffectBattler = gBattlerAbility = battler;
                     BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);

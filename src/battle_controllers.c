@@ -2637,9 +2637,8 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
          || IsControllerRecordedPartner(battler)
          || IsControllerWally(battler))
             UpdateHpTextInHealthbox(gHealthboxSpriteIds[battler], HP_CURRENT, 0, maxHP);
-        // For INSTANT_HP_BAR_DROP we still want HP_BAR expectations to match the real HP
-        // (the move logic already updated gBattleMons[battler].hp).
-        TestRunner_Battle_RecordHP(battler, curHP, curHP);
+        // The displayed bar drops to zero; the move script synchronizes actual HP.
+        TestRunner_Battle_RecordHP(battler, curHP, 0);
     }
 
     gBattlerControllerFuncs[battler] = Controller_WaitForHealthBar;

@@ -64,13 +64,6 @@ void FreeKazuradropBattleIconGfx(void);
 void ReshowKazuradropBattleUI(void);
 
 // ---------------------------------------------------------------
-// HP bar palette override (purple break bar → red after break)
-// ---------------------------------------------------------------
-void LoadKazuradropHpBarPalette(void);
-void SetKazuradropHpBarPalette(u32 battler, bool32 usePurple);
-void StartKazuHpBarPurpleFade(u32 battler);
-
-// ---------------------------------------------------------------
 // Kazuradrop dialogue box (Moon Cell styled message window)
 // ---------------------------------------------------------------
 

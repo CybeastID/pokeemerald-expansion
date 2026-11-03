@@ -81,6 +81,7 @@ bool32 HasMageArmor(u32 battler);
 
 // Only implemented, route-eligible outcomes can be selected or executed.
 bool32 CastoriaCanWishFor(u32 battler, u32 outcome);
+// Current production picker. Endurance tactics are deferred; tests can nominate it.
 u32 CastoriaGetAvailableWishOutcome(u32 battler);
 void BS_CastoriaTryWish(void);
 

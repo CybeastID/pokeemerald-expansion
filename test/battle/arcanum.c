@@ -129,7 +129,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish Domination requires the true name and exactly z
                     opponent->volatiles.castoriaTrueNameCharges = charges;
                     gBattleStruct->castoria.wishUsed = used;
                     EXPECT_EQ(CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION), eligible);
-                    EXPECT_EQ(IsArcanumSlotUsable(battler, 6), eligible);
+                    EXPECT_EQ(IsArcanumSlotUsable(battler, 6), !used
+                        && (name == CASTORIA_NAME_TRUE || name == CASTORIA_NAME_FALSE));
                 }
             }
         }
@@ -156,7 +157,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish leaves unimplemented and invalid outcomes unava
         {
             gBattleStruct->castoria.nameResult = name;
             for (outcome = CASTORIA_WISH_REDUCTION; outcome <= CASTORIA_WISH_NORMALITY; outcome++)
-                EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, outcome), FALSE);
+                if (outcome != CASTORIA_WISH_ENDURANCE)
+                    EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, outcome), FALSE);
         }
         EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, CASTORIA_WISH_NONE), FALSE);
         EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, 255), FALSE);
