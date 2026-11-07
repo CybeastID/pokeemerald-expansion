@@ -881,6 +881,8 @@ extern const u8 BattleScript_TrainerSlideKazuradropSendoutRet[];
 extern const u8 BattleScript_KazuraLegendPunishSwitchIn[];
 extern const u8 BattleScript_EffectPolymorph[];
 extern const u8 BattleScript_EffectArcanumWish[];
+extern const u8 BattleScript_CastoriaDebilitationRelease[];
+extern const u8 BattleScript_KoankoConjureTeam[];
 extern const u8 BattleScript_BreakBarRefill[];
 extern const u8 BattleScript_BreakBarReturn[];
 extern const u8 BattleScript_CastoriaEnduranceBreak[];

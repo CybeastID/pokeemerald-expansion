@@ -130,7 +130,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Domination requires the true name and exactly z
                     gBattleStruct->castoria.wishUsed = used;
                     EXPECT_EQ(CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION), eligible);
                     EXPECT_EQ(IsArcanumSlotUsable(battler, 6), !used
-                        && (name == CASTORIA_NAME_TRUE || name == CASTORIA_NAME_FALSE));
+                        && name != CASTORIA_NAME_NONE);
                 }
             }
         }
@@ -157,7 +157,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish leaves unimplemented and invalid outcomes unava
         {
             gBattleStruct->castoria.nameResult = name;
             for (outcome = CASTORIA_WISH_REDUCTION; outcome <= CASTORIA_WISH_NORMALITY; outcome++)
-                if (outcome != CASTORIA_WISH_ENDURANCE)
+                if (outcome != CASTORIA_WISH_ENDURANCE && outcome != CASTORIA_WISH_DEBILITATION)
                     EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, outcome), FALSE);
         }
         EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, CASTORIA_WISH_NONE), FALSE);
@@ -692,7 +692,7 @@ SINGLE_BATTLE_TEST("Arcanum Special AI requires both the flag and a registered c
     u32 expectedSlot, expectedSpellCalls;
     PARAMETRIZE { flags = 0; registered = TRUE; expectedSlot = 0; expectedSpellCalls = 0; }
     PARAMETRIZE { flags = AI_FLAG_DYNAMIC_FUNC; registered = FALSE; expectedSlot = 0; expectedSpellCalls = 0; }
-    PARAMETRIZE { flags = AI_FLAG_DYNAMIC_FUNC; registered = TRUE; expectedSlot = 4; expectedSpellCalls = 3; }
+    PARAMETRIZE { flags = AI_FLAG_DYNAMIC_FUNC; registered = TRUE; expectedSlot = 4; expectedSpellCalls = 4; }
     GIVEN {
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_CASTORIA) { Moves(MOVE_CELEBRATE); }
@@ -735,7 +735,7 @@ SINGLE_BATTLE_TEST("Arcanum Special AI preserves regular ties and can adjust reg
         EXPECT_EQ(ArcanumTestChooseMove(B_POSITION_OPPONENT_LEFT, AI_FLAG_DYNAMIC_FUNC,
                                       ArcanumTestDynamicScore), expectedSlot);
         EXPECT_EQ(sArcanumTestRegularCalls, 1);
-        EXPECT_EQ(sArcanumTestSpellCalls, 3);
+        EXPECT_EQ(sArcanumTestSpellCalls, 4);
         EXPECT_EQ(gAiThinkingStruct->score[0], regularScore);
         EXPECT_EQ(opponent->moves[0], MOVE_FIREBALL);
         EXPECT_EQ(opponent->pp[0], GetMovePP(MOVE_FIREBALL));

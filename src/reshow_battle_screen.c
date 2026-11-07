@@ -17,6 +17,7 @@
 #include "data.h"
 #include "kazuradrop_battle_ui.h"
 #include "battle_break_bar.h"
+#include "battle_status_icons.h"
 
 // this file's functions
 static void CB2_ReshowBattleScreenAfterMenu(void);
@@ -73,6 +74,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         break;
     case 3:
         ResetSpriteData();
+        InitNoOrderChangeIcons();
         break;
     case 4:
         FreeAllSpritePalettes();
@@ -217,6 +219,7 @@ static void CB2_ReshowBlankBattleScreenAfterMenu(void)
         break;
     case 3:
         ResetSpriteData();
+        InitNoOrderChangeIcons();
         break;
     case 4:
         FreeAllSpritePalettes();

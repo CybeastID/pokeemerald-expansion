@@ -11,6 +11,8 @@
 #include "field_message_box.h"
 
 #include "dexnav.h"
+#include "trainer_break_bars.h"
+#include "constants/trainers.h"
 
 #define RAM_SCRIPT_MAGIC 51
 
@@ -43,6 +45,7 @@ void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTable
 {
     s32 i;
 
+    memset(ctx->trainerBreakBarRules, 0, sizeof(ctx->trainerBreakBarRules));
     ctx->mode = SCRIPT_MODE_STOPPED;
     ctx->scriptPtr = NULL;
     ctx->stackDepth = 0;
@@ -74,6 +77,7 @@ void SetupNativeScript(struct ScriptContext *ctx, bool8 (*ptr)(void))
 
 void StopScript(struct ScriptContext *ctx)
 {
+    memset(ctx->trainerBreakBarRules, 0, sizeof(ctx->trainerBreakBarRules));
     ctx->mode = SCRIPT_MODE_STOPPED;
     ctx->scriptPtr = NULL;
 }
@@ -106,7 +110,7 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
 
             if (!ctx->scriptPtr)
             {
-                ctx->mode = SCRIPT_MODE_STOPPED;
+                StopScript(ctx);
                 return FALSE;
             }
 
@@ -122,7 +126,7 @@ bool8 RunScriptCommand(struct ScriptContext *ctx)
 
             if (func >= ctx->cmdTableEnd)
             {
-                ctx->mode = SCRIPT_MODE_STOPPED;
+                StopScript(ctx);
                 return FALSE;
             }
 
@@ -639,4 +643,44 @@ void Script_RequestWriteVar_Internal(u32 varId)
     if (SPECIAL_VARS_START <= varId && varId <= SPECIAL_VARS_END)
         return;
     Script_RequestEffects(SCREFF_V1 | SCREFF_SAVE);
+}
+
+// Overrides belong to the initiating script and only affect initial generation.
+void Script_SetTrainerBreakBars(struct ScriptContext *ctx)
+{
+    u16 trainerId = VarGet(ScriptReadHalfword(ctx));
+    const struct TrainerBreakBarRules *rules = (const struct TrainerBreakBarRules *)ScriptReadWord(ctx);
+    Script_RequestEffects(SCREFF_V1);
+    gSpecialVar_Result = FALSE;
+    if (trainerId == TRAINER_NONE || trainerId >= TRAINERS_COUNT || rules == NULL)
+        return;
+    for (u32 i = 0; i < TRAINER_BREAK_BAR_OVERRIDE_COUNT; i++)
+    {
+        if (ctx->trainerBreakBarRules[i] != NULL && ctx->trainerBreakBarIds[i] != trainerId)
+            continue;
+        ctx->trainerBreakBarIds[i] = trainerId;
+        ctx->trainerBreakBarRules[i] = rules;
+        gSpecialVar_Result = TRUE;
+        return;
+    }
+}
+
+const struct TrainerBreakBarRules *Script_TakeTrainerBreakBarOverride(u16 trainerId)
+{
+    for (u32 i = 0; i < TRAINER_BREAK_BAR_OVERRIDE_COUNT; i++)
+    {
+        if (sGlobalScriptContext.trainerBreakBarRules[i] != NULL
+         && sGlobalScriptContext.trainerBreakBarIds[i] == trainerId)
+        {
+            const struct TrainerBreakBarRules *rules = sGlobalScriptContext.trainerBreakBarRules[i];
+            sGlobalScriptContext.trainerBreakBarRules[i] = NULL;
+            return rules;
+        }
+    }
+    return NULL;
+}
+
+void Script_ClearTrainerBreakBarOverrides(void)
+{
+    memset(sGlobalScriptContext.trainerBreakBarRules, 0, sizeof(sGlobalScriptContext.trainerBreakBarRules));
 }

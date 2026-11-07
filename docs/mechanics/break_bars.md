@@ -1,5 +1,8 @@
 # Break Bar reference
 
+For trainer defaults, event-script overrides and Koanko's conjured team, see
+[Trainer Break Bars and Koanko](trainer_break_bars.md).
+
 The shared API is in `include/battle_break_bar.h`, implemented by
 `src/battle_break_bar.c`. Boss behavior opts in by registering a configuration;
 the faint hook and healthbar renderer do not identify species or abilities.
@@ -46,7 +49,8 @@ a layer. Perish Song, Destiny Bond and deliberate self-KO bypass that floor; OHK
 attacks also break normally. The final red bar has no passive-damage protection.
 
 Kazuradrop registers one extra purple bar when Bug Space first activates. Her
-configuration runs the existing transformation and return scripts. Dialogue,
+shared `gKazuradropBreakBarConfig` profile in `src/data/trainer_break_bars.h`
+runs the existing transformation and return scripts. Dialogue,
 doubled max HP, full restore, moveset changes, status cure, accelerated decay, and
 Guts remain Kazuradrop's policy. The configuration preserves her existing rule
 that transformation disables her break interception.

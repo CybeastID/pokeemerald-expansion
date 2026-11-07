@@ -633,7 +633,8 @@ struct BattlerState
     u32 wasAboveHalfHp:1; // For Berserk, Emergency Exit, Wimp Out and Anger Shell.
     u32 commanderSpecies:11;
     u32 selectionScriptFinished:1;
-    u32 padding:3;
+    u32 noOrderChange:1;
+    u32 padding:2;
     // End of Word
 };
 
@@ -683,6 +684,7 @@ struct BattleStruct
 {
     struct BattlerState battlerState[MAX_BATTLERS_COUNT];
     struct PartyState partyState[NUM_BATTLE_SIDES][PARTY_SIZE];
+    u8 koankoPhase; // enum KoankoPhase; keeps the original trainer identity.
     struct EventStates eventState;
     u16 moveTarget[MAX_BATTLERS_COUNT];
     u32 expShareExpValue;

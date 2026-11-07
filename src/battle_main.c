@@ -78,6 +78,7 @@
 #include "cable_club.h"
 #include "castoria_name_theft.h"
 #include "test/test_runner_battle.h"
+#include "trainer_break_bars.h"
 
 extern const struct BgTemplate gBattleBgTemplates[];
 extern const struct WindowTemplate *const gBattleWindowTemplates[];
@@ -575,6 +576,7 @@ static void CB2_InitBattleInternal(void)
         }
     }
 
+    Script_ClearTrainerBreakBarOverrides();
     gMain.inBattle = TRUE;
     gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;
 
@@ -1886,8 +1888,9 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
     }
 }
 
-u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags)
+u8 CreateNPCTrainerPartyWithBreakBars(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags, const struct TrainerBreakBarRules *rules)
 {
+    s32 partyOffset = party == gEnemyParty ? 0 : party == &gEnemyParty[PARTY_SIZE / 2] ? PARTY_SIZE / 2 : -1;
     u32 personalityValue;
     s32 i;
     u8 monsCount;
@@ -1998,7 +2001,7 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             {
                 u32 data = partyData[monIndex].dynamaxLevel;
                 if (partyData[monIndex].shouldUseDynamax)
-                    gBattleStruct->opponentMonCanDynamax |= 1 << i;
+                    gBattleStruct->opponentMonCanDynamax |= 1 << (i + (partyOffset >= 0 ? partyOffset : 0));
                 SetMonData(&party[i], MON_DATA_DYNAMAX_LEVEL, &data);
             }
             if (partyData[monIndex].gigantamaxFactor)
@@ -2008,11 +2011,13 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             }
             if (partyData[monIndex].teraType > 0)
             {
-                gBattleStruct->opponentMonCanTera |= 1 << i;
+                gBattleStruct->opponentMonCanTera |= 1 << (i + (partyOffset >= 0 ? partyOffset : 0));
                 enum Type data = partyData[monIndex].teraType;
                 SetMonData(&party[i], MON_DATA_TERA_TYPE, &data);
             }
             CalculateMonStats(&party[i]);
+            if (partyOffset >= 0 && rules != NULL)
+                InitializeTrainerBreakBar(partyOffset + i, rules, partyData[monIndex].species, monIndex);
 
             if (B_TRAINER_CLASS_POKE_BALLS >= GEN_7 && ball == -1)
             {
@@ -2025,9 +2030,17 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
     return trainer->partySize;
 }
 
+u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags)
+{
+    return CreateNPCTrainerPartyWithBreakBars(party, trainer, firstTrainer, battleTypeFlags, NULL);
+}
+
 static u8 CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum, bool8 firstTrainer)
 {
     u8 retVal;
+    const struct TrainerBreakBarRules *rules = Script_TakeTrainerBreakBarOverride(trainerNum);
+    if (rules == NULL && trainerNum < TRAINERS_COUNT)
+        rules = GetTrainerBreakBarRules(trainerNum, GetTrainerDifficultyLevel(trainerNum));
     if (trainerNum == TRAINER_SECRET_BASE)
         return 0;
     if (GetTrainerStructFromId(trainerNum)->overrideTrainer)
@@ -2042,11 +2055,11 @@ static u8 CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum, bool8 fir
         if (tempTrainer.partySize == 0)
             tempTrainer.partySize = origTrainer->partySize;
 
-        retVal = CreateNPCTrainerPartyFromTrainer(party, (const struct Trainer *)(&tempTrainer), firstTrainer, gBattleTypeFlags);
+        retVal = CreateNPCTrainerPartyWithBreakBars(party, &tempTrainer, firstTrainer, gBattleTypeFlags, rules);
     }
     else
     {
-        retVal = CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum), firstTrainer, gBattleTypeFlags);
+        retVal = CreateNPCTrainerPartyWithBreakBars(party, GetTrainerStructFromId(trainerNum), firstTrainer, gBattleTypeFlags, rules);
     }
     return retVal;
 }
@@ -3147,6 +3160,7 @@ void SwitchInClearSetData(u32 battler, struct Volatiles *volatilesCopy)
     enum BattleMoveEffects effect = GetMoveEffect(gCurrentMove);
     struct DisableStruct disableStructCopy = gDisableStructs[battler];
 
+    gBattleStruct->battlerState[battler].noOrderChange = FALSE;
     ClearIllusionMon(battler);
     if (effect != EFFECT_BATON_PASS)
     {
@@ -3304,6 +3318,7 @@ const u8* FaintClearSetData(u32 battler)
     s32 i;
     const u8 *result = NULL;
 
+    gBattleStruct->battlerState[battler].noOrderChange = FALSE;
     for (i = 0; i < NUM_BATTLE_STATS; i++)
         gBattleMons[battler].statStages[i] = DEFAULT_STAT_STAGE;
 
@@ -4404,7 +4419,8 @@ static void HandleTurnActionSelectionState(void)
                     break;
                 case B_ACTION_SWITCH:
                     gBattleStruct->battlerPartyIndexes[battler] = gBattlerPartyIndexes[battler];
-                    if (gBattleTypeFlags & BATTLE_TYPE_ARENA
+                    if (HasNoOrderChange(battler)
+                        || gBattleTypeFlags & BATTLE_TYPE_ARENA
                         || (!CanBattlerEscape(battler) && GetBattlerHoldEffect(battler) != HOLD_EFFECT_SHED_SHELL))
                     {
                         BtlController_EmitChoosePokemon(battler, B_COMM_TO_CONTROLLER, PARTY_ACTION_CANT_SWITCH, PARTY_SIZE, ABILITY_NONE, 0, gBattleStruct->battlerPartyOrders[battler]);

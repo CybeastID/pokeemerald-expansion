@@ -43,6 +43,8 @@
 #include "battle_controllers.h"
 #include "battle_break_bar.h"
 #include "battle_interface.h"
+#include "battle_util.h"
+#include "generational_changes.h"
 #include "daycare.h"
 #include "item.h"
 
@@ -451,7 +453,8 @@ bool32 IsArcanumSlotUsable(u32 battler, u32 slot)
 
     if (move == MOVE_ARCANUM_WISH
      && !CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION)
-     && !CastoriaCanWishFor(battler, CASTORIA_WISH_ENDURANCE))
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_ENDURANCE)
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_DEBILITATION))
         return FALSE;
 
     effect = GetMoveEffect(move);
@@ -534,6 +537,20 @@ bool32 HasMageArmor(u32 battler)
             & (1u << gBattlerPartyIndexes[battler]));
 }
 
+static u32 GetDebilitationTarget(u32 battler)
+{
+    u32 target = GetOppositeBattler(battler);
+    if (target < gBattlersCount && IsBattlerAlive(target))
+        return target;
+    if (IsDoubleBattle() && target < gBattlersCount)
+    {
+        target = GetPartnerBattler(target);
+        if (target < gBattlersCount && IsBattlerAlive(target))
+            return target;
+    }
+    return gBattlersCount;
+}
+
 bool32 CastoriaCanWishFor(u32 battler, u32 outcome)
 {
     if (battler >= gBattlersCount
@@ -552,6 +569,11 @@ bool32 CastoriaCanWishFor(u32 battler, u32 outcome)
         return (gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
              || gBattleStruct->castoria.nameResult == CASTORIA_NAME_FALSE)
             && GetBreakBarCount(battler) == 0;
+    case CASTORIA_WISH_DEBILITATION:
+        return (gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
+             || gBattleStruct->castoria.nameResult == CASTORIA_NAME_FALSE
+             || gBattleStruct->castoria.nameResult == CASTORIA_NAME_BACKED_OUT)
+            && GetDebilitationTarget(battler) < gBattlersCount;
     default:
         // Other named outcomes stay unavailable until their effects exist.
         return FALSE;
@@ -562,7 +584,7 @@ u32 CastoriaGetAvailableWishOutcome(u32 battler)
 {
     if (CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION))
         return CASTORIA_WISH_DOMINATION;
-    // Endurance has execution support; its production tactical policy is deferred.
+    // Endurance and Debilitation execute, but their tactical policies are deferred.
     return CASTORIA_WISH_NONE;
 }
 
@@ -596,6 +618,31 @@ void BS_CastoriaTryWish(void)
         }
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_ENDURANCE;
         break;
+    case CASTORIA_WISH_DEBILITATION:
+    {
+        u32 targetBattler = GetDebilitationTarget(battler);
+        struct BattlePokemon *target = &gBattleMons[targetBattler];
+
+        // Wish overrides initial status prevention. Existing counters and other
+        // ailments remain intact; later recovery and cures use their normal rules.
+        if (!(target->status1 & STATUS1_SLEEP))
+        {
+            if (B_SLEEP_TURNS >= GEN_5)
+                target->status1 |= STATUS1_SLEEP_TURN(1 + RandomUniform(RNG_SLEEP_TURNS, 1, 3));
+            else
+                target->status1 |= STATUS1_SLEEP_TURN(1 + RandomUniform(RNG_SLEEP_TURNS, 2, 5));
+            TryActivateSleepClause(targetBattler, gBattlerPartyIndexes[targetBattler]);
+        }
+        target->status1 |= STATUS1_POISON | STATUS1_BURN | STATUS1_FREEZE
+                        | STATUS1_PARALYSIS | STATUS1_FROSTBITE;
+        gBattleStruct->battlerState[targetBattler].noOrderChange = TRUE;
+        gEffectBattler = targetBattler;
+        BtlController_EmitSetMonData(targetBattler, B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE,
+            0, sizeof(target->status1), &target->status1);
+        MarkBattlerForControllerExec(targetBattler);
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_DEBILITATION;
+        break;
+    }
     default:
         gBattlescriptCurrInstr = cmd->failInstr;
         return;
@@ -603,6 +650,22 @@ void BS_CastoriaTryWish(void)
 
     gBattleStruct->castoria.wishUsed = TRUE;
     gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_CastoriaCancelDebilitationMoves(void)
+{
+    NATIVE_ARGS();
+    u32 caster = gBattlerAttacker;
+    const u8 *cancelScript = CancelMultiTurnMoves(gEffectBattler, SKY_DROP_CANCEL_MULTI_TURN_MOVES);
+
+    gBattlescriptCurrInstr = cmd->nextInstr;
+    if (cancelScript != NULL)
+    {
+        // Sky Drop may release and confuse a rampaging passenger. Its ordinary
+        // status-command return address is not valid for a native Wish command.
+        SaveBattlerAttacker(caster);
+        BattleScriptCall(BattleScript_CastoriaDebilitationRelease);
+    }
 }
 
 bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall)

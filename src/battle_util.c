@@ -56,17 +56,7 @@
 #include "kazuradrop_battle_ui.h"
 #include "castoria_name_theft.h"
 #include "battle_break_bar.h"
-
-static const struct BreakBarConfig sKazuradropBreakBar =
-{
-    .phases[BREAK_BAR_PURPLE - 1] =
-    {
-        .onBreakScript = BattleScript_KazuradropTransform,
-        .afterBreakScript = BattleScript_KazuradropTransformReturn,
-    },
-    .extraBars = 1,
-    .flags = BREAK_BAR_IGNORE_WHILE_TRANSFORMED,
-};
+#include "trainer_break_bars.h"
 
 /*
 NOTE: The data and functions in this file up until (but not including) sSoundMovesTable
@@ -2869,7 +2859,16 @@ static enum MoveCanceler CancelerMoveFailure(struct BattleContext *ctx)
             battleScript = BattleScript_ButItFailed;
         break;
     case EFFECT_TELEPORT:
-        // TODO: follow up: Can't make sense of teleport logic
+    // TODO: follow up: Can't make sense of teleport logic
+    case EFFECT_BATON_PASS:
+    case EFFECT_SHED_TAIL:
+        if (HasNoOrderChange(ctx->battlerAtk))
+            battleScript = BattleScript_ButItFailed;
+        break;
+    case EFFECT_LUNAR_DANCE:
+        if (HasNoOrderChange(ctx->battlerAtk)
+         && (GetBreakBarCount(ctx->battlerAtk) > 0 || IsBreakBarPending(ctx->battlerAtk)))
+            battleScript = BattleScript_ButItFailed;
         break;
     case EFFECT_LOW_KICK:
     case EFFECT_HEAT_CRASH:
@@ -4764,7 +4763,7 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
                     gBattleStruct->bugSpace.bpDecayRatePhase2 = 15;
                     if (!gBattleMons[battler].volatiles.transformed
                      && GetBattlerPartyState(battler)->breakBarConfig == NULL)
-                        ActivateBreakBar(battler, &sKazuradropBreakBar);
+                        ActivateBreakBar(battler, &gKazuradropBreakBarConfig);
                     CreateBugSpacePanel(battler);
                     gEffectBattler = gBattlerAbility = battler;
                     BattleScriptPushCursorAndCallback(BattleScript_BugSpaceStart);
@@ -5992,6 +5991,12 @@ u32 IsAbilityPreventingEscape(u32 battler)
     }
 
     return 0;
+}
+
+bool32 HasNoOrderChange(u32 battler)
+{
+    return battler < gBattlersCount
+        && gBattleStruct->battlerState[battler].noOrderChange;
 }
 
 bool32 CanBattlerEscape(u32 battler) // no ability check
@@ -10799,6 +10804,7 @@ bool32 TrySwitchInEjectPack(enum EjectPackTiming timing)
     {
         if (gDisableStructs[i].tryEjectPack
          && GetBattlerHoldEffect(i) == HOLD_EFFECT_EJECT_PACK
+         && !HasNoOrderChange(i)
          && IsBattlerAlive(i)
          && CountUsablePartyMons(i) > 0)
         {

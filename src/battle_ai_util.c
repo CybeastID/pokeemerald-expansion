@@ -5,6 +5,7 @@
 #include "battle_anim.h"
 #include "battle_ai_field_statuses.h"
 #include "battle_ai_util.h"
+#include "battle_util.h"
 #include "battle_ai_main.h"
 #include "battle_ai_switch_items.h"
 #include "battle_factory.h"
@@ -503,6 +504,8 @@ bool32 AI_CanBattlerEscape(u32 battler)
 {
     enum HoldEffect holdEffect = gAiLogicData->holdEffects[battler];
 
+    if (HasNoOrderChange(battler))
+        return FALSE;
     if (B_GHOSTS_ESCAPE >= GEN_6 && IS_BATTLER_OF_TYPE(battler, TYPE_GHOST))
         return TRUE;
     if (holdEffect == HOLD_EFFECT_SHED_SHELL)
@@ -513,6 +516,8 @@ bool32 AI_CanBattlerEscape(u32 battler)
 
 bool32 IsBattlerTrapped(u32 battlerAtk, u32 battlerDef)
 {
+    if (HasNoOrderChange(battlerDef))
+        return TRUE;
     if (AI_CanBattlerEscape(battlerDef))
         return FALSE;
 

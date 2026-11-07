@@ -14,11 +14,14 @@
 #include "kazuradrop_battle_ui.h"
 #include "castoria_battle_ui.h"
 #include "battle_break_bar.h"
+#include "battle_status_icons.h"
+#include "script.h"
 
 void AllocateBattleResources(void)
 {
     InitKazuradropBattleIcons();
     InitMageArmorIcons();
+    InitNoOrderChangeIcons();
     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
         InitTrainerHillBattleStruct();
 
@@ -54,6 +57,7 @@ void AllocateBattleResources(void)
 
 void FreeBattleResources(void)
 {
+    Script_ClearTrainerBreakBarOverrides();
     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
         FreeTrainerHillBattleStruct();
 
@@ -61,6 +65,7 @@ void FreeBattleResources(void)
     DestroyAllKazuradropBuffIcons();
     FreeBreakBarGraphics();
     FreeMageArmorIcons();
+    FreeNoOrderChangeIcons();
     if (gBattleResources != NULL)
     {
         FREE_AND_SET_NULL(gBattleStruct);

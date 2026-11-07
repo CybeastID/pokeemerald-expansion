@@ -75,6 +75,7 @@
 #include "kazuradrop_battle_ui.h"
 #include "castoria_name_theft.h"
 #include "battle_break_bar.h"
+#include "battle_koanko.h"
 #include "gba/isagbprint.h"
 #include "constants/flags.h"
 
@@ -1109,6 +1110,7 @@ bool32 EmergencyExitCanBeTriggered(u32 battler)
 
     if (IsBattlerAlive(battler)
      && HadMoreThanHalfHpNowDoesnt(battler)
+     && !HasNoOrderChange(battler)
      && (CanBattlerSwitch(battler) || !(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
      && !(gBattleTypeFlags & BATTLE_TYPE_ARENA)
      && gBattleMons[battler].volatiles.semiInvulnerable != STATE_SKY_DROP)
@@ -5421,7 +5423,11 @@ static void Cmd_checkteamslost(void)
         // }
     }
     if (NoAliveMonsForOpponent())
+    {
+        if (gBattleOutcome == 0 && TryStartKoankoConjuring(gBattlescriptCurrInstr))
+            return;
         gBattleOutcome |= B_OUTCOME_WON;
+    }
 
     // Fair switching - everyone has to switch in most at the same time, without knowing which pokemon the other trainer selected.
     // In vanilla Emerald this was only used for link battles, in expansion it's also used for regular trainer battles.
@@ -6047,6 +6053,7 @@ static inline bool32 IsProtectivePadsProtected(u32 battler, enum HoldEffect hold
 static inline bool32 CanEjectButtonTrigger(u32 battlerAtk, u32 battlerDef, enum BattleMoveEffects moveEffect)
 {
     if (GetBattlerHoldEffect(battlerDef) == HOLD_EFFECT_EJECT_BUTTON
+     && !HasNoOrderChange(battlerDef)
      && battlerAtk != battlerDef
      && IsBattlerTurnDamaged(battlerDef)
      && IsBattlerAlive(battlerDef)
@@ -6061,6 +6068,7 @@ static inline bool32 CanEjectPackTrigger(u32 battlerAtk, u32 battlerDef, enum Ba
 {
     if (gDisableStructs[battlerDef].tryEjectPack
      && GetBattlerHoldEffect(battlerDef) == HOLD_EFFECT_EJECT_PACK
+     && !HasNoOrderChange(battlerDef)
      && IsBattlerAlive(battlerDef)
      && CountUsablePartyMons(battlerDef) > 0
      && !gProtectStructs[battlerDef].disableEjectPack
@@ -7166,7 +7174,8 @@ static void Cmd_moveend(void)
                     if (GetBattlerHoldEffect(i) == HOLD_EFFECT_RED_CARD)
                         redCardBattlers |= (1u << i);
                 }
-                if (redCardBattlers && IsBattlerAlive(gBattlerAttacker))
+                if (redCardBattlers && IsBattlerAlive(gBattlerAttacker)
+                 && !HasNoOrderChange(gBattlerAttacker))
                 {
                     // Since we check if battler was damaged, we don't need to check move result.
                     // In fact, doing so actually prevents multi-target moves from activating red card properly
@@ -7991,7 +8000,10 @@ static void Cmd_jumpifcantswitch(void)
     CMD_ARGS(u8 battler:7, u8 ignoreEscapePrevention:1, const u8 *jumpInstr);
 
     u32 battler = GetBattlerForBattleScript(cmd->battler);
-    if (!cmd->ignoreEscapePrevention && !CanBattlerEscape(battler) && GetBattlerHoldEffect(battler) != HOLD_EFFECT_SHED_SHELL)
+    // Ignore-escape checks also serve as preflight for weather and sacrifices.
+    // Their actual withdrawal paths independently enforce No Order Change.
+    if ((HasNoOrderChange(battler) && !cmd->ignoreEscapePrevention)
+     || (!cmd->ignoreEscapePrevention && !CanBattlerEscape(battler) && GetBattlerHoldEffect(battler) != HOLD_EFFECT_SHED_SHELL))
     {
         gBattlescriptCurrInstr = cmd->jumpInstr;
     }
@@ -8177,6 +8189,11 @@ static void Cmd_openpartyscreen(void)
         battler = GetBattlerForBattleScript(cmd->battler);
         if (IsBreakBarPending(battler) && TryBreakBar(battler, gBattlescriptCurrInstr))
             return;
+        if (HasNoOrderChange(battler) && IsBattlerAlive(battler))
+        {
+            gBattlescriptCurrInstr = failInstr;
+            return;
+        }
         if (gSpecialStatuses[battler].faintedHasReplacement)
         {
             gBattlescriptCurrInstr = cmd->nextInstr;
@@ -11131,6 +11148,12 @@ static void Cmd_forcerandomswitch(void)
     s32 validMonsCount = 0;
 
     bool32 redCardForcedSwitch = FALSE;
+
+    if (HasNoOrderChange(gBattlerTarget))
+    {
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
+    }
 
     // Red card checks against wild pokemon. If we have reached here, the player has a mon to switch into
     // Red card swaps attacker with target to get the animation correct, so here we check attacker which is really the target. Thanks GF...
@@ -16154,6 +16177,14 @@ void BS_TryTriggerStatusForm(void)
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
+void BS_JumpIfNoOrderChange(void)
+{
+    NATIVE_ARGS(u8 battler, const u8 *jumpInstr);
+    u32 battler = GetBattlerForBattleScript(cmd->battler);
+
+    gBattlescriptCurrInstr = HasNoOrderChange(battler) ? cmd->jumpInstr : cmd->nextInstr;
+}
+
 void BS_AllySwitchSwapBattler(void)
 {
     NATIVE_ARGS();
@@ -16168,7 +16199,8 @@ void BS_TryAllySwitch(void)
 {
     NATIVE_ARGS(const u8 *failInstr);
 
-    if (!IsBattlerAlive(BATTLE_PARTNER(gBattlerAttacker)) || HasPartnerTrainer(gBattlerAttacker))
+    if (!IsBattlerAlive(BATTLE_PARTNER(gBattlerAttacker)) || HasPartnerTrainer(gBattlerAttacker)
+     || HasNoOrderChange(gBattlerAttacker) || HasNoOrderChange(BATTLE_PARTNER(gBattlerAttacker)))
     {
         gBattlescriptCurrInstr = cmd->failInstr;
     }

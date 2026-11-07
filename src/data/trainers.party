@@ -16881,7 +16881,7 @@ Pic: Razeluxe
 Gender: Male
 Music: Elite Four
 Double Battle: No
-AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
+AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT / AI_FLAG_DYNAMIC_FUNC
 
 The Face (SPECIES_RAZE_KIRLIA) @ Psychium-Z
 Level: 100
@@ -17105,80 +17105,3 @@ IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
 - Seismic Toss
 - Toxic
 - Stealth Rock
-
-/* Conjured team. Special boss mechanics will be added separately. */
-=== TRAINER_KOANKO2 ===
-Name: Koanko
-Class: Koanko
-Pic: Beauty
-Gender: Female
-Music: Elite Four
-Double Battle: No
-AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_TRY_TO_FAINT
-
-Smeargle @ Focus Sash
-Level: 100
-Ability: Own Tempo
-Nature: Timid
-EVs: 252 HP / 4 SpD / 252 Spe
-IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Seismic Toss
-- Night Shade
-- Spore
-- Endeavor
-
-Jirachi @ Steelium Z
-Level: 101
-Ability: Serene Grace
-Nature: Jolly
-EVs: 4 HP / 252 Atk / 252 Spe
-IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Iron Head
-- Zen Headbutt
-- Thunder Wave
-- Wish
-
-SPECIES_CALYREX_ICE @ Leftovers
-Level: 102
-Ability: ABILITY_AS_ONE_ICE_RIDER
-Nature: Adamant
-EVs: 252 HP / 252 Atk / 4 SpD
-IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-Tera Type: Fire
-- Glacial Lance
-- High Horsepower
-- Tera Blast
-- Swords Dance
-
-Eternatus @ Leftovers
-Level: 103
-Ability: Pressure
-Nature: Timid
-EVs: 4 HP / 252 SpA / 252 Spe
-IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Dynamax Cannon
-- Flamethrower
-- Sludge Bomb
-- Recover
-
-SPECIES_DIALGA_ORIGIN @ Leftovers
-Level: 104
-Ability: Pressure
-Nature: Modest
-EVs: 252 HP / 252 SpA / 4 SpD
-IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Roar of Time
-- Flash Cannon
-- Earth Power
-- Stealth Rock
-
-Arceus
-Level: 105
-Ability: Multitype
-Nature: Modest
-EVs: 252 HP / 252 SpA / 4 SpD
-IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
-- Judgment
-- Calm Mind
-- Recover
-- Earth Power

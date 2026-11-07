@@ -53,12 +53,25 @@ pair immediately, without healing the underlying bar or carrying over excess
 damage. The snapshot and active bar survive switching. All hits of the breaking
 move finish before the saved layer is revealed; only a later move can damage it.
 
-Endurance shares the once-per-battle Wish use with Domination. Selection eligibility
+Endurance shares the once-per-battle Wish use with Domination and Debilitation. Selection eligibility
 includes implemented outcomes, while the production outcome picker still chooses
-only Domination. Endurance tactical rules remain deferred. Tests nominate Endurance
-through their own Special AI callback and exercise normal selection and execution.
+only Domination. Endurance and Debilitation tactical rules remain deferred. Tests
+nominate them through their own Special AI callback and exercise normal selection
+and execution.
 
-Reserved outcomes are Reduction, More Wishes, Debilitation, and
+Debilitation is implemented for any resolved name route. It applies ordinary
+Poison, Burn, Sleep, Freeze, Paralysis, and Frostbite concurrently to the living
+opponent opposite the caster (the other opponent is the fallback in doubles).
+Initial status prevention, including typing, abilities, Safeguard and terrain,
+does not block this Wish. Existing ailments and counters are preserved; a missing
+Sleep condition receives the normal generation-dependent random duration.
+Subsequent recovery, status damage, abilities and cures retain their normal engine
+behavior. In particular, the existing action canceler checks Sleep before Freeze.
+Debilitation also applies [No Order Change](no_order_change.md), which remains
+after the nonvolatile ailments are cured. A successful application spends the same
+shared Wish use; interruption or a missing living target does not.
+
+Reserved outcomes are Reduction, More Wishes, and
 Normality. They remain unavailable until their effects are implemented. The
 agreed name-route rules for those future outcomes are:
 

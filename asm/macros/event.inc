@@ -2120,6 +2120,13 @@
 	special CreateEnemyEventMon
 	.endm
 
+	@ ruleset is a static TrainerBreakBarRules symbol; an empty set disables defaults.
+	.macro settrainerbreakbars trainer:req, ruleset:req
+	callnative Script_SetTrainerBreakBars, requests_effects=1
+	.2byte \trainer
+	.4byte \ruleset
+	.endm
+
 	.macro setdynamicaifunc func:req
 	callnative ScriptSetDynamicAiFunc, requests_effects=1
 	.4byte \func

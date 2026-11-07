@@ -5,6 +5,7 @@
 #include "pokemon.h"
 #include "battle_controllers.h"
 #include "battle_interface.h"
+#include "battle_status_icons.h"
 #include "battle_z_move.h"
 #include "graphics.h"
 #include "sprite.h"
@@ -1857,6 +1858,7 @@ static void UpdateStatusIconInHealthbox(u8 healthboxSpriteId)
     battler = gSprites[healthboxSpriteId].hMain_Battler;
     healthBarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
     status = GetMonData(GetBattlerMon(battler), MON_DATA_STATUS);
+    RefreshNoOrderChangeIcon(battler);
     if (IsOnPlayerSide(battler))
     {
         switch (GetBattlerCoordsIndex(battler))

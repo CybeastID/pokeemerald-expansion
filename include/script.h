@@ -2,6 +2,9 @@
 #define GUARD_SCRIPT_H
 
 struct ScriptContext;
+struct TrainerBreakBarRules;
+
+#define TRAINER_BREAK_BAR_OVERRIDE_COUNT 2
 
 typedef bool8 (*ScrCmdFunc)(struct ScriptContext *);
 typedef u8 Script[];
@@ -18,9 +21,15 @@ struct ScriptContext
     ScrCmdFunc *cmdTable;
     ScrCmdFunc *cmdTableEnd;
     u32 data[4];
+    const struct TrainerBreakBarRules *trainerBreakBarRules[TRAINER_BREAK_BAR_OVERRIDE_COUNT];
+    u16 trainerBreakBarIds[TRAINER_BREAK_BAR_OVERRIDE_COUNT];
 };
 
 #define ScriptReadByte(ctx) (*(ctx->scriptPtr++))
+
+void Script_SetTrainerBreakBars(struct ScriptContext *ctx);
+const struct TrainerBreakBarRules *Script_TakeTrainerBreakBarOverride(u16 trainerId);
+void Script_ClearTrainerBreakBarOverrides(void);
 
 void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd);
 u8 SetupBytecodeScript(struct ScriptContext *ctx, const u8 *ptr);

@@ -302,6 +302,7 @@ BattleScript_MoveSwitchPursuitEnd:
 	end
 
 BattleScript_MoveSwitchPursuitRet:
+	jumpifnoorderchange BS_ATTACKER, BattleScript_MoveSwitchEnd
 	jumpifbattletype BATTLE_TYPE_ARENA, BattleScript_MoveSwitchEnd
 	jumpifcantswitch SWITCH_IGNORE_ESCAPE_PREVENTION | BS_ATTACKER, BattleScript_MoveSwitchEnd
 	printstring STRINGID_PKMNWENTBACK
@@ -310,6 +311,7 @@ BattleScript_MoveSwitchPursuitRet:
 	return
 
 BattleScript_MoveSwitch:
+	jumpifnoorderchange BS_ATTACKER, BattleScript_MoveSwitchEnd
 	jumpifbattletype BATTLE_TYPE_ARENA, BattleScript_MoveSwitchEnd
 	jumpifcantswitch SWITCH_IGNORE_ESCAPE_PREVENTION | BS_ATTACKER, BattleScript_MoveSwitchEnd
 	printstring STRINGID_PKMNWENTBACK
@@ -9260,9 +9262,27 @@ BattleScript_EffectArcanumWish::
     attackanimation
     waitanimation
     jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_ENDURANCE, BattleScript_CastoriaWishEndurance
+    jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_DEBILITATION, BattleScript_CastoriaWishDebilitation
     printstring STRINGID_CASTORIA_WISH_DOMINATION
     waitmessage B_WAIT_TIME_LONG
     goto BattleScript_MoveEnd
+
+BattleScript_CastoriaWishDebilitation::
+    updatestatusicon BS_EFFECT_BATTLER
+    waitstate
+    printstring STRINGID_CASTORIA_WISH_DEBILITATION
+    waitmessage B_WAIT_TIME_LONG
+    printstring STRINGID_NO_ORDER_CHANGE
+    waitmessage B_WAIT_TIME_LONG
+    callnative BS_CastoriaCancelDebilitationMoves
+    goto BattleScript_MoveEnd
+
+BattleScript_CastoriaDebilitationRelease::
+    volatileanimation BS_ATTACKER, VOLATILE_CONFUSION
+    printstring STRINGID_PKMNFATIGUECONFUSION
+    waitmessage B_WAIT_TIME_LONG
+    restoreattacker
+    return
 
 BattleScript_CastoriaWishEndurance::
     fillsavedbreakbar BS_ATTACKER
@@ -9321,3 +9341,9 @@ BattleScript_PolymorphFailed:
     printstring STRINGID_BUTITFAILED
     waitmessage B_WAIT_TIME_LONG
     goto BattleScript_MoveEnd
+
+@ Victory-check continuation, after faint and EXP processing.
+BattleScript_KoankoConjureTeam::
+    call BattleScript_TrainerASlideMsgRet
+    callnative BS_ConjureKoankoTeam
+    return

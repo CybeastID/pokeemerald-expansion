@@ -2495,6 +2495,20 @@
 	.4byte \failInstr
 	.endm
 
+	.macro jumpifnoorderchange battler:req, jumpInstr:req
+	callnative BS_JumpIfNoOrderChange
+	.byte \battler
+	.4byte \jumpInstr
+	.endm
+
+	@ Register a static BreakBarConfig without replacing an active stack.
+	.macro activatebreakbar battler:req, config:req, failInstr:req
+	callnative BS_ActivateBreakBar
+	.byte \battler
+	.4byte \config
+	.4byte \failInstr
+	.endm
+
 	.macro trysavedbreakbar battler:req, failInstr:req
 	callnative BS_TryGrantSavedBreakBar
 	.byte \battler
