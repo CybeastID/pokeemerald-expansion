@@ -276,8 +276,8 @@ SINGLE_BATTLE_TEST("Punching Glove vs Muscle Band Damage calculation")
     PARAMETRIZE { expectedDamagePlayer = 174, expectedDamageOpponent = 172; }
     PARAMETRIZE { expectedDamagePlayer = 172, expectedDamageOpponent = 169; }
     GIVEN {
-        PLAYER(SPECIES_MAKUHITA) { Item(ITEM_PUNCHING_GLOVE); }
-        OPPONENT(SPECIES_MAKUHITA) { Item(ITEM_MUSCLE_BAND); }
+        PLAYER(SPECIES_MAKUHITA) { Level(100); Item(ITEM_PUNCHING_GLOVE); }
+        OPPONENT(SPECIES_MAKUHITA) { Level(100); Item(ITEM_MUSCLE_BAND); }
     } WHEN {
         TURN {
             MOVE(player, MOVE_DRAIN_PUNCH, WITH_RNG(RNG_DAMAGE_MODIFIER, i));
@@ -291,6 +291,18 @@ SINGLE_BATTLE_TEST("Punching Glove vs Muscle Band Damage calculation")
         HP_BAR(player, captureDamage: &dmgOpponent);
     }
     THEN {
+        DebugPrintf("PARTY level=%d",
+    GetMonData(&PLAYER_PARTY[0], MON_DATA_LEVEL));
+
+DebugPrintf("BATTLE level=%d",
+    gBattleMons[B_POSITION_PLAYER_LEFT].level);
+        DebugPrintf("REGRESSION level=%d atk=%d def=%d",
+    gBattleMons[B_POSITION_PLAYER_LEFT].level,
+    gBattleMons[B_POSITION_PLAYER_LEFT].attack,
+    gBattleMons[B_POSITION_OPPONENT_LEFT].defense);
+
+DebugPrintf("REGRESSION expected=%d actual=%d",
+    expectedDamagePlayer, dmgPlayer);
         EXPECT_EQ(expectedDamagePlayer, dmgPlayer);
         EXPECT_EQ(expectedDamageOpponent, dmgOpponent);
     }
@@ -337,8 +349,8 @@ SINGLE_BATTLE_TEST("Gem boosted Damage calculation")
     PARAMETRIZE { expectedDamage = 231; }
 #endif
     GIVEN {
-        PLAYER(SPECIES_MAKUHITA) { Item(ITEM_FIGHTING_GEM); }
-        OPPONENT(SPECIES_MAKUHITA);
+        PLAYER(SPECIES_MAKUHITA) { Level(100); Item(ITEM_FIGHTING_GEM); }
+        OPPONENT(SPECIES_MAKUHITA) {Level(100); };
     } WHEN {
         TURN {
             MOVE(player, MOVE_DRAIN_PUNCH, WITH_RNG(RNG_DAMAGE_MODIFIER, i));
@@ -418,3 +430,56 @@ DOUBLE_BATTLE_TEST("Transistor Damage calculation", s16 damage)
         EXPECT_EQ(damagePlayerRight, expectedDamageTransistorPhys);
     }
 }
+
+
+SINGLE_BATTLE_TEST("DEBUG Drain Punch damage modifiers")
+{
+    u32 move;
+    u32 item;
+    s16 damage;
+
+    // No item: baseline damage.
+    PARAMETRIZE { move = MOVE_DRAIN_PUNCH; item = ITEM_NONE; }
+    PARAMETRIZE { move = MOVE_BRICK_BREAK; item = ITEM_NONE; }
+
+    // Muscle Band: boosts all physical moves.
+    PARAMETRIZE { move = MOVE_DRAIN_PUNCH; item = ITEM_MUSCLE_BAND; }
+    PARAMETRIZE { move = MOVE_BRICK_BREAK; item = ITEM_MUSCLE_BAND; }
+
+    // Punching Glove: boosts punching moves.
+    PARAMETRIZE { move = MOVE_DRAIN_PUNCH; item = ITEM_PUNCHING_GLOVE; }
+    PARAMETRIZE { move = MOVE_BRICK_BREAK; item = ITEM_PUNCHING_GLOVE; }
+
+    // Fighting Gem: boosts Fighting-type moves.
+    PARAMETRIZE { move = MOVE_DRAIN_PUNCH; item = ITEM_FIGHTING_GEM; }
+    PARAMETRIZE { move = MOVE_BRICK_BREAK; item = ITEM_FIGHTING_GEM; }
+
+    GIVEN {
+        ASSUME(GetMovePower(MOVE_DRAIN_PUNCH) == GetMovePower(MOVE_BRICK_BREAK));
+        PLAYER(SPECIES_MAKUHITA) { Item(item); }
+        OPPONENT(SPECIES_MAKUHITA);
+    } WHEN {
+        TURN {
+            MOVE(player, move, WITH_RNG(RNG_DAMAGE_MODIFIER, 0));
+        }
+    } SCENE {
+        HP_BAR(opponent, captureDamage: &damage);
+    } THEN {
+        DebugPrintf("DEBUG move=%S item=%d damage=%d",
+                    GetMoveName(move), item, damage);
+        DebugPrintf("DEBUG player: level=%d atk=%d def=%d",
+            gBattleMons[B_POSITION_PLAYER_LEFT].level,
+            gBattleMons[B_POSITION_PLAYER_LEFT].attack,
+            gBattleMons[B_POSITION_PLAYER_LEFT].defense);
+
+DebugPrintf("DEBUG opponent: level=%d atk=%d def=%d",
+            gBattleMons[B_POSITION_OPPONENT_LEFT].level,
+            gBattleMons[B_POSITION_OPPONENT_LEFT].attack,
+            gBattleMons[B_POSITION_OPPONENT_LEFT].defense);
+
+DebugPrintf("DEBUG move power=%d",
+            GetMovePower(move));
+        EXPECT_GT(damage, 0);
+    }
+}
+

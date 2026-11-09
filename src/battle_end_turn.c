@@ -7,6 +7,7 @@
 #include "battle_gimmick.h"
 #include "battle_scripts.h"
 #include "kazuradrop_battle_ui.h"
+#include "battle_status_icons.h"
 #include "constants/battle.h"
 #include "constants/battle_string_ids.h"
 #include "constants/abilities.h"
@@ -74,7 +75,7 @@ static bool32 HandleEndTurnVarious(u32 battler)
         if (gBattleMons[i].volatiles.kazuradropGuts > 0)
         {
             if (--gBattleMons[i].volatiles.kazuradropGuts == 0)
-                DestroyKazuradropBuffIcon(i, KA_BUFF_GUTS);
+                DestroyBattleStatusIcon(i, BATTLE_STATUS_ICON_GUTS);
         }
 
         if (gDisableStructs[i].laserFocusTimer > 0 && --gDisableStructs[i].laserFocusTimer == 0)
@@ -1662,6 +1663,7 @@ static bool32 (*const sEndTurnEffectHandlers[])(u32 battler) =
     [ENDTURN_BUGSPACE_PASSIVE] = HandleEndTurnBugSpacePassiveOHKO,
     [ENDTURN_INFINITE_GROWTH] = HandleEndTurnInfiniteGrowth,
     [ENDTURN_MELT_VIRUS] = HandleEndTurnMeltVirus,
+    [ENDTURN_REDUCTION] = ReductionEndTurn,
 };
 
 u32 DoEndTurnEffects(void)

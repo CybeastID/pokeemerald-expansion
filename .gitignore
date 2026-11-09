@@ -92,3 +92,14 @@ graphics/special/CasterUI/Caster16.aseprite
 sound/voicegroups/vs_alice.inc.bak
 src/data/moves_info.h.bak
 TEMPSCRIPTS/*
+graphics/trainers/koanko/*
+graphics/pokemon/jirachi/tx_rollback/anim_front - Copy.png
+graphics/pokemon/jirachi/tx_rollback/preview.png
+graphics/pokemon/jirachi/tx_rollback/anim_front4x.png
+graphics/pokemon/jirachi/tx_rollback/anim_frontCHECKLATER.png
+graphics/pokemon/jirachi/tx_rollback/README.md
+graphics/pokemon/jirachi/tx_rollback/Sprite-0001.aseprite
+graphics/pokemon/jirachi/tx_rollback/Sprite-00012.aseprite
+graphics/special/CasterUI/MageArmor16.png
+.cursor/rules/git-no-pager.mdc
+graphics/battle_interface/no_order_change_source.png

@@ -1667,11 +1667,15 @@ bool8 IsEnemyMon(struct Pokemon *mon) {
 
 void CalculateMonStats(struct Pokemon *mon)
 {
+    CalculateMonStatsAtLevel(mon, GetLevelFromMonExp(mon));
+}
+
+void CalculateMonStatsAtLevel(struct Pokemon *mon, u32 level)
+{
     s32 oldMaxHP = GetMonData(mon, MON_DATA_MAX_HP, NULL);
     s32 currentHP = GetMonData(mon, MON_DATA_HP, NULL);
     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
     u8 friendship = GetMonData(mon, MON_DATA_FRIENDSHIP, NULL);
-    s32 level = GetLevelFromMonExp(mon);
     s32 newMaxHP;
 
     u8 nature = GetMonData(mon, MON_DATA_HIDDEN_NATURE, NULL);
@@ -3813,6 +3817,10 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, u16 item, u8 partyIndex, u8 mov
                 {
                     u16 species = GetMonData(mon, MON_DATA_SPECIES, NULL);
                     dataUnsigned = sExpCandyExperienceTable[param - 1] + GetMonData(mon, MON_DATA_EXP, NULL);
+                    u32 playerMaxExp = gExperienceTables[gSpeciesInfo[species].growthRate][PLAYER_MAX_LV];
+
+                    if (dataUnsigned > playerMaxExp)
+                        dataUnsigned = playerMaxExp;
 
                     if (B_RARE_CANDY_CAP && B_EXP_CAP_TYPE == EXP_CAP_HARD)
                     {

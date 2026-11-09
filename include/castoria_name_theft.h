@@ -81,14 +81,22 @@ bool32 HasMageArmor(u32 battler);
 
 // Only implemented, route-eligible outcomes can be selected or executed.
 bool32 CastoriaCanWishFor(u32 battler, u32 outcome);
-// Current production picker. Endurance/Debilitation tactics are deferred;
-// tests can nominate either through Special AI.
+// Current production picker. Other implemented outcome tactics are deferred;
+// tests can nominate them through Special AI.
 u32 CastoriaGetAvailableWishOutcome(u32 battler);
 void BS_CastoriaTryWish(void);
 void BS_CastoriaCancelDebilitationMoves(void);
 
 #if TESTING
 u16 Test_GetCastoriaArcanumMove(u32 slot);
+struct PolymorphBackup
+{
+    u16 moves[MAX_MON_MOVES];
+    u8 pp[MAX_MON_MOVES];
+    u8 nickname[POKEMON_NAME_LENGTH + 1];
+    u32 exp;
+};
+const struct PolymorphBackup *Test_GetPolymorphBackup(u32 side, u32 partyIndex);
 #endif
 
 // Returns the move ID for any logical slot (0-3 normal, 4-7 arcanum).

@@ -1,6 +1,8 @@
 #include <stdarg.h>
 #include "fake_rtc.h"
 #include "global.h"
+#include "event_data.h"
+#include "difficulty.h"
 #include "gpu_regs.h"
 #include "load_save.h"
 #include "main.h"
@@ -191,6 +193,10 @@ static void ClearSaveBlocks(void)
     ClearSav1();
     ClearSav2();
     ClearSav3();
+    // Testing flags and variables live outside the save blocks. Cost
+    // estimation can write them even on runners that skip the test.
+    ResetTestEventData();
+    SetCurrentDifficultyLevel(DIFFICULTY_NORMAL);
 }
 
 void CB2_TestRunner(void)

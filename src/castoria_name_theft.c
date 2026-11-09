@@ -24,7 +24,7 @@
 #include "battle_message.h"
 #include "battle_scripts.h"
 #include "castoria_name_theft.h"
-#include "castoria_battle_ui.h"
+#include "battle_status_icons.h"
 #include "battle_ai_util.h"
 #include "constants/battle.h"
 #include "constants/battle_string_ids.h"
@@ -43,6 +43,8 @@
 #include "battle_controllers.h"
 #include "battle_break_bar.h"
 #include "battle_interface.h"
+#include "battle_dynamax.h"
+#include "battle_gimmick.h"
 #include "battle_util.h"
 #include "generational_changes.h"
 #include "daycare.h"
@@ -228,7 +230,7 @@ void BS_ApplyCastoriaNameResult(void)
 void BS_ShowMageArmorIcon(void)
 {
     NATIVE_ARGS();
-    CreateMageArmorIcon(gBattlerAttacker);
+    RefreshBattleStatusIcon(gBattlerAttacker, BATTLE_STATUS_ICON_MAGE_ARMOR);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -444,17 +446,23 @@ bool32 IsArcanumSlotUsable(u32 battler, u32 slot)
      || slot >= MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT)
         return FALSE;
 
-    if (gBattleStruct->castoria.arcanumMoves[0] == MOVE_NONE)
+    if (!TxRollbackHasWishes(battler) && gBattleStruct->castoria.arcanumMoves[0] == MOVE_NONE)
         return FALSE;
 
     move = GetBattlerMoveAtSlot(battler, slot);
     if (move == MOVE_NONE)
         return FALSE;
 
-    if (move == MOVE_ARCANUM_WISH
+    if (TxRollbackHasWishes(battler) && !TxRollbackHasUsableWish(battler))
+        return FALSE;
+
+    if (move == MOVE_ARCANUM_WISH && !TxRollbackHasWishes(battler)
      && !CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION)
      && !CastoriaCanWishFor(battler, CASTORIA_WISH_ENDURANCE)
-     && !CastoriaCanWishFor(battler, CASTORIA_WISH_DEBILITATION))
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_DEBILITATION)
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_NORMALITY)
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_REDUCTION)
+     && !CastoriaCanWishFor(battler, CASTORIA_WISH_MORE_WISHES))
         return FALSE;
 
     effect = GetMoveEffect(move);
@@ -537,7 +545,7 @@ bool32 HasMageArmor(u32 battler)
             & (1u << gBattlerPartyIndexes[battler]));
 }
 
-static u32 GetDebilitationTarget(u32 battler)
+static u32 GetWishTarget(u32 battler)
 {
     u32 target = GetOppositeBattler(battler);
     if (target < gBattlersCount && IsBattlerAlive(target))
@@ -562,18 +570,25 @@ bool32 CastoriaCanWishFor(u32 battler, u32 outcome)
 
     switch (outcome)
     {
+    case CASTORIA_WISH_MORE_WISHES:
+        return TxRollbackCanCreate(battler);
     case CASTORIA_WISH_DOMINATION:
         return gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
             && gBattleMons[battler].volatiles.castoriaTrueNameCharges == 0;
+    case CASTORIA_WISH_REDUCTION:
+        return (gBattleStruct->castoria.nameResult == CASTORIA_NAME_FALSE
+             || gBattleStruct->castoria.nameResult == CASTORIA_NAME_BACKED_OUT)
+            && !ReductionIsActive() && GetWishTarget(battler) < gBattlersCount;
     case CASTORIA_WISH_ENDURANCE:
         return (gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
              || gBattleStruct->castoria.nameResult == CASTORIA_NAME_FALSE)
             && GetBreakBarCount(battler) == 0;
     case CASTORIA_WISH_DEBILITATION:
+    case CASTORIA_WISH_NORMALITY:
         return (gBattleStruct->castoria.nameResult == CASTORIA_NAME_TRUE
              || gBattleStruct->castoria.nameResult == CASTORIA_NAME_FALSE
              || gBattleStruct->castoria.nameResult == CASTORIA_NAME_BACKED_OUT)
-            && GetDebilitationTarget(battler) < gBattlersCount;
+            && GetWishTarget(battler) < gBattlersCount;
     default:
         // Other named outcomes stay unavailable until their effects exist.
         return FALSE;
@@ -584,12 +599,17 @@ u32 CastoriaGetAvailableWishOutcome(u32 battler)
 {
     if (CastoriaCanWishFor(battler, CASTORIA_WISH_DOMINATION))
         return CASTORIA_WISH_DOMINATION;
-    // Endurance and Debilitation execute, but their tactical policies are deferred.
+    // Other implemented outcomes await their tactical policies.
     return CASTORIA_WISH_NONE;
 }
 
 void BS_CastoriaTryWish(void)
 {
+    if (TxRollbackHasWishes(gBattlerAttacker))
+    {
+        BS_TxRollbackTryWish();
+        return;
+    }
     NATIVE_ARGS(const u8 *failInstr);
     u32 battler = gBattlerAttacker;
     u32 outcome = gBattleStruct->castoria.wishOutcome;
@@ -606,6 +626,19 @@ void BS_CastoriaTryWish(void)
 
     switch (outcome)
     {
+    case CASTORIA_WISH_MORE_WISHES:
+        if (!TxRollbackRequestCreation(battler))
+        {
+            gBattlescriptCurrInstr = cmd->failInstr;
+            return;
+        }
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_MORE_WISHES;
+        gBattlescriptCurrInstr = cmd->nextInstr;
+        return; // Creation commits Wish use after the animation and initialization.
+    case CASTORIA_WISH_REDUCTION:
+        ReductionActivate();
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_REDUCTION;
+        break;
     case CASTORIA_WISH_DOMINATION:
         gBattleMons[battler].volatiles.castoriaTrueNameCharges = 3;
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_DOMINATION;
@@ -620,7 +653,7 @@ void BS_CastoriaTryWish(void)
         break;
     case CASTORIA_WISH_DEBILITATION:
     {
-        u32 targetBattler = GetDebilitationTarget(battler);
+        u32 targetBattler = GetWishTarget(battler);
         struct BattlePokemon *target = &gBattleMons[targetBattler];
 
         // Wish overrides initial status prevention. Existing counters and other
@@ -641,6 +674,38 @@ void BS_CastoriaTryWish(void)
             0, sizeof(target->status1), &target->status1);
         MarkBattlerForControllerExec(targetBattler);
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_DEBILITATION;
+        break;
+    }
+    case CASTORIA_WISH_NORMALITY:
+    {
+        u32 target = GetWishTarget(battler);
+        struct Pokemon *mon = GetBattlerMon(target);
+
+        if (GetActiveGimmick(target) == GIMMICK_DYNAMAX)
+        {
+            UndoDynamax(target);
+            gBattleStruct->dynamax.dynamaxTurns[target] = 0;
+            // Ordinary Dynamax has no species change to copy the reduced HP back.
+            gBattleMons[target].hp = GetMonData(mon, MON_DATA_HP);
+            gBattleMons[target].maxHP = GetMonData(mon, MON_DATA_MAX_HP);
+        }
+        else if (IsBattlerMegaEvolved(target)
+              || IsBattlerPrimalReverted(target)
+              || IsBattlerUltraBursted(target)
+              || IsBattlerInTeraForm(target))
+        {
+            TryBattleFormChange(target, FORM_CHANGE_END_BATTLE);
+        }
+        // The form-change fallback restores party species; synchronize the
+        // battler too. A copied form (Transform) is not an active gimmick.
+        if (!gBattleMons[target].volatiles.transformed)
+            gBattleMons[target].species = GetMonData(mon, MON_DATA_SPECIES);
+        // Z-Moves are single actions, not ongoing transformations to reverse.
+        if (GetActiveGimmick(target) != GIMMICK_Z_MOVE)
+            SetActiveGimmick(target, GIMMICK_NONE);
+        SET_BATTLER_TYPE(target, TYPE_NORMAL);
+        gEffectBattler = gBattleScripting.battler = target;
+        gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_CASTORIA_WISH_NORMALITY;
         break;
     }
     default:
@@ -846,7 +911,17 @@ struct MoveScore {
 
 static EWRAM_DATA struct
 {
-    struct MoveScore pool[250];
+    // Candidate selection finishes before moveset construction starts. Sharing
+    // their scratch space also avoids a large nested battle-script stack frame.
+    union
+    {
+        struct MoveScore pool[250];
+        struct
+        {
+            u16 species[60];
+            u32 scores[60];
+        } candidates;
+    };
     u16 count;
 } sPolyScratch;
 
@@ -1118,8 +1193,8 @@ u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMo
 
     sPolymorphRejectBattler = gBattlerTarget;
 
-    u16 samples[60];
-    u32 sampleScores[60];
+    u16 *samples = sPolyScratch.candidates.species;
+    u32 *sampleScores = sPolyScratch.candidates.scores;
     u32 sampleCount = 0;
     u32 attempts = 0;
 
@@ -1253,14 +1328,23 @@ void GiveMonPolymorphMoveset(struct Pokemon *mon, u16 species)
     }
 }
 
+#if !TESTING
 struct PolymorphBackup {
     u16 moves[MAX_MON_MOVES];
     u8 pp[MAX_MON_MOVES];
     u8 nickname[POKEMON_NAME_LENGTH + 1];
     u32 exp;
 };
+#endif
 
 static EWRAM_DATA struct PolymorphBackup sPolymorphBackup[2][PARTY_SIZE] = {0};
+
+#if TESTING
+const struct PolymorphBackup *Test_GetPolymorphBackup(u32 side, u32 partyIndex)
+{
+    return &sPolymorphBackup[side][partyIndex];
+}
+#endif
 
 void BS_PolymorphTarget(void)
 {
@@ -1271,9 +1355,9 @@ void BS_PolymorphTarget(void)
     u32 partyIndex = gBattlerPartyIndexes[target];
     struct Pokemon *party = GetBattlerParty(target);
     struct Pokemon *mon = &party[monId];
-    u32 oldSpecies = gBattleMons[target].species;
-    u32 oldHp = GetMonData(mon, MON_DATA_HP);
-    u32 oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
+    // The snapshot source is always the unreduced party mon, never the overlay.
+    u32 oldSpecies = GetMonData(mon, MON_DATA_SPECIES);
+    u32 oldHp, oldMaxHp;
     bool32 alreadyPolymorphed;
     u32 newSpecies, newHp, newExp, i, moveBudget;
     
@@ -1296,6 +1380,9 @@ void BS_PolymorphTarget(void)
         return;
     }
 
+    ReductionBeginMutation(target);
+    oldHp = GetMonData(mon, MON_DATA_HP);
+    oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
     alreadyPolymorphed = GetBattlerPartyState(target)->polymorphed;
     sPolymorphRejectBattler = target;
     if (IsOnPlayerSide(target))
@@ -1361,6 +1448,7 @@ void BS_PolymorphTarget(void)
     PREPARE_SPECIES_BUFFER(gBattleTextBuff1, newSpecies)
 
     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TRANSFORMED;
+    ReductionEndMutation(target);
 }
 
 bool32 TryRestorePolymorphedMon(u32 partyIndex)

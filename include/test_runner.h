@@ -35,6 +35,8 @@ u32 TestRunner_Battle_GetForcedAbility(u32 array, u32 partyIndex);
 u32 TestRunner_Battle_GetChosenGimmick(u32 side, u32 partyIndex);
 u32 TestRunner_Battle_GetForcedEnvironment(void);
 void TestRunner_Battle_AfterCleanup(void);
+bool32 TestRunner_Battle_HasPendingAfterCleanup(void);
+void Test_RestorePlayerBattleStats(void);
 
 #else
 
@@ -61,6 +63,7 @@ void TestRunner_Battle_AfterCleanup(void);
 
 #define TestRunner_Battle_GetForcedEnvironment(...) (u8)0
 #define TestRunner_Battle_AfterCleanup(...) (void)0
+#define TestRunner_Battle_HasPendingAfterCleanup(...) FALSE
 #endif
 
 #endif

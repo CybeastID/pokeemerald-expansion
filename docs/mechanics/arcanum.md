@@ -53,7 +53,7 @@ pair immediately, without healing the underlying bar or carrying over excess
 damage. The snapshot and active bar survive switching. All hits of the breaking
 move finish before the saved layer is revealed; only a later move can damage it.
 
-Endurance shares the once-per-battle Wish use with Domination and Debilitation. Selection eligibility
+Endurance shares the once-per-battle Wish use with all implemented outcomes. Selection eligibility
 includes implemented outcomes, while the production outcome picker still chooses
 only Domination. Endurance and Debilitation tactical rules remain deferred. Tests
 nominate them through their own Special AI callback and exercise normal selection
@@ -71,12 +71,61 @@ Debilitation also applies [No Order Change](no_order_change.md), which remains
 after the nonvolatile ailments are cured. A successful application spends the same
 shared Wish use; interruption or a missing living target does not.
 
-Reserved outcomes are Reduction, More Wishes, and
-Normality. They remain unavailable until their effects are implemented. The
-agreed name-route rules for those future outcomes are:
+Normality is implemented for any resolved name route. It ends the living opposing
+target's active Mega Evolution, Primal Reversion, Ultra Burst, Dynamax/Gigantamax,
+or Terastallization, then changes its battle types to pure Normal. It uses the
+same opposite-position target and doubles fallback as Debilitation. A target
+without a gimmick can still be made Normal. Like Debilitation, this direct Wish
+effect bypasses initial type-change prevention, Substitute and Protect.
 
-- Reduction: fake name or backed out.
-- More Wishes: fake name only.
-- Debilitation and Normality: any resolved name route.
+Existing form-reversion, Dynamax HP, form-animation, healthbox and primal-weather
+helpers handle the reversal. No additional vanilla battle-flow hooks or persistent
+flags are introduced. Used gimmick charges remain spent. One-off Z-Moves,
+Copied Transform forms and unrelated ability/item forms remain intact. The Normal
+typing has ordinary type-change lifetime: switching restores species types,
+and later effects can change them. Primal Reversion can activate again on a later
+entry with its Orb, following the normal engine rules. Production tactical
+selection remains deferred, as for Endurance and Debilitation; tests nominate
+Normality through Special AI and execute the ordinary Arcanum action.
+
+Reduction is implemented for the fake-name and backed-out routes. It curses the
+player's side for the rest of the battle. The casting turn has no tick; each later
+end of turn subtracts 10, then 11, then 12 levels and so on, down to Level 1. The
+loss amount is shared across the side and advances once per turn in doubles.
+Switching clears the outgoing occupant's accumulated loss, but does not reset the
+side's next subtraction. The replacement receives that next subtraction at the
+end of its entry turn. Break Bar grants, breaks and reveals do not reset it.
+
+Reduction is a battle-only overlay: party experience, real level and derived
+stats stay unreduced, and party screens keep those real values. The battle
+healthbox and level-dependent combat checks use the effective level. HP maintains
+its percentage as maximum HP changes, with fractional precision retained across
+rescaling; fixed healing items heal displayed battle HP. Damage and healing are
+converted back to the ordinary HP scale for party synchronization. Level decay
+alone cannot faint or revive a Pokemon.
+
+Polymorph only reads the unreduced party representation. Its original species,
+experience, nickname, moves and PP backup is never owned or overwritten by
+Reduction. A Polymorph cast finishes its canonical species/stats/HP conversion
+before the accumulated Reduction is reapplied. Removing Reduction does not undo
+Polymorph. Battle cleanup first removes the overlay, then uses existing form and
+Break Bar restoration, including converting Polymorph's surviving HP layers to
+the original species' HP scale. Production tactical selection remains deferred.
+
+More Wishes is implemented for the fake-name route in the supported local
+Razeluxe encounter. It creates the distinct TX Rollback species in a new enemy
+position during the ongoing Singles battle, permanently keeping player-right
+unavailable. The creation has two extra Break Bars and No Order Change, cannot
+withdraw or be revived, and performs one scripted, PP-independent ambush before
+the next scheduled action. Both enemies must be defeated. Production tactical
+selection remains deferred; tests nominate the outcome through Special AI.
+See [TX Rollback](tx_rollback.md) for ownership, initialization and script contracts.
+
+TX Rollback has its own PP-independent virtual Wish slot and independent outcome
+state, with reusable Reversal, Reclamation, Calamity, Restoration and Reciprocity.
+Its default arrival grants Castoria saved-layer Endurance. Its original breaks
+script ordinary Wish, then Reduction plus Doom Desire, without consuming normal
+actions or Castoria's Wish allowance. Production selection of the summon and
+later TX Wishes remains deferred; deterministic Special AI callbacks test them.
 
 These route rules do not bypass the spell's ordinary selection restrictions.

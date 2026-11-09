@@ -58,6 +58,8 @@ If Stun Spore did not have that effect it would cause the tests in the file to b
 
 `GIVEN` initializes the parties, `PLAYER` and `OPPONENT` add a Pokémon to their respective parties. They can both accept a block which further customizes the Pokémon's stats, moves, item, ability, etc.
 
+Put fixture side effects such as `VarSet`, `FlagSet`, and callback registration inside `GIVEN`. The runner invokes test functions to estimate their cost before assigning them to workers; code outside the test blocks also executes during that estimation, even on workers that will skip the battle and its cleanup. Between tests, the runner clears save blocks and the separate test-only event flags and variables, then restores Normal difficulty. This boundary does not run between a test's parameters or trials.
+
 `WHEN` describes the turns, and `TURN` describes the choices made in a single turn. `MOVE` causes the player to use Stun Spore and adds the move to the Pokémon's moveset if an explicit Moves was not specified.
 Pokémon that are not mentioned in a `TURN` use Celebrate.
 The test runner rigs the RNG so that unless otherwise specified, moves always hit, never critical hit, always activate their secondary effects, and always roll the same damage modifier.
@@ -142,6 +144,19 @@ You might notice that all the tests check the outputs the player could see rathe
 The overworld is not available, so it is only possible to test commands which don't affect the overworld itself, e.g. `givemon` can be tested because it only alters `gPlayerParty`, but `addobject` cannot because it affects object events (which aren't loaded).
 
 ## REFERENCE
+
+### `SUMMONED_OPPONENT`
+
+In an AI Singles test, place `SUMMONED_OPPONENT();` immediately after the TURN
+that creates TX Rollback. Subsequent TURNs may use
+`EXPECT_MOVE(&gBattleMons[B_POSITION_OPPONENT_RIGHT], MOVE_CELEBRATE)` and other
+expectations for that battler. The declaration does not start a doubles battle,
+add a second player, or populate the initially empty sixth enemy party slot.
+The real creation must occur through the normal battle action path.
+
+### `AFTER_CLEANUP`
+
+Use `AFTER_CLEANUP { ... }` for assertions after player stats/forms and saved Break Bar HP have been restored, while battle resources and party state are still available. It runs once per trial, including unfinished recorded test battles. Declaring the block opts that parameter into cleanup dispatch; tests without it do not receive another test-body invocation. `THEN` and `FINALLY` retain their existing timing before this restoration.
 
 ### `ASSUME`
 `ASSUME(cond)`

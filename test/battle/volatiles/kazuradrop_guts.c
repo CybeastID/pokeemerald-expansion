@@ -1,5 +1,6 @@
 #include "global.h"
 #include "test/battle.h"
+#include "event_data.h"
 
 SINGLE_BATTLE_TEST("Kazuradrop Guts (cheat death) expires after one full turn")
 {
@@ -14,7 +15,8 @@ SINGLE_BATTLE_TEST("Kazuradrop Guts (cheat death) expires after one full turn")
 
     GIVEN {
         // Bug Space must be active; in existing tests this is done via Kazuradrop's ability.
-        PLAYER(SPECIES_WOBBUFFET) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(500); Speed(100); }
+        // Keep both hits lethal without overflowing signed damage under terrain boosts.
+        PLAYER(SPECIES_WOBBUFFET) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(100); Speed(100); }
         OPPONENT(SPECIES_KAZURADROP) { Ability(ABILITY_BUG_SPACE); Level(5); Defense(1); SpDefense(1); MaxHP(20); HP(20); Speed(1); Moves(MOVE_CELEBRATE, MOVE_TRASH_CRUSH, MOVE_INFINITE_GROWTH, MOVE_CRACK_ICE); }
     } WHEN {
         TURN { MOVE(player, MOVE_PETAL_BLIZZARD); MOVE(opponent, MOVE_TRASH_CRUSH, hit: FALSE); }
@@ -34,7 +36,7 @@ SINGLE_BATTLE_TEST("Kazuradrop Guts snaps internal HP to 50% immediately on chea
     PARAMETRIZE { species = SPECIES_XERNEAS; }
     GIVEN {
         // Make damage large enough that turn 2 would normally KO if not snapped.
-        PLAYER(species) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(500); Speed(100); }
+        PLAYER(species) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(100); Speed(100); }
         OPPONENT(SPECIES_KAZURADROP) { Ability(ABILITY_BUG_SPACE); Level(5); Defense(1); SpDefense(1); MaxHP(20); HP(20); Speed(1); Moves(MOVE_CELEBRATE, MOVE_TRASH_CRUSH, MOVE_INFINITE_GROWTH, MOVE_CRACK_ICE); }
 
     } WHEN {
@@ -55,13 +57,18 @@ SINGLE_BATTLE_TEST("Kazuradrop Guts snaps internal HP to 50% immediately on chea
 SINGLE_BATTLE_TEST("Kazuradrop Guts snaps HP bar to 50% immediately on cheat death (visual)")
 {
     u16 species;
-    PARAMETRIZE { species = SPECIES_WOBBUFFET; }
-    PARAMETRIZE { species = SPECIES_REGISTEEL; }
-    PARAMETRIZE { species = SPECIES_XERNEAS; }
+    u16 terrain;
+    PARAMETRIZE { species = SPECIES_WOBBUFFET; terrain = STARTING_STATUS_NONE; }
+    PARAMETRIZE { species = SPECIES_REGISTEEL; terrain = STARTING_STATUS_NONE; }
+    PARAMETRIZE { species = SPECIES_XERNEAS; terrain = STARTING_STATUS_NONE; }
+    PARAMETRIZE { species = SPECIES_WOBBUFFET; terrain = STARTING_STATUS_GRASSY_TERRAIN; }
+    PARAMETRIZE { species = SPECIES_REGISTEEL; terrain = STARTING_STATUS_GRASSY_TERRAIN; }
+    PARAMETRIZE { species = SPECIES_XERNEAS; terrain = STARTING_STATUS_GRASSY_TERRAIN; }
     // Initial Kazuradrop MaxHP is 20. Transformation doubles max HP to 40.
     // Cheat-death snap sets HP to maxHP / 2 => 20.
     GIVEN {
-        PLAYER(species) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(500); Speed(100); }
+        VarSet(B_VAR_STARTING_STATUS, terrain);
+        PLAYER(species) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(100); Speed(100); }
         OPPONENT(SPECIES_KAZURADROP) { Ability(ABILITY_BUG_SPACE); Level(5); Defense(1); SpDefense(1); MaxHP(20); HP(20); Speed(1); Moves(MOVE_CELEBRATE, MOVE_TRASH_CRUSH, MOVE_INFINITE_GROWTH, MOVE_CRACK_ICE); }
     } WHEN {
         TURN { MOVE(player, MOVE_PETAL_BLIZZARD); MOVE(opponent, MOVE_TRASH_CRUSH, hit: FALSE); }

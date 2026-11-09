@@ -107,12 +107,13 @@ bool32 GrantSavedBreakBar(u32 battler)
      || owner->breakBarsRemaining >= BREAK_BAR_MAX_EXTRA_BARS)
         return FALSE;
     u32 layer = owner->breakBarsRemaining;
-    owner->breakBarSavedHp[layer] = gBattleMons[battler].hp;
-    owner->breakBarSavedMaxHp[layer] = gBattleMons[battler].maxHP;
+    owner->breakBarSavedHp[layer] = ReductionCanonicalHp(battler);
+    owner->breakBarSavedMaxHp[layer] = ReductionCanonicalMaxHp(battler);
     owner->breakBarFillPixels = 0;
     if (owner->breakBarConfig == NULL)
         owner->breakBarConfig = &sSavedBreakBarConfig;
     owner->breakBarsRemaining++;
+    owner->breakBarsPeak = max(owner->breakBarsPeak, owner->breakBarsRemaining);
     return TRUE;
 }
 
@@ -247,6 +248,7 @@ bool32 ActivateBreakBar(u32 battler, const struct BreakBarConfig *config)
 
     owner->breakBarConfig = config;
     owner->breakBarsRemaining = config->extraBars;
+    owner->breakBarsPeak = max(owner->breakBarsPeak, owner->breakBarsRemaining);
     if (!(config->flags & BREAK_BAR_DEFER_INITIAL_DRAW))
     {
         RefreshBreakBarPalette(battler, TRUE);
@@ -572,10 +574,12 @@ void BS_RestoreSavedBreakBar(void)
     u32 battler = gBattlerTarget;
     struct PartyState *owner = GetBattlerPartyState(battler);
     u32 layer = owner->breakBarsRemaining;
+    ReductionBeginMutation(battler);
     gBattleMons[battler].hp = owner->breakBarSavedHp[layer];
     gBattleMons[battler].maxHP = owner->breakBarSavedMaxHp[layer];
     owner->breakBarSavedHp[layer] = owner->breakBarSavedMaxHp[layer] = 0;
     owner->breakBarFillPixels = 0;
+    ReductionEndMutation(battler);
     BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE,
         1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
    // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE,

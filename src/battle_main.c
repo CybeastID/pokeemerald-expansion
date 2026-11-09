@@ -1806,6 +1806,13 @@ void CB2_QuitRecordedBattle(void)
                 DestroyTask(taskId);
 
             TestRunner_Battle_AfterLastTurn();
+#if TESTING
+            if (TestRunner_Battle_HasPendingAfterCleanup())
+            {
+                Test_RestorePlayerBattleStats();
+                TestRunner_Battle_AfterCleanup();
+            }
+#endif
         }
         FreeRestoreBattleData();
         FreeAllWindowBuffers();
@@ -3160,6 +3167,7 @@ void SwitchInClearSetData(u32 battler, struct Volatiles *volatilesCopy)
     enum BattleMoveEffects effect = GetMoveEffect(gCurrentMove);
     struct DisableStruct disableStructCopy = gDisableStructs[battler];
 
+    ReductionResetOccupant(battler);
     gBattleStruct->battlerState[battler].noOrderChange = FALSE;
     ClearIllusionMon(battler);
     if (effect != EFFECT_BATON_PASS)
@@ -3317,6 +3325,8 @@ const u8* FaintClearSetData(u32 battler)
 {
     s32 i;
     const u8 *result = NULL;
+    ReductionResetOccupant(battler);
+    TxRollbackOnFaint(battler);
 
     gBattleStruct->battlerState[battler].noOrderChange = FALSE;
     for (i = 0; i < NUM_BATTLE_STATS; i++)
@@ -4274,7 +4284,9 @@ static void HandleTurnActionSelectionState(void)
         case STATE_TURN_START_RECORD: // Recorded battle related action on start of every turn.
             RecordedBattle_CopyBattlerMoves(battler);
             gBattleCommunication[battler] = STATE_BEFORE_ACTION_CHOSEN;
-            ComputeBattlerDecisions(battler); // Do AI score computations here so we can use them in AI_TrySwitchOrUseItem
+            if (TxRollbackGetSlotPolicy(battler) != TX_SLOT_DISABLED
+             && TxRollbackGetSlotPolicy(battler) != TX_SLOT_RETIRED)
+                ComputeBattlerDecisions(battler); // Do AI score computations here so we can use them in AI_TrySwitchOrUseItem
             // fallthrough
         case STATE_BEFORE_ACTION_CHOSEN: // Choose an action.
             gBattleStruct->monToSwitchIntoId[battler] = PARTY_SIZE;
@@ -4572,6 +4584,27 @@ static void HandleTurnActionSelectionState(void)
                         }
                         else if (TrySetCantSelectMoveBattleScript(battler))
                         {
+                            #if TESTING
+    if (gTestRunnerEnabled)
+    {
+        u32 slot = gBattleResources->bufferB[battler][2] & ~RET_GIMMICK;
+
+        Test_MgbaPrintf(
+            "[MOVE REJECT] turn=%d battler=%d species=%d "
+            "party=%d slot=%d move=%d locked=%d "
+            "multi=%d uproar=%d\n",
+            gBattleResults.battleTurnCounter,
+            battler,
+            gBattleMons[battler].species,
+            gBattlerPartyIndexes[battler],
+            slot,
+            slot < MAX_MON_MOVES ? gBattleMons[battler].moves[slot] : MOVE_NONE,
+            gLockedMoves[battler],
+            gBattleMons[battler].volatiles.multipleTurns,
+            gBattleMons[battler].volatiles.uproarTurns
+        );
+    }
+#endif
                             RecordedBattle_ClearBattlerAction(battler, 1);
                             gBattleCommunication[battler] = STATE_SELECTION_SCRIPT;
                             gBattleStruct->battlerState[battler].selectionScriptFinished = FALSE;
@@ -5646,6 +5679,8 @@ static void RestorePlayerBreakBarHp(void)
 {
     u32 consolidatedHp[PARTY_SIZE] = {0};
     bool32 hasBreakBars[PARTY_SIZE] = {FALSE};
+    u32 polymorphHpFraction[PARTY_SIZE] = {0};
+    bool32 restorePolymorphHp[PARTY_SIZE] = {FALSE};
 
     // Capture HP before form restoration and stat recalculation.
     for (u32 slot = 0; slot < PARTY_SIZE; slot++)
@@ -5678,11 +5713,25 @@ static void RestorePlayerBreakBarHp(void)
             break;
         }
 
+        // Polymorph will change the HP scale again during restoration. Keep
+        // each surviving layer as a fraction, not absolute HP from that form.
+        if (state->polymorphed)
+        {
+            u32 maxHp = GetMonData(&gPlayerParty[slot], MON_DATA_MAX_HP);
+            restorePolymorphHp[slot] = TRUE;
+            if (maxHp != 0)
+                polymorphHpFraction[slot] = ((u64)consolidatedHp[slot] << 24) / maxHp;
+        }
         // Only surviving, explicitly saved layers contribute HP.
         for (u32 layer = 0; layer < state->breakBarsRemaining; layer++)
         {
             if (state->breakBarSavedMaxHp[layer] != 0)
+            {
                 consolidatedHp[slot] += state->breakBarSavedHp[layer];
+                if (restorePolymorphHp[slot])
+                    polymorphHpFraction[slot] += ((u64)state->breakBarSavedHp[layer] << 24)
+                                              / state->breakBarSavedMaxHp[layer];
+            }
         }
     }
 
@@ -5704,6 +5753,13 @@ static void RestorePlayerBreakBarHp(void)
 
         u32 maxHp = GetMonData(&gPlayerParty[slot], MON_DATA_MAX_HP);
         u16 hp = min(consolidatedHp[slot], maxHp);
+        if (restorePolymorphHp[slot])
+        {
+            u32 fraction = min(1u << 24, polymorphHpFraction[slot]);
+            hp = ((u64)fraction * maxHp + (1u << 23)) >> 24;
+            if (fraction != 0 && hp == 0)
+                hp = 1;
+        }
 
         SetMonData(&gPlayerParty[slot], MON_DATA_HP, &hp);
     }
@@ -5757,7 +5813,8 @@ static void HandleEndTurn_FinishBattle(void)
 
                 for (u32 partySlot = 0; partySlot < PARTY_SIZE; partySlot++)
                 {
-                    if (gBattleStruct->partyState[side][partySlot].sentOut)
+                    if (gBattleStruct->partyState[side][partySlot].sentOut
+                     && !TxRollbackOwnsPartyMon(side, partySlot))
                         HandleSetPokedexFlagFromMon(&party[partySlot], FLAG_SET_SEEN);
                 }
             }
@@ -5784,6 +5841,7 @@ static void HandleEndTurn_FinishBattle(void)
         if (B_TRAINERS_KNOCK_OFF_ITEMS == TRUE || B_RESTORE_HELD_BATTLE_ITEMS >= GEN_9)
             TryRestoreHeldItems();
 
+        ReductionFinishBattle();
         // Undo Dynamax HP multiplier before recalculating stats.
         for (battler = 0; battler < gBattlersCount; ++battler)
         {
@@ -5801,8 +5859,8 @@ static void HandleEndTurn_FinishBattle(void)
         } */
     #endif
         RestorePlayerBreakBarHp();
-        if (gTestRunnerEnabled)
-    TestRunner_Battle_AfterCleanup();
+        if (gTestRunnerEnabled && TestRunner_Battle_HasPendingAfterCleanup())
+            TestRunner_Battle_AfterCleanup();
         // Clear battle mon species to avoid a bug on the next battle that causes
         // healthboxes loading incorrectly due to it trying to create a Mega Indicator
         // if the previous battler would've had it.
@@ -5819,6 +5877,19 @@ static void HandleEndTurn_FinishBattle(void)
             gBattleScriptingCommandsTable[gBattlescriptCurrInstr[0]]();
     }
 }
+
+#if TESTING
+// Reuse production player-stat cleanup before recorded cleanup assertions and
+// before the recorded party or battle resources are restored/freed.
+void Test_RestorePlayerBattleStats(void)
+{
+    ReductionFinishBattle();
+    for (u32 battler = 0; battler < gBattlersCount; battler++)
+        if (GetActiveGimmick(battler) == GIMMICK_DYNAMAX)
+            UndoDynamax(battler);
+    RestorePlayerBreakBarHp();
+}
+#endif
 
 static void FreeResetData_ReturnToOvOrDoEvolutions(void)
 {

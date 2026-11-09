@@ -729,6 +729,7 @@ struct AILogLine
 // be reset between trials.
 struct BattleTrialData
 {
+    bool8 afterCleanupDone;
     u8 lastActionTurn;
     u8 queuedEvent;
     u8 aiActionsPlayed[MAX_BATTLERS_COUNT];
@@ -738,6 +739,9 @@ struct BattleTestData
 {
     u8 stack[BATTLE_TEST_STACK_SIZE];
 
+    bool8 hasSummonedOpponent;
+    bool8 hasAfterCleanup;
+    struct Pokemon summonedOpponentMon;
     u8 playerPartySize;
     u8 opponentPartySize;
     u8 explicitMoves[MAX_BATTLERS_COUNT];
@@ -964,6 +968,9 @@ struct moveWithPP {
 };
 
 #define GIVEN for (; gBattleTestRunnerState->runGiven; gBattleTestRunnerState->runGiven = FALSE)
+
+#define SUMMONED_OPPONENT() DeclareSummonedOpponent(__LINE__)
+void DeclareSummonedOpponent(u32 sourceLine);
 
 #define RNGSeed(seed) RNGSeed_(__LINE__, seed)
 #define AI_FLAGS(flags) AIFlags_(__LINE__, flags)
@@ -1288,8 +1295,10 @@ void QueueStatus(u32 sourceLine, struct BattlePokemon *battler, struct StatusEve
 /* After Cleanup*/
 
 #define AFTER_CLEANUP \
-    for (; gBattleTestRunnerState->runAfterCleanup; \
+    for (DeclareAfterCleanup(); gBattleTestRunnerState->runAfterCleanup; \
            gBattleTestRunnerState->runAfterCleanup = FALSE)
+
+void DeclareAfterCleanup(void);
 
 /* Finally */
 

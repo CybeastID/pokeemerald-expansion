@@ -56,6 +56,7 @@ enum EndTurnResolutionOrder
     ENDTURN_BUGSPACE_PASSIVE,    // Bug Space passive OHKO at floor
     ENDTURN_INFINITE_GROWTH,     // Infinite Growth stat boost + HP regen
     ENDTURN_MELT_VIRUS,          // Melt Virus draining
+    ENDTURN_REDUCTION,
     ENDTURN_COUNT,
 };
 

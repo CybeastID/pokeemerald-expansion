@@ -32,6 +32,12 @@ EWRAM_DATA static u8 sSpecialFlags[SPECIAL_FLAGS_SIZE] = {0};
 #define TEST_VARS_SIZE      8
 EWRAM_DATA static u8 sTestFlags[TEST_FLAGS_SIZE] = {0};
 EWRAM_DATA static u16 sTestVars[TEST_VARS_SIZE] = {0};
+
+void ResetTestEventData(void)
+{
+    memset(sTestFlags, 0, sizeof(sTestFlags));
+    memset(sTestVars, 0, sizeof(sTestVars));
+}
 #endif // TESTING
 
 extern u16 *const gSpecialVars[];

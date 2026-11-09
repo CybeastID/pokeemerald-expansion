@@ -9261,9 +9261,164 @@ BattleScript_EffectArcanumWish::
     trycastoriawish BattleScript_ButItFailed
     attackanimation
     waitanimation
+    jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_MORE_WISHES, BattleScript_CastoriaWishMoreWishes
     jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_ENDURANCE, BattleScript_CastoriaWishEndurance
     jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_DEBILITATION, BattleScript_CastoriaWishDebilitation
+    jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_NORMALITY, BattleScript_CastoriaWishNormality
+    jumpifbyte CMP_EQUAL, cMULTISTRING_CHOOSER, B_MSG_CASTORIA_WISH_REDUCTION, BattleScript_CastoriaWishReduction
     printstring STRINGID_CASTORIA_WISH_DOMINATION
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_CastoriaWishMoreWishes::
+    createtxrollback BattleScript_ButItFailed
+    waitstate
+    switchindataupdate BS_SCRIPTING
+    callnative BS_TxRollbackInitialize
+    callnative BS_TxRollbackSlideCaster
+    printstring STRINGID_CASTORIA_WISH_MORE_WISHES
+    waitmessage B_WAIT_TIME_LONG
+    switchinanim BS_SCRIPTING, FALSE, FALSE
+    waitstate
+    switchineffects BS_SCRIPTING
+    callnative BS_TxRollbackFinishEntry
+    goto BattleScript_MoveEnd
+
+BattleScript_TxRollbackAmbush::
+    callnative BS_TxRollbackCallAmbush
+    callnative BS_TxRollbackFinishAmbush
+    end3
+
+BattleScript_TxRollbackPrototypeAmbush::
+    printstring STRINGID_TX_ROLLBACK_AMBUSH
+    waitmessage B_WAIT_TIME_LONG
+    return
+
+BattleScript_TxRollbackEndurance::
+    callnative BS_TxRollbackEndurance
+    .4byte BattleScript_TxRollbackEnduranceEnd
+    playmoveanimation MOVE_ARCANUM_WISH
+    waitanimation
+    fillsavedbreakbar BS_SCRIPTING
+    animatesavedbreakbar BS_SCRIPTING
+    printstring STRINGID_CASTORIA_WISH_ENDURANCE
+    waitmessage B_WAIT_TIME_LONG
+BattleScript_TxRollbackEnduranceEnd:
+    return
+
+BattleScript_TxRollbackBreakWish::
+    callnative BS_TxRollbackBeginPhase
+    .2byte MOVE_WISH
+    printstring STRINGID_USEDMOVE
+    waitmessage B_WAIT_TIME_LONG
+    trywish BattleScript_TxRollbackPhaseFailed
+    playmoveanimation MOVE_WISH
+    waitanimation
+    goto BattleScript_TxRollbackPhaseEnd
+
+BattleScript_TxRollbackBreakDoomDesire::
+    callnative BS_TxRollbackBeginPhase
+    .2byte MOVE_DOOM_DESIRE
+    callnative BS_TxRollbackReduction
+    .4byte BattleScript_TxRollbackPhaseDoomDesire
+    printstring STRINGID_CASTORIA_WISH_REDUCTION
+    waitmessage B_WAIT_TIME_LONG
+BattleScript_TxRollbackPhaseDoomDesire:
+    callnative BS_TxRollbackPrepareDoomDesire
+    .4byte BattleScript_TxRollbackPhaseEnd
+    printstring STRINGID_USEDMOVE
+    waitmessage B_WAIT_TIME_LONG
+    setfutureattack
+    playmoveanimation MOVE_DOOM_DESIRE
+    waitanimation
+    printfromtable gFutureMoveUsedStringIds
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_TxRollbackPhaseEnd
+BattleScript_TxRollbackPhaseFailed:
+    printstring STRINGID_BUTITFAILED
+    waitmessage B_WAIT_TIME_LONG
+BattleScript_TxRollbackPhaseEnd:
+    callnative BS_TxRollbackEndPhase
+    return
+
+BattleScript_TxWishReversal::
+    attackanimation
+    waitanimation
+    printstring STRINGID_TX_WISH_REVERSAL
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_TxWishReclamation::
+    attackanimation
+    waitanimation
+    jumpifbyte CMP_EQUAL, gEffectBattler, MAX_BATTLERS_COUNT, BattleScript_TxWishReclamationMessage
+    savetarget
+    copybyte gBattlerTarget, gEffectBattler
+    playanimation BS_TARGET, B_ANIM_SUBSTITUTE_FADE
+    waitanimation
+    restoretarget
+    playanimation BS_ATTACKER, B_ANIM_SUBSTITUTE_APPEAR
+    waitanimation
+BattleScript_TxWishReclamationMessage:
+    printstring STRINGID_TX_WISH_RECLAMATION
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_TxWishCalamity::
+    attackanimation
+    waitanimation
+    printstring STRINGID_TX_WISH_CALAMITY
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_TxWishRestoration::
+    attackanimation
+    waitanimation
+    fillsavedbreakbar BS_SCRIPTING
+    animatesavedbreakbar BS_SCRIPTING
+    printstring STRINGID_TX_WISH_RESTORATION
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_TxWishReciprocity::
+    attackanimation
+    waitanimation
+    printstring STRINGID_TX_WISH_RECIPROCITY
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_TxReciprocityHeal::
+    waitstate
+    callnative BS_TxRollbackBeginReciprocity
+    playanimation BS_SCRIPTING, B_ANIM_WISH_HEAL
+    waitanimation
+    healthbarupdate BS_SCRIPTING, PASSIVE_HP_UPDATE
+    datahpupdate BS_SCRIPTING, PASSIVE_HP_UPDATE
+    printstring STRINGID_TX_RECIPROCITY_HEAL
+    waitmessage B_WAIT_TIME_LONG
+    callnative BS_TxRollbackEndReciprocity
+    return
+
+BattleScript_CastoriaWishReduction::
+    printstring STRINGID_CASTORIA_WISH_REDUCTION
+    waitmessage B_WAIT_TIME_LONG
+    goto BattleScript_MoveEnd
+
+BattleScript_ReductionTick::
+    callnative BS_ReductionRefreshDisplay
+    printstring STRINGID_REDUCTION_TICK
+    waitmessage B_WAIT_TIME_LONG
+    end2
+
+BattleScript_CastoriaWishNormality::
+    handleformchange BS_SCRIPTING, 0
+    waitstate
+    playanimation BS_SCRIPTING, B_ANIM_FORM_CHANGE
+    waitanimation
+    handleformchange BS_SCRIPTING, 2
+    printstring STRINGID_CASTORIA_WISH_NORMALITY
+    waitmessage B_WAIT_TIME_LONG
+    trytoclearprimalweather
     waitmessage B_WAIT_TIME_LONG
     goto BattleScript_MoveEnd
 

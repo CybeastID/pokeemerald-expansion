@@ -93,6 +93,8 @@ SINGLE_BATTLE_TEST("Lunar Dance effect activates even if the the switched Pokém
 
 SINGLE_BATTLE_TEST("Lunar Dance effect activates only if the switched Pokémon can be healed (Gen8+)")
 {
+        KNOWN_FAILING; // Lunar Dance grants Break Bars even when the recipient has no HP, status, or PP to restore.
+    // The vanilla eligibility expectation is intentionally obsolete.
     u32 switchTo;
     PARAMETRIZE { switchTo = 2; }
     PARAMETRIZE { switchTo = 3; }

@@ -965,7 +965,10 @@ void HandleAction_ActionFinished(void)
     if (gActionsByTurnOrder[gCurrentTurnActionNumber] == B_ACTION_USE_MOVE
      && TryResolveBreakBarsAfterMove())
         return;
-    bool32 afterYouActive = gSpecialStatuses[gBattlerByTurnOrder[gCurrentTurnActionNumber + 1]].afterYou;
+    if (TxRollbackTryAmbush())
+        return;
+    bool32 afterYouActive = gCurrentTurnActionNumber + 1 < gBattlersCount
+        && gSpecialStatuses[gBattlerByTurnOrder[gCurrentTurnActionNumber + 1]].afterYou;
     gBattleStruct->monToSwitchIntoId[gBattlerByTurnOrder[gCurrentTurnActionNumber]] = gSelectedMonPartyId = PARTY_SIZE;
     gCurrentTurnActionNumber++;
     gCurrentActionFuncId = gActionsByTurnOrder[gCurrentTurnActionNumber];
@@ -1487,7 +1490,7 @@ u32 TrySetCantSelectMoveBattleScript(u32 battler)
     u16 *choicedMove = &gBattleStruct->choicedMove[battler];
     enum BattleMoveEffects moveEffect;
 
-    if (move == MOVE_NONE)
+    if (moveId >= MAX_MON_MOVES && move == MOVE_NONE)
     {
         if (gBattleTypeFlags & BATTLE_TYPE_PALACE)
         {
@@ -3177,6 +3180,8 @@ bool32 HasNoMonsToSwitch(u32 battler, u8 partyIdBattlerOn1, u8 partyIdBattlerOn2
     u32 i, playerId, flankId;
     struct Pokemon *party;
 
+    if (!TxRollbackCanPopulateSlot(battler))
+        return TRUE;
     if (!IsDoubleBattle())
         return FALSE;
 
@@ -3206,7 +3211,7 @@ bool32 HasNoMonsToSwitch(u32 battler, u8 partyIdBattlerOn1, u8 partyIdBattlerOn2
         if (partyIdBattlerOn1 == PARTY_SIZE)
             partyIdBattlerOn1 = gBattlerPartyIndexes[flankId];
         if (partyIdBattlerOn2 == PARTY_SIZE)
-            partyIdBattlerOn2 = gBattlerPartyIndexes[playerId];
+            partyIdBattlerOn2 = TxRollbackGetSlotPolicy(playerId) == TX_SLOT_DISABLED ? PARTY_SIZE : gBattlerPartyIndexes[playerId];
 
         for (i = 0; i < PARTY_SIZE; i++)
         {
@@ -3317,7 +3322,7 @@ bool32 HasNoMonsToSwitch(u32 battler, u8 partyIdBattlerOn1, u8 partyIdBattlerOn2
         if (partyIdBattlerOn1 == PARTY_SIZE)
             partyIdBattlerOn1 = gBattlerPartyIndexes[flankId];
         if (partyIdBattlerOn2 == PARTY_SIZE)
-            partyIdBattlerOn2 = gBattlerPartyIndexes[playerId];
+            partyIdBattlerOn2 = TxRollbackGetSlotPolicy(playerId) == TX_SLOT_DISABLED ? PARTY_SIZE : gBattlerPartyIndexes[playerId];
 
         for (i = 0; i < PARTY_SIZE; i++)
         {
@@ -10283,6 +10288,7 @@ void CopyMonLevelAndBaseStatsToBattleMon(u32 battler, struct Pokemon *mon)
     gBattleMons[battler].speed = GetMonData(mon, MON_DATA_SPEED);
     gBattleMons[battler].spAttack = GetMonData(mon, MON_DATA_SPATK);
     gBattleMons[battler].spDefense = GetMonData(mon, MON_DATA_SPDEF);
+    ReductionOnStatsCopied(battler);
 }
 
 void CopyMonAbilityAndTypesToBattleMon(u32 battler, struct Pokemon *mon)
@@ -10295,6 +10301,7 @@ void CopyMonAbilityAndTypesToBattleMon(u32 battler, struct Pokemon *mon)
 
 void RecalcBattlerStats(u32 battler, struct Pokemon *mon, bool32 isDynamaxing)
 {
+    ReductionBeginMutation(battler);
     u32 hp = GetMonData(mon, MON_DATA_HP);
     u32 oldMaxHp = GetMonData(mon, MON_DATA_MAX_HP);
     CalculateMonStats(mon);
@@ -10317,6 +10324,7 @@ void RecalcBattlerStats(u32 battler, struct Pokemon *mon, bool32 isDynamaxing)
     }
     CopyMonLevelAndBaseStatsToBattleMon(battler, mon);
     CopyMonAbilityAndTypesToBattleMon(battler, mon);
+    ReductionEndMutation(battler);
 }
 
 void RemoveConfusionStatus(u32 battler)

@@ -31,6 +31,7 @@
 #undef TestRunner_Battle_CheckBattleRecordActionType
 #undef TestRunner_Battle_GetForcedAbility
 #undef TestRunner_Battle_AfterCleanup
+#undef TestRunner_Battle_HasPendingAfterCleanup
 #endif
 
 #define INVALID(fmt, ...) Test_ExitWithResult(TEST_RESULT_INVALID, sourceLine, ":L%s:%d: " fmt, gTestRunnerState.test->filename, sourceLine, ##__VA_ARGS__)
@@ -344,10 +345,24 @@ static void SetImplicitSpeeds(void)
     }
 }
 
+void DeclareAfterCleanup(void)
+{
+    DATA.hasAfterCleanup = TRUE;
+}
+
+bool32 TestRunner_Battle_HasPendingAfterCleanup(void)
+{
+    return DATA.hasAfterCleanup && !DATA.trial.afterCleanupDone;
+}
+
 void TestRunner_Battle_AfterCleanup(void)
 {
+    if (!TestRunner_Battle_HasPendingAfterCleanup())
+        return;
     const struct BattleTest *test = GetBattleTest();
 
+    // Mark before dispatch: cleanup assertions may call back into this hook.
+    DATA.trial.afterCleanupDone = TRUE;
     STATE->runAfterCleanup = TRUE;
     InvokeTestFunction(test);
     STATE->runAfterCleanup = FALSE;
@@ -1634,6 +1649,8 @@ void TestRunner_Battle_AfterLastTurn(void)
 
 static void TearDownBattle(void)
 {
+    // An assertion can abort the cleanup block before its normal flag reset.
+    STATE->runAfterCleanup = FALSE;
     // Zero out the parties, data in them could potentially carry over
     ZeroPlayerPartyMons();
     ZeroEnemyPartyMons();
@@ -2288,6 +2305,8 @@ static const char *const sBattlerIdentifiersDoubles[] =
 
 static const char *BattlerIdentifier(s32 battlerId)
 {
+    if (battlerId >= 2 && battlerId < MAX_BATTLERS_COUNT)
+        return sBattlerIdentifiersDoubles[battlerId];
     const struct BattleTest *test = GetBattleTest();
     switch (test->type)
     {
@@ -2433,6 +2452,18 @@ static void SetAiActionToPass(u32 sourceLine, s32 battlerId)
     DATA.expectedAiActionIndex[battlerId]++;
 }
 
+void DeclareSummonedOpponent(u32 sourceLine)
+{
+    INVALID_IF(!IsAITest() || STATE->battlersCount != 2, "SUMMONED_OPPONENT requires an AI Singles test");
+    INVALID_IF(DATA.turns == 0 || DATA.turnState != TURN_CLOSED, "Declare the summon after its creation TURN");
+    DATA.hasSummonedOpponent = TRUE;
+    DATA.currentMonIndexes[B_POSITION_OPPONENT_RIGHT] = PARTY_SIZE - 1;
+    CreateMon(&DATA.summonedOpponentMon, SPECIES_TX_ROLLBACK, 50, 31, TRUE, 0, OT_ID_PRESET, 0x12345678);
+    const u16 moves[MAX_MON_MOVES] = {MOVE_PSYCHIC, MOVE_SWIFT, MOVE_PROTECT, MOVE_CELEBRATE};
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        SetMonMoveSlot(&DATA.summonedOpponentMon, moves[i], i);
+}
+
 void CloseTurn(u32 sourceLine)
 {
     s32 i;
@@ -2440,8 +2471,10 @@ void CloseTurn(u32 sourceLine)
     DATA.turnState = TURN_CLOSING;
 
     // If Move was not specified always use Celebrate. In AI Tests allow any taken action.
-    for (i = 0; i < STATE->battlersCount; i++)
+    for (i = 0; i < (DATA.hasSummonedOpponent ? MAX_BATTLERS_COUNT : STATE->battlersCount); i++)
     {
+        if (DATA.hasSummonedOpponent && i == B_POSITION_PLAYER_RIGHT)
+            continue;
         if (!(DATA.actionBattlers & (1 << i)))
         { // Multi test partner trainers want setting to RecordedPartner controller if no move set in this case.
             if (IsAITest() && (i & BIT_SIDE) == B_SIDE_OPPONENT) // If Move was not specified, allow any move used.
@@ -2456,6 +2489,8 @@ void CloseTurn(u32 sourceLine)
 
 static struct Pokemon *CurrentMon(s32 battlerId)
 {
+    if (DATA.hasSummonedOpponent && battlerId == B_POSITION_OPPONENT_RIGHT)
+        return &DATA.summonedOpponentMon;
     struct Pokemon *party;
     if (battlerId == B_POSITION_PLAYER_LEFT || battlerId == B_POSITION_PLAYER_RIGHT)
         party = DATA.recordedBattle.playerParty;

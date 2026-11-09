@@ -279,6 +279,8 @@ enum BugSpaceThresholdTier
 
 #define CASTORIA_ARCANUM_COUNT 4
 
+#include "battle_tx_rollback.h"
+
 struct CastoriaBattleData
 {
     u8 nameResult;
@@ -655,7 +657,7 @@ struct PartyState
     u32 breakBarsRemaining:3;
     u32 breakBarPending:1;
     u32 breakBarItemUsed:1;
-    u32 padding:3;
+    u32 breakBarsPeak:3;
     u16 usedHeldItem;
     const struct BreakBarConfig *breakBarConfig;
     u16 breakBarSavedHp[BREAK_BAR_MAX_EXTRA_BARS];
@@ -680,8 +682,11 @@ struct EventStates
 };
 
 // Cleared at the beginning of the battle. Fields need to be cleared when needed manually otherwise.
+#include "battle_reduction.h"
+
 struct BattleStruct
 {
+    struct ReductionData reduction;
     struct BattlerState battlerState[MAX_BATTLERS_COUNT];
     struct PartyState partyState[NUM_BATTLE_SIDES][PARTY_SIZE];
     u8 koankoPhase; // enum KoankoPhase; keeps the original trainer identity.
@@ -820,6 +825,7 @@ struct BattleStruct
     s32 battlerExpReward;
     u16 prevTurnSpecies[MAX_BATTLERS_COUNT]; // Stores species the AI has in play at start of turn
     s16 passiveHpUpdate[MAX_BATTLERS_COUNT]; // non-move damage and healing
+    u8 healingHpUpdate; // Genuine recovery, as opposed to redistribution or layer changes.
     s16 moveDamage[MAX_BATTLERS_COUNT];
     s16 critChance[MAX_BATTLERS_COUNT];
     u16 moveResultFlags[MAX_BATTLERS_COUNT];
@@ -846,6 +852,7 @@ struct BattleStruct
     u8 padding3:4;
     struct BugSpaceData bugSpace;
     struct CastoriaBattleData castoria;
+    struct TxRollbackBattleData txRollback;
 };
 
 struct AiBattleData
@@ -1198,6 +1205,8 @@ extern u8 gCategoryIconSpriteId;
 static inline bool32 IsBreakBarPending(u32 battler)
 {
     return gBattleStruct != NULL && battler < gBattlersCount
+        && TxRollbackGetSlotPolicy(battler) != TX_SLOT_DISABLED
+        && TxRollbackGetSlotPolicy(battler) != TX_SLOT_RETIRED
         && gBattlerPartyIndexes[battler] < PARTY_SIZE
         && gBattleStruct->partyState[battler & BIT_SIDE][gBattlerPartyIndexes[battler]].breakBarPending;
 }
@@ -1205,6 +1214,9 @@ static inline bool32 IsBreakBarPending(u32 battler)
 static inline bool32 IsBattlerAlive(u32 battler)
 {
     if (battler >= gBattlersCount)
+        return FALSE;
+    else if (TxRollbackGetSlotPolicy(battler) == TX_SLOT_DISABLED
+          || TxRollbackGetSlotPolicy(battler) == TX_SLOT_RETIRED)
         return FALSE;
     else if (gAbsentBattlerFlags & (1u << battler))
         return FALSE;
@@ -1318,6 +1330,8 @@ static inline bool32 IsBattlerInvalidForSpreadMove(u32 battlerAtk, u32 battlerDe
 // Only valid while resolving the active action; called moves may change gCurrMovePos.
 static inline bool32 IsArcanumAction(u32 battler)
 {
+    if (TxRollbackHasWishes(battler))
+        return gChosenMovePos == MAX_MON_MOVES;
     return !IsOnPlayerSide(battler)
         && gBattleMons[battler].species == SPECIES_CASTORIA
         && gChosenMovePos >= MAX_MON_MOVES
@@ -1326,6 +1340,8 @@ static inline bool32 IsArcanumAction(u32 battler)
 
 static inline u32 GetBattlerMoveSlotCount(u32 battler)
 {
+    if (TxRollbackHasWishes(battler))
+        return MAX_MON_MOVES + 1;
     if (gBattleStruct->castoria.arcanumMoves[0] == MOVE_NONE)
         return MAX_MON_MOVES;
 
@@ -1340,6 +1356,8 @@ static inline u16 GetBattlerMoveAtSlot(u32 battler, u32 slot)
 {
     if (slot < MAX_MON_MOVES)
         return gBattleMons[battler].moves[slot];
+    if (TxRollbackHasWishes(battler))
+        return slot == MAX_MON_MOVES ? MOVE_ARCANUM_WISH : MOVE_NONE;
     if (!IsOnPlayerSide(battler)
      && gBattleMons[battler].species == SPECIES_CASTORIA
      && slot < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT)
@@ -1357,6 +1375,7 @@ static inline void SetPassiveDamageAmount(u32 battler, s32 value)
     if (value == 0)
         value = 1;
     gBattleStruct->passiveHpUpdate[battler] = value;
+    gBattleStruct->healingHpUpdate &= ~(1u << battler);
 }
 
 static inline void SetHealAmount(u32 battler, s32 value)
@@ -1364,6 +1383,7 @@ static inline void SetHealAmount(u32 battler, s32 value)
     if (value == 0)
         value = 1;
     gBattleStruct->passiveHpUpdate[battler] = -1 * value;
+    gBattleStruct->healingHpUpdate |= 1u << battler;
 }
 
 #endif // GUARD_BATTLE_H

@@ -1,4 +1,6 @@
 #include "global.h"
+#include "party_menu.h"
+#include "constants/party_menu.h"
 #include "battle.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
@@ -8,6 +10,7 @@
 #include "battle_gfx_sfx_util.h"
 #include "battle_interface.h"
 #include "kazuradrop_battle_ui.h"
+#include "battle_status_icons.h"
 #include "servant_sigil.h"
 #include "kazuradrop_entrance.h"
 #include "battle_message.h"
@@ -814,6 +817,7 @@ void BtlController_EmitSetMonData(u32 battler, u32 bufferId, u8 requestId, u8 mo
     gBattleResources->transferBuffer[2] = monToCheck;
     for (i = 0; i < bytes; i++)
         gBattleResources->transferBuffer[3 + i] = *(u8 *)(data++);
+    ReductionNormalizeRequest(battler, requestId, monToCheck, &gBattleResources->transferBuffer[3]);
     PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 3 + bytes);
 }
 
@@ -1063,6 +1067,9 @@ void BtlController_EmitChooseItem(u32 battler, u32 bufferId, u8 *battlePartyOrde
 
 void BtlController_EmitChoosePokemon(u32 battler, u32 bufferId, u8 caseId, u8 slotId, u16 abilityId, u8 battlerPreventingSwitchout, u8 *data)
 {
+    if (!TxRollbackCanPopulateSlot(battler)
+     && caseId != PARTY_ACTION_CHOOSE_FAINTED_MON)
+        return;
     s32 i;
 
     gBattleResources->transferBuffer[0] = CONTROLLER_CHOOSEPOKEMON;
@@ -1871,7 +1878,7 @@ static void SetBattlerMonData(u32 battler, struct Pokemon *party, u32 monId)
             u16 hp = GetMonData(&party[monId], MON_DATA_HP);
             u16 maxHp = GetMonData(&party[monId], MON_DATA_MAX_HP);
             if (hp == maxHp)
-                CreateKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+                RefreshBattleStatusIcon(battler, BATTLE_STATUS_ICON_GUTS);
         }
         break;
     case REQUEST_MAX_HP_BATTLE:
@@ -2603,6 +2610,11 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
     hpVal = gBattleResources->bufferA[battler][2] | (gBattleResources->bufferA[battler][3] << 8);
     maxHP = GetMonData(mon, MON_DATA_MAX_HP);
     curHP = GetMonData(mon, MON_DATA_HP);
+    if (ReductionIsScaled(battler))
+    {
+        maxHP = gBattleMons[battler].maxHP;
+        curHP = gBattleMons[battler].hp;
+    }
     // DebugPrintf("hpVal: %d SNAP: %d curHP: %d", hpVal, (s16)INSTANT_HP_BAR_SNAP, curHP);
 
     if (hpVal != INSTANT_HP_BAR_DROP && hpVal != INSTANT_HP_BAR_SNAP)

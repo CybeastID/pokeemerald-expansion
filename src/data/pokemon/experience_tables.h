@@ -1,4 +1,4 @@
-#define UNFAIR_AI_CONSTANT 10000
+
 #define SQUARE(n) ((n) * (n))
 #define CUBE(n) ((n) * (n) * (n))
 
@@ -6,7 +6,7 @@
 #define EXP_FAST(n) ((4 * CUBE(n)) / 5) // (4 * (n)^3) / 5
 #define EXP_MEDIUM_FAST(n) (CUBE(n)) // (n)^3
 #define EXP_MEDIUM_SLOW(n) ((6 * CUBE(n)) / 5 - (15 * SQUARE(n)) + (100 * n) - 140)    // (6 * (n)^3) / 5 - (15 * (n)^2) + (100 * n) - 140
-#define EXP_ERRATIC(n)                                      \
+/* #define EXP_ERRATIC(n)                                      \
      (n <= 50) ? ((100 - n) * CUBE(n) /  50)                \
     :(n <= 68) ? ((150 - n) * CUBE(n) / 100)                \
     :(n <= 98) ? (((1911 - 10 * n) / 3) * CUBE(n) / 500)    \
@@ -15,6 +15,20 @@
      (n <= 15) ? (((n + 1) / 3 + 24) * CUBE(n) / 50)        \
     :(n <= 36) ? ((n + 14)           * CUBE(n) / 50)        \
     :            (((n / 2) + 32)     * CUBE(n) / 50)
+*/
+
+#define EXP_ERRATIC(n) (                                     \
+     (n <= 50) ? ((100 - n) * CUBE(n) / 50)                 \
+    :(n <= 68) ? ((150 - n) * CUBE(n) / 100)                \
+    :(n <= 98) ? (((1911 - 10 * n) / 3) * CUBE(n) / 500)   \
+    :            ((160 - n) * CUBE(n) / 100)                 \
+)
+
+#define EXP_FLUCTUATING(n) (                                \
+     (n <= 15) ? (((n + 1) / 3 + 24) * CUBE(n) / 50)       \
+    :(n <= 36) ? ((n + 14) * CUBE(n) / 50)                  \
+    :            (((n / 2) + 32) * CUBE(n) / 50)            \
+)
 
 const u32 gExperienceTables[][MAX_LEVEL + 1] =
 {
@@ -120,11 +134,11 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_MEDIUM_FAST(98),
         EXP_MEDIUM_FAST(99),
         EXP_MEDIUM_FAST(100),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_FAST(101),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_FAST(102),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_FAST(103),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_FAST(104),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_FAST(105),
+        EXP_MEDIUM_FAST(101),
+        EXP_MEDIUM_FAST(102),
+        EXP_MEDIUM_FAST(103),
+        EXP_MEDIUM_FAST(104),
+        EXP_MEDIUM_FAST(105),
 
     },
     { // Erratic
@@ -229,11 +243,11 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_ERRATIC(98),
         EXP_ERRATIC(99),
         EXP_ERRATIC(100),
-        UNFAIR_AI_CONSTANT + EXP_ERRATIC(101),
-        UNFAIR_AI_CONSTANT + EXP_ERRATIC(102),
-        UNFAIR_AI_CONSTANT + EXP_ERRATIC(103),
-        UNFAIR_AI_CONSTANT + EXP_ERRATIC(104),
-        UNFAIR_AI_CONSTANT + EXP_ERRATIC(105),
+        EXP_ERRATIC(101),
+        EXP_ERRATIC(102),
+        EXP_ERRATIC(103),
+        EXP_ERRATIC(104),
+        EXP_ERRATIC(105),
     },
     { // Fluctuating
         0, // 0
@@ -337,11 +351,11 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_FLUCTUATING(98),
         EXP_FLUCTUATING(99),
         EXP_FLUCTUATING(100),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_SLOW(101),
-        UNFAIR_AI_CONSTANT + EXP_FLUCTUATING(102),
-        UNFAIR_AI_CONSTANT + EXP_FLUCTUATING(103),
-        UNFAIR_AI_CONSTANT + EXP_FLUCTUATING(104),
-        UNFAIR_AI_CONSTANT + EXP_FLUCTUATING(105),
+        EXP_FLUCTUATING(101),
+        EXP_FLUCTUATING(102),
+        EXP_FLUCTUATING(103),
+        EXP_FLUCTUATING(104),
+        EXP_FLUCTUATING(105),
     },
     { // Medium Slow
         0, // 0
@@ -445,11 +459,11 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_MEDIUM_SLOW(98),
         EXP_MEDIUM_SLOW(99),
         EXP_MEDIUM_SLOW(100),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_SLOW(101),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_SLOW(102),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_SLOW(103),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_SLOW(104),
-        UNFAIR_AI_CONSTANT + EXP_MEDIUM_SLOW(105),
+        EXP_MEDIUM_SLOW(101),
+        EXP_MEDIUM_SLOW(102),
+        EXP_MEDIUM_SLOW(103),
+        EXP_MEDIUM_SLOW(104),
+        EXP_MEDIUM_SLOW(105),
     },
     { // Fast
         0, // 0
@@ -553,11 +567,11 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_FAST(98),
         EXP_FAST(99),
         EXP_FAST(100),
-        UNFAIR_AI_CONSTANT + EXP_FAST(101),
-        UNFAIR_AI_CONSTANT + EXP_FAST(102),
-        UNFAIR_AI_CONSTANT + EXP_FAST(103),
-        UNFAIR_AI_CONSTANT + EXP_FAST(104),
-        UNFAIR_AI_CONSTANT + EXP_FAST(105),
+        EXP_FAST(101),
+        EXP_FAST(102),
+        EXP_FAST(103),
+        EXP_FAST(104),
+        EXP_FAST(105),
     },
     { // Slow
         0, // 0
@@ -661,11 +675,11 @@ const u32 gExperienceTables[][MAX_LEVEL + 1] =
         EXP_SLOW(98),
         EXP_SLOW(99),
         EXP_SLOW(100),
-        UNFAIR_AI_CONSTANT + EXP_SLOW(101),
-        UNFAIR_AI_CONSTANT + EXP_SLOW(102),
-        UNFAIR_AI_CONSTANT + EXP_SLOW(103),
-        UNFAIR_AI_CONSTANT + EXP_SLOW(104),
-        UNFAIR_AI_CONSTANT + EXP_SLOW(105),
+        EXP_SLOW(101),
+        EXP_SLOW(102),
+        EXP_SLOW(103),
+        EXP_SLOW(104),
+        EXP_SLOW(105),
         
     },
     { // Medium Fast copy 2 (unused? to-do: investigate)

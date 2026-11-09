@@ -74,7 +74,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         break;
     case 3:
         ResetSpriteData();
-        InitNoOrderChangeIcons();
+        InitBattleStatusIcons();
         break;
     case 4:
         FreeAllSpritePalettes();
@@ -169,6 +169,7 @@ static void CB2_ReshowBattleScreenAfterMenu(void)
         SetMainCallback2(BattleMainCB2);
         FillAroundBattleWindows();
         // menu close/return reshow path wipes sprites/OBJ tiles; recreate ours
+        ReshowBattleStatusIcons();
         ReshowKazuradropBattleUI();
         ReshowBreakBars();
         break;
@@ -219,7 +220,7 @@ static void CB2_ReshowBlankBattleScreenAfterMenu(void)
         break;
     case 3:
         ResetSpriteData();
-        InitNoOrderChangeIcons();
+        InitBattleStatusIcons();
         break;
     case 4:
         FreeAllSpritePalettes();
@@ -256,6 +257,7 @@ static void CB2_ReshowBlankBattleScreenAfterMenu(void)
         SetMainCallback2(BattleMainCB2);
         FillAroundBattleWindows();
         // menu close/return reshow path wipes sprites/OBJ tiles; recreate ours
+        ReshowBattleStatusIcons();
         ReshowKazuradropBattleUI();
         ReshowBreakBars();
         break;
@@ -277,7 +279,16 @@ static void ClearBattleBgCntBaseBlocks(void)
 
 static bool8 LoadBattlerSpriteGfx(u32 battler)
 {
-    if (battler < gBattlersCount)
+    if (TxRollbackGetSlotPolicy(battler) == TX_SLOT_DISABLED
+     || TxRollbackGetSlotPolicy(battler) == TX_SLOT_RETIRED)
+    {
+        gBattlerSpriteIds[battler] = MAX_SPRITES;
+        gHealthboxSpriteIds[battler] = MAX_SPRITES;
+        return TRUE;
+    }
+    if (battler < gBattlersCount
+     && TxRollbackGetSlotPolicy(battler) != TX_SLOT_DISABLED
+     && TxRollbackGetSlotPolicy(battler) != TX_SLOT_RETIRED)
     {
         if (!IsOnPlayerSide(battler))
         {
@@ -302,7 +313,9 @@ static bool8 LoadBattlerSpriteGfx(u32 battler)
 
 void CreateBattlerSprite(u32 battler)
 {
-    if (battler < gBattlersCount)
+    if (battler < gBattlersCount
+     && TxRollbackGetSlotPolicy(battler) != TX_SLOT_DISABLED
+     && TxRollbackGetSlotPolicy(battler) != TX_SLOT_RETIRED)
     {
         u8 posY;
 
@@ -372,7 +385,9 @@ void CreateBattlerSprite(u32 battler)
 
 static void CreateHealthboxSprite(u32 battler)
 {
-    if (battler < gBattlersCount)
+    if (battler < gBattlersCount
+     && TxRollbackGetSlotPolicy(battler) != TX_SLOT_DISABLED
+     && TxRollbackGetSlotPolicy(battler) != TX_SLOT_RETIRED)
     {
         u8 healthboxSpriteId;
 

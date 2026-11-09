@@ -73,6 +73,7 @@
 #include "test/test_runner_battle.h"
 #include "kazuradrop_gameover.h"
 #include "kazuradrop_battle_ui.h"
+#include "battle_status_icons.h"
 #include "castoria_name_theft.h"
 #include "battle_break_bar.h"
 #include "battle_koanko.h"
@@ -1424,7 +1425,7 @@ static void JumpIfMoveFailed(u32 adder, u32 move, u32 moveType, const u8 *failIn
         gBattleStruct->moveResultFlags[gBattlerTarget] |= MOVE_RESULT_NO_EFFECT;
         // Show Invincible icon for explosive moves (Explosion, Self-Destruct, Misty Explosion)
         if (GetMoveEffect(move) == EFFECT_EXPLOSION || GetMoveEffect(move) == EFFECT_MISTY_EXPLOSION)
-            CreateKazuradropBuffIcon(gBattlerTarget, KA_BUFF_INVINCIBLE);
+            ShowInvincibleBattleStatusIcon(gBattlerTarget);
     if (gBattleStruct->bugSpace.currentTier == BUGSPACE_TIER_PASSIVE_OHKO)
     {
         gBattlerAbility = gBattleStruct->bugSpace.sourceBattler;
@@ -2478,6 +2479,9 @@ static void Cmd_healthbarupdate(void)
 
 static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr, bool32 instantDeath)
 {
+    u32 oldHp = gBattleMons[battler].hp;
+    bool32 healing = (gBattleStruct->healingHpUpdate & (1u << battler)) != 0;
+    gBattleStruct->healingHpUpdate &= ~(1u << battler);
     s32 requested = gBattleStruct->passiveHpUpdate[battler];
     s32 change = instantDeath ? requested : ClampBreakBarPassiveDamage(battler, requested);
     if (IsBreakBarPending(battler) || (!instantDeath && requested != 0 && change == 0))
@@ -2521,6 +2525,8 @@ static void PassiveDataHpUpdate(u32 battler, const u8 *nextInstr, bool32 instant
 
     gBattleStruct->passiveHpUpdate[battler] = 0;
     gBattlescriptCurrInstr = nextInstr;
+    if (healing && !instantDeath)
+        TxRollbackMirrorHealing(battler, oldHp, nextInstr);
 }
 
 // DEADCODE (NOT COMPILED) — canonical note: the old 10%-HP-clamp transformation design.
@@ -2647,6 +2653,7 @@ void BS_KazuraOmniboost(void)
 
 static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nextInstr)
 {
+    u32 oldHp = gBattleMons[battler].hp;
     if (IsBreakBarPending(battler))
     {
         gBattleStruct->moveDamage[battler] = 0;
@@ -2737,7 +2744,7 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
                     // Clear 1-turn Guts (cheat death) so it can't be re-triggered
                     gBattleMons[battler].volatiles.kazuradropGuts = 0;
                     // Destroy Guts icon
-                    DestroyKazuradropBuffIcon(battler, KA_BUFF_GUTS);
+                    DestroyBattleStatusIcon(battler, BATTLE_STATUS_ICON_GUTS);
                     // DEADCODE (NOT COMPILED): palette restore moved to the transform script; preSnapHP debug leftover. Kept for posterity.
                     // Restore HP bar to normal red (break bar is broken) (MOVED TO TRANSFORM)
                     // SetKazuradropHpBarPalette(battler, FALSE);
@@ -2827,6 +2834,8 @@ static void MoveDamageDataHpUpdate(u32 battler, u32 scriptBattler, const u8 *nex
 
     if (IsBattlerTurnDamaged(gBattlerTarget) && GetMoveCategory(gCurrentMove) != DAMAGE_CATEGORY_STATUS)
         GetBattlerPartyState(battler)->timesGotHit++;
+    if (gBattleStruct->moveDamage[battler] < 0)
+        TxRollbackMirrorHealing(battler, oldHp, gBattlescriptCurrInstr);
 }
 
 static void Cmd_datahpupdate(void)
@@ -5097,7 +5106,7 @@ static void Cmd_getexp(void)
                 gBattleStruct->battlerExpReward = 0;
             }
             else if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && *expMonId >= 3)
-                  || GetMonData(&gPlayerParty[*expMonId], MON_DATA_LEVEL) == MAX_LEVEL)
+                  || GetMonData(&gPlayerParty[*expMonId], MON_DATA_LEVEL) >= PLAYER_MAX_LV)
             {
                 gBattleScripting.getexpState = 5;
                 gBattleStruct->battlerExpReward = 0;
@@ -5245,8 +5254,14 @@ static void Cmd_getexp(void)
                 {
                     if (gBattleMons[battler].volatiles.transformed)
                     {
+                        u16 hp = GetMonData(&gPlayerParty[*expMonId], MON_DATA_HP);
+                        ReductionBeginMutation(battler);
+                        SetMonData(&gPlayerParty[*expMonId], MON_DATA_HP, &hp);
                         gBattleMons[battler].level = GetMonData(&gPlayerParty[*expMonId], MON_DATA_LEVEL);
-                        gBattleMons[battler].hp = GetMonData(&gPlayerParty[*expMonId], MON_DATA_HP);
+                        gBattleMons[battler].hp = hp;
+                        if (ReductionIsActive())
+                            gBattleMons[battler].maxHP = GetMonData(&gPlayerParty[*expMonId], MON_DATA_MAX_HP);
+                        ReductionEndMutation(battler);
                     }
                     else
                     {
@@ -5440,14 +5455,16 @@ static void Cmd_checkteamslost(void)
 
         for (emptyPlayerSpots = 0, i = 0; i < gBattlersCount; i += 2)
         {
-            if ((gHitMarker & HITMARKER_FAINTED(i)) && (!gSpecialStatuses[i].faintedHasReplacement))
+            if (TxRollbackCanPopulateSlot(i)
+             && (gHitMarker & HITMARKER_FAINTED(i)) && (!gSpecialStatuses[i].faintedHasReplacement))
                 emptyPlayerSpots++;
         }
 
         emptyOpponentSpots = 0;
         for (i = 1; i < gBattlersCount; i += 2)
         {
-            if ((gHitMarker & HITMARKER_FAINTED(i)) && (!gSpecialStatuses[i].faintedHasReplacement))
+            if (TxRollbackCanPopulateSlot(i)
+             && (gHitMarker & HITMARKER_FAINTED(i)) && (!gSpecialStatuses[i].faintedHasReplacement))
                 emptyOpponentSpots++;
         }
 
@@ -5460,8 +5477,15 @@ static void Cmd_checkteamslost(void)
         }
         else
         {
-            u32 occupiedPlayerSpots = (gBattlersCount / 2) - emptyPlayerSpots;
-            u32 occupiedOpponentSpots = (gBattlersCount / 2) - emptyOpponentSpots;
+            u32 playerCapacity = gBattlersCount / 2;
+            u32 opponentCapacity = gBattlersCount / 2;
+            if (TxRollbackGetSlotPolicy(GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT)) == TX_SLOT_DISABLED)
+            {
+                playerCapacity = 1;
+                opponentCapacity = TxRollbackGetSlotPolicy(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT)) == TX_SLOT_RETIRED ? 1 : 2;
+            }
+            u32 occupiedPlayerSpots = playerCapacity - emptyPlayerSpots;
+            u32 occupiedOpponentSpots = opponentCapacity - emptyOpponentSpots;
             u32 alivePlayerPartyMons = CountAliveMonsForBattlerSide(B_POSITION_PLAYER_LEFT) - occupiedPlayerSpots;
             u32 aliveOpponentPartyMons = CountAliveMonsForBattlerSide(B_POSITION_OPPONENT_LEFT) - occupiedOpponentSpots;
 
@@ -7854,6 +7878,8 @@ static void Cmd_switchinanim(void)
 
 bool32 CanBattlerSwitch(u32 battler)
 {
+    if (!TxRollbackCanPopulateSlot(battler))
+        return FALSE;
     s32 i, lastMonId, battlerIn1, battlerIn2;
     bool32 ret = FALSE;
     struct Pokemon *party;
@@ -7973,7 +7999,8 @@ bool32 CanBattlerSwitch(u32 battler)
             // Check if attacker side has mon to switch into
             battlerIn1 = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
 
-            if (IsDoubleBattle())
+            if (IsDoubleBattle()
+             && TxRollbackGetSlotPolicy(GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT)) != TX_SLOT_DISABLED)
                 battlerIn2 = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
             else
                 battlerIn2 = battlerIn1;
@@ -8021,6 +8048,8 @@ static void Cmd_jumpifcantswitch(void)
 // Note that this is not used by the Switch action, only replacing fainted Pokémon or Baton Pass
 static void ChooseMonToSendOut(u32 battler, u8 slotId)
 {
+    if (!TxRollbackCanPopulateSlot(battler))
+        return;
     gBattleStruct->battlerPartyIndexes[battler] = gBattlerPartyIndexes[battler];
     gBattleStruct->monToSwitchIntoId[battler] = PARTY_SIZE;
     gBattleStruct->field_93 &= ~(1u << battler);
@@ -8191,6 +8220,13 @@ static void Cmd_openpartyscreen(void)
             return;
         if (HasNoOrderChange(battler) && IsBattlerAlive(battler))
         {
+            gBattlescriptCurrInstr = failInstr;
+            return;
+        }
+        if (!TxRollbackCanPopulateSlot(battler))
+        {
+            gAbsentBattlerFlags |= 1u << battler;
+            gHitMarker &= ~HITMARKER_FAINTED(battler);
             gBattlescriptCurrInstr = failInstr;
             return;
         }
@@ -8698,7 +8734,10 @@ static void Cmd_returntoball(void)
 
     // Don't always execute a form change here otherwise we can stomp gigantamax
     if (!cmd->changingForm)
+    {
+        ReductionResetOccupant(battler);
         TryBattleFormChange(battler, FORM_CHANGE_BATTLE_SWITCH);
+    }
 
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
@@ -10427,6 +10466,7 @@ static void Cmd_manipulatedamage(void)
     {
     case DMG_CHANGE_SIGN:
         gBattleStruct->passiveHpUpdate[gBattlerAttacker] *= -1;
+        gBattleStruct->healingHpUpdate |= 1u << gBattlerAttacker;
         break;
     case DMG_1_8_TARGET_HP:
         SetPassiveDamageAmount(gBattlerTarget, GetNonDynamaxMaxHP(gBattlerTarget) / 8);
@@ -10436,6 +10476,7 @@ static void Cmd_manipulatedamage(void)
         break;
     case DMG_BIG_ROOT:
         gBattleStruct->passiveHpUpdate[gBattlerAttacker] = -1 * GetDrainedBigRootHp(gBattlerAttacker, gBattleStruct->passiveHpUpdate[gBattlerAttacker]);
+        gBattleStruct->healingHpUpdate |= 1u << gBattlerAttacker;
         break;
     }
 
@@ -11751,6 +11792,7 @@ static void Cmd_transformdataexecution(void)
         u8 *battleMonAttacker, *battleMonTarget;
         u8 timesGotHit;
 
+        ReductionBeginMutation(gBattlerAttacker);
         gBattleMons[gBattlerAttacker].volatiles.transformed = TRUE;
         gDisableStructs[gBattlerAttacker].disabledMove = MOVE_NONE;
         gDisableStructs[gBattlerAttacker].disableTimer = 0;
@@ -11790,6 +11832,7 @@ static void Cmd_transformdataexecution(void)
         BtlController_EmitResetActionMoveSelection(gBattlerAttacker, B_COMM_TO_CONTROLLER, RESET_MOVE_SELECTION);
         MarkBattlerForControllerExec(gBattlerAttacker);
         gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TRANSFORMED;
+        ReductionEndMutation(gBattlerAttacker);
     }
 }
 
@@ -12041,6 +12084,7 @@ static void Cmd_painsplitdmgcalc(void)
 
         gBattleStruct->passiveHpUpdate[gBattlerTarget] = GetNonDynamaxHP(gBattlerTarget) - hpDiff;
         gBattleStruct->passiveHpUpdate[gBattlerAttacker] = gBattleMons[gBattlerAttacker].hp - hpDiff;
+        gBattleStruct->healingHpUpdate &= ~((1u << gBattlerAttacker) | (1u << gBattlerTarget));
 
         gBattlescriptCurrInstr = cmd->nextInstr;
     }
@@ -12097,6 +12141,8 @@ static void Cmd_settypetorandomresistance(void)
 
         for (i = 0; i < NUMBER_OF_MON_TYPES; i++) // Find all types that resist.
         {
+            if (i == TYPE_DIVINE || i == TYPE_CASTER_CLASS || i == TYPE_ALTER_EGO)
+        continue; // Boss-only types can't be gained through Conversion 2.
             switch (GetTypeModifier(typeToCheck, i))
             {
             case UQ_4_12(0):
@@ -13661,6 +13707,7 @@ static void Cmd_switchoutabilities(void)
     CMD_ARGS(u8 battler);
 
     u32 battler = GetBattlerForBattleScript(cmd->battler);
+    ReductionResetOccupant(battler);
     if (gDisableStructs[battler].neutralizingGas)
     {
         gDisableStructs[battler].neutralizingGas = FALSE;
@@ -15149,6 +15196,13 @@ void BS_TryRevivalBlessing2(void)
     }
 
     // Battler selected! Revive and go to next instruction.
+    if (gSelectedMonPartyId != PARTY_SIZE
+     && !TxRollbackCanRevive(GetBattlerSide(gBattlerAttacker), gSelectedMonPartyId))
+    {
+        gSelectedMonPartyId = PARTY_SIZE;
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
+    }
     if (gSelectedMonPartyId != PARTY_SIZE)
     {
         struct Pokemon *party = GetSideParty(side);
@@ -15160,7 +15214,8 @@ void BS_TryRevivalBlessing2(void)
 
         // If an on-field battler is revived, it needs to be sent out again.
         if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE &&
-            gBattlerPartyIndexes[BATTLE_PARTNER(gBattlerAttacker)] == gSelectedMonPartyId)
+            TxRollbackCanPopulateSlot(BATTLE_PARTNER(gBattlerAttacker))
+         && gBattlerPartyIndexes[BATTLE_PARTNER(gBattlerAttacker)] == gSelectedMonPartyId)
         {
             gBattleScripting.battler = BATTLE_PARTNER(gBattlerAttacker);
             gBattleCommunication[MULTIUSE_STATE] = TRUE;
@@ -15551,6 +15606,7 @@ u8 GetFirstFaintedPartyIndex(u8 battler)
         u32 species = GetMonData(&party[i], MON_DATA_SPECIES_OR_EGG);
         if (species != SPECIES_NONE
             && species != SPECIES_EGG
+            && TxRollbackCanRevive(GetBattlerSide(battler), i)
             && GetMonData(&party[i], MON_DATA_HP) == 0)
         {
             return i;
@@ -15600,9 +15656,21 @@ void BS_ItemRestoreHP(void)
     struct Pokemon *party = GetBattlerParty(gBattlerAttacker);
     u16 hp = GetMonData(&party[gBattleStruct->itemPartyIndex[gBattlerAttacker]], MON_DATA_HP);
     u16 maxHP = GetMonData(&party[gBattleStruct->itemPartyIndex[gBattlerAttacker]], MON_DATA_MAX_HP);
+    // Party views retain canonical stats; active-target items heal battle HP.
+    for (u32 i = 0; i < gBattlersCount; i++)
+    {
+        if (GetBattlerSide(i) == GetBattlerSide(gBattlerAttacker)
+         && gBattlerPartyIndexes[i] == gBattleStruct->itemPartyIndex[gBattlerAttacker]
+         && ReductionIsScaled(i))
+        {
+            hp = gBattleMons[i].hp;
+            maxHP = gBattleMons[i].maxHP;
+        }
+    }
     gBattleCommunication[MULTIUSE_STATE] = 0;
 
-    if (hp == maxHP)
+    if (hp == maxHP || (hp == 0
+     && !TxRollbackCanRevive(GetBattlerSide(gBattlerAttacker), gBattleStruct->itemPartyIndex[gBattlerAttacker])))
     {
         gBattlescriptCurrInstr = cmd->alreadyMaxHpInstr;
     }
@@ -15643,7 +15711,7 @@ void BS_ItemRestoreHP(void)
         // Heal is applied as move damage if battler is active.
         if (battler != MAX_BATTLERS_COUNT && hp != 0)
         {
-            gBattleStruct->passiveHpUpdate[battler] = -healAmount;
+            SetHealAmount(battler, healAmount);
             gBattlescriptCurrInstr = cmd->restoreBattlerInstr;
         }
         else
@@ -15653,7 +15721,8 @@ void BS_ItemRestoreHP(void)
 
             u32 partner = BATTLE_PARTNER(gBattlerAttacker);
             // Absent battlers on the field need to be replaced
-            if (IsDoubleBattle() && (gAbsentBattlerFlags & (1u << partner)))
+            if (IsDoubleBattle() && TxRollbackCanPopulateSlot(partner)
+             && (gAbsentBattlerFlags & (1u << partner)))
             {
                 gAbsentBattlerFlags &= ~(1u << partner);
                 gBattleCommunication[MULTIUSE_STATE] = TRUE;
@@ -16621,6 +16690,13 @@ void BS_TryRevivalBlessing(void)
     }
 
     // Battler selected! Revive and go to next instruction.
+    if (gSelectedMonPartyId != PARTY_SIZE
+     && !TxRollbackCanRevive(GetBattlerSide(gBattlerAttacker), gSelectedMonPartyId))
+    {
+        gSelectedMonPartyId = PARTY_SIZE;
+        gBattlescriptCurrInstr = cmd->failInstr;
+        return;
+    }
     if (gSelectedMonPartyId != PARTY_SIZE)
     {
         struct Pokemon *party = GetBattlerParty(gBattlerAttacker);
@@ -16632,7 +16708,8 @@ void BS_TryRevivalBlessing(void)
 
         // If an on-field battler is revived, it needs to be sent out again.
         if (IsDoubleBattle() &&
-            gBattlerPartyIndexes[BATTLE_PARTNER(gBattlerAttacker)] == gSelectedMonPartyId)
+            TxRollbackCanPopulateSlot(BATTLE_PARTNER(gBattlerAttacker))
+         && gBattlerPartyIndexes[BATTLE_PARTNER(gBattlerAttacker)] == gSelectedMonPartyId)
         {
             u32 i = BATTLE_PARTNER(gBattlerAttacker);
             gAbsentBattlerFlags &= ~(1u << i);

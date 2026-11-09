@@ -7,10 +7,11 @@ Arcanum Wish for Debilitation applies it alongside six nonvolatile ailments.
 
 ## Indicator
 
-The FGO Order Change Seal icon appears beside the affected Pokemon's healthbox,
+The FGO Order Change Seal icon appears below the affected Pokemon's healthbox,
 independently of the ordinary ailment badge. It follows the panel's movement and
 visibility in singles and doubles. Status cures and bar breaks leave it visible;
-clearing No Order Change removes the sprite. Healthbox reconstruction after menus
+clearing No Order Change removes the sprite. Its trailing-corner placement is
+staggered to clear the next healthbox in doubles. Healthbox reconstruction after menus
 recreates it from battle state, and battle cleanup frees its tiles and palette.
 
 The user supplied `bufficon_554.png`; the original is retained as

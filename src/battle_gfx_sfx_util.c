@@ -811,6 +811,16 @@ bool8 BattleLoadAllHealthBoxesGfx(u8 state)
     return retVal;
 }
 
+void BattleLoadTxRollbackHealthboxGfx(void)
+{
+    // Keep the existing enemy panel allocation; its doubles frame fits inside it.
+    u32 tile = GetSpriteTileStartByTag(TAG_HEALTHBOX_OPPONENT1_TILE);
+    if (tile != 0xFFFF)
+        DecompressDataWithHeaderVram(gHealthboxDoublesOpponentGfx, (void *)(OBJ_VRAM0 + tile * TILE_SIZE_4BPP));
+    LoadCompressedSpriteSheet(&sSpriteSheets_DoublesOpponentHealthbox[1]);
+    LoadCompressedSpriteSheet(&sSpriteSheets_HealthBar[B_POSITION_OPPONENT_RIGHT]);
+}
+
 void LoadBattleBarGfx(u8 unused)
 {
     DecompressDataWithHeaderWram(gBattleInterfaceGfx_BattleBar, gMonSpritesGfxPtr->barFontGfx);
@@ -1156,6 +1166,8 @@ void SetBattlerSpriteAffineMode(u8 affineMode)
 
 void CreateEnemyShadowSprite(u32 battler)
 {
+    if (TxRollbackGetSlotPolicy(battler) == TX_SLOT_RETIRED)
+        return;
     if (B_ENEMY_MON_SHADOW_STYLE >= GEN_4 && P_GBA_STYLE_SPECIES_GFX == FALSE)
     {
         u16 species = GetBattlerVisualSpecies(battler);

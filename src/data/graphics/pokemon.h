@@ -13948,6 +13948,8 @@ const u32 gObjectEventPic_Substitute[] = INCBIN_COMP("graphics/pokemon/question_
 
 #if P_FAMILY_JIRACHI
 #if !P_GBA_STYLE_SPECIES_GFX
+    const u32 gMonFrontPic_TxRollback[] = INCBIN_U32("graphics/pokemon/jirachi/tx_rollback/anim_front.4bpp.smol");
+    const u16 gMonPalette_TxRollback[] = INCBIN_U16("graphics/pokemon/jirachi/tx_rollback/normal2.gbapal");
     const u32 gMonFrontPic_Jirachi[] = INCBIN_U32("graphics/pokemon/jirachi/anim_front.4bpp.smol");
     const u16 gMonPalette_Jirachi[] = INCBIN_U16("graphics/pokemon/jirachi/normal.gbapal");
     const u32 gMonBackPic_Jirachi[] = INCBIN_U32("graphics/pokemon/jirachi/back.4bpp.smol");

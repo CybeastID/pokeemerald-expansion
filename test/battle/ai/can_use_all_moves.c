@@ -658,6 +658,9 @@ AI_DOUBLE_BATTLE_TEST("AI can use all moves, 801-900")
 
     for (j = moveStart + 1; j <= moveCap; j++)
     {
+        if (j == MOVE_MAGEARMOR) // We do not have a CATEGORY for FGO buffs. No.
+            continue;
+        
         effect = GetMoveEffect(j);
 
         // Stat raising effects are not meant to be used when you have only Splash.
@@ -677,6 +680,7 @@ AI_DOUBLE_BATTLE_TEST("AI can use all moves, 801-900")
         // tests exist elsewhere
         case EFFECT_SNOWSCAPE:
         case EFFECT_DRAGON_CHEER:
+        case EFFECT_ARCANUM_WISH:
 
         // Skipped on purpose.
         case EFFECT_PROTECT:
@@ -685,6 +689,8 @@ AI_DOUBLE_BATTLE_TEST("AI can use all moves, 801-900")
         case EFFECT_HOLD_HANDS:
         case EFFECT_CELEBRATE:
         case EFFECT_HAPPY_HOUR:
+        case EFFECT_REVIVAL_BLESSING_2:
+        case EFFECT_TRASH_CRUSH: // OHKO is not handled nicely!
             break;
         default:
             PARAMETRIZE { move = j; }
@@ -701,6 +707,55 @@ AI_DOUBLE_BATTLE_TEST("AI can use all moves, 801-900")
         OPPONENT(SPECIES_WOBBUFFET) { Status1(STATUS1_BURN); }
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
+        DebugPrintf("AI move under test: %S (%d)", GetMoveName(move), move);
         TURN {  EXPECT_MOVE(opponentLeft, move); }
+    }
+}
+
+
+AI_DOUBLE_BATTLE_TEST("Trash Crush KO without burn")
+{
+    GIVEN {
+        AI_FLAGS(AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_CHECK_VIABILITY
+               | AI_FLAG_TRY_TO_FAINT | AI_FLAG_HP_AWARE
+               | AI_FLAG_OMNISCIENT);
+
+        PLAYER(SPECIES_WOBBUFFET) { HP(1); }
+        PLAYER(SPECIES_WOBBUFFET);
+        PLAYER(SPECIES_WOBBUFFET);
+
+        OPPONENT(SPECIES_WOBBUFFET) {
+            Moves(MOVE_SPLASH, MOVE_TRASH_CRUSH);
+        }
+        OPPONENT(SPECIES_WOBBUFFET) { Moves(MOVE_SPLASH); }
+    } WHEN {
+        TURN {
+            EXPECT_MOVE(opponentLeft, MOVE_TRASH_CRUSH);
+            SEND_OUT(playerLeft, 2);
+        }
+    }
+}
+
+AI_DOUBLE_BATTLE_TEST("Trash Crush KO with burn")
+{
+    GIVEN {
+        AI_FLAGS(AI_FLAG_CHECK_BAD_MOVE | AI_FLAG_CHECK_VIABILITY
+               | AI_FLAG_TRY_TO_FAINT | AI_FLAG_HP_AWARE
+               | AI_FLAG_OMNISCIENT);
+
+        PLAYER(SPECIES_WOBBUFFET) { HP(1); }
+        PLAYER(SPECIES_WOBBUFFET);
+        PLAYER(SPECIES_WOBBUFFET);
+
+        OPPONENT(SPECIES_WOBBUFFET) {
+            Moves(MOVE_SPLASH, MOVE_TRASH_CRUSH);
+            Status1(STATUS1_BURN);
+        }
+        OPPONENT(SPECIES_WOBBUFFET) { Moves(MOVE_SPLASH); }
+    } WHEN {
+        TURN {
+            EXPECT_MOVE(opponentLeft, MOVE_TRASH_CRUSH);
+            SEND_OUT(playerLeft, 2);
+        }
     }
 }

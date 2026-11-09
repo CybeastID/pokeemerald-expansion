@@ -2211,6 +2211,24 @@ void PlayerHandleExpUpdate(u32 battler)
     {
         LoadBattleBarGfx(1);
         expPointsToGive = T1_READ_32(&gBattleResources->bufferA[battler][2]);
+        struct Pokemon *mon = &gPlayerParty[monId];
+        u16 species = GetMonData(mon, MON_DATA_SPECIES);
+        u32 currentExp = GetMonData(mon, MON_DATA_EXP);
+        u32 maxExp = gExperienceTables[gSpeciesInfo[species].growthRate][PLAYER_MAX_LV];
+
+        if (currentExp >= maxExp)
+        {
+            expPointsToGive = 0;
+        }
+        else if (expPointsToGive > 0 && (u32)expPointsToGive > maxExp - currentExp)
+        {
+            expPointsToGive = maxExp - currentExp;
+        }
+        if (expPointsToGive <= 0)
+    {
+        BtlController_Complete(battler);
+        return;
+    }
         taskId = CreateTask(Task_GiveExpToMon, 10);
         gTasks[taskId].tExpTask_monId = monId;
         gTasks[taskId].tExpTask_gainedExp_1 = expPointsToGive;

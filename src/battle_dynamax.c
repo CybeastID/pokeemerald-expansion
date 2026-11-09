@@ -204,6 +204,8 @@ void ActivateDynamax(u32 battler)
 // Unsets the flags used for Dynamaxing and reverts max HP if needed.
 void UndoDynamax(u32 battler)
 {
+    bool32 reduced = ReductionIsScaled(battler);
+    ReductionBeginMutation(battler);
     // Revert HP if battler is still Dynamaxed.
     if (GetActiveGimmick(battler) == GIMMICK_DYNAMAX)
     {
@@ -220,6 +222,12 @@ void UndoDynamax(u32 battler)
     // Undo form change if needed.
     if (IsGigantamaxed(battler))
         TryBattleFormChange(battler, FORM_CHANGE_END_BATTLE);
+    if (reduced)
+    {
+        gBattleMons[battler].hp = GetMonData(GetBattlerMon(battler), MON_DATA_HP);
+        gBattleMons[battler].maxHP = GetMonData(GetBattlerMon(battler), MON_DATA_MAX_HP);
+    }
+    ReductionEndMutation(battler);
 }
 
 // Certain moves are blocked by Max Guard that normally ignore protection.

@@ -19,7 +19,10 @@ SINGLE_BATTLE_TEST("Bug Space blocks Explosion but still causes user to faint wi
             MESSAGE("2 is about to send out Gothitelle. Will you switch your Pokémon?");
         }
     } THEN {
-        EXPECT_EQ(gBattleMons[B_POSITION_PLAYER_LEFT].hp, 0);
+        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(player->species, SPECIES_WYNAUT);
+        EXPECT_GT(player->hp, 0);
+        EXPECT_EQ(opponent->hp, opponent->maxHP);
     }
 }
 SINGLE_BATTLE_TEST("Bug Space blocks Explosion but still causes the user to faint")
@@ -32,9 +35,12 @@ SINGLE_BATTLE_TEST("Bug Space blocks Explosion but still causes the user to fain
         TURN { MOVE(player, MOVE_EXPLOSION); SEND_OUT(player, 1); }
     } SCENE {
         MESSAGE("Wobbuffet used Explosion!");
-        MESSAGE("You can't use that move anymore!");
         HP_BAR(player, hp: 0);
+        MESSAGE("You can't use that move anymore!");
         MESSAGE("Wobbuffet fainted!");
         SEND_IN_MESSAGE("Wynaut");
+    } THEN {
+        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(opponent->hp, opponent->maxHP);
     }
 }

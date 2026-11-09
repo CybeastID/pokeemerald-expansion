@@ -45,7 +45,7 @@ static s32 DebilitationTestScore(u32 battlerAtk, u32 battlerDef, u32 move, s32 s
         else
         {
             gBattleStruct->battlerState[sTrappedBattler].noOrderChange = TRUE;
-            RefreshNoOrderChangeIcon(sTrappedBattler);
+            RefreshBattleStatusIcon(sTrappedBattler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE);
         }
         if (sInitialBars)
             ActivateBreakBar(sTrappedBattler, &sOneBar);
@@ -78,7 +78,7 @@ static void DebilitationFixture(bool32 castWish, u32 trappedBattler, u32 bars)
 
 static void ExpectNoOrderChangeIcon(u32 battler, bool32 present)
 {
-    u32 spriteId = Test_GetNoOrderChangeIconSpriteId(battler);
+    u32 spriteId = Test_GetBattleStatusIconSpriteId(battler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE);
     if (!present)
     {
         EXPECT_EQ(spriteId, MAX_SPRITES);
@@ -561,7 +561,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change indicator follows healthbox movem
         TURN { MOVE(player, MOVE_CELEBRATE); }
     } THEN {
         u32 battler = B_POSITION_PLAYER_LEFT;
-        u32 spriteId = Test_GetNoOrderChangeIconSpriteId(battler);
+        u32 spriteId = Test_GetBattleStatusIconSpriteId(battler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE);
         ExpectNoOrderChangeIcon(battler, TRUE);
         if (spriteId < MAX_SPRITES)
         {
@@ -575,8 +575,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change indicator follows healthbox movem
             s16 offsetY = icon->y - healthbox->y;
 
             // Repeated status refreshes must not allocate duplicate indicators.
-            RefreshNoOrderChangeIcon(battler);
-            EXPECT_EQ(Test_GetNoOrderChangeIconSpriteId(battler), spriteId);
+            RefreshBattleStatusIcon(battler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE);
+            EXPECT_EQ(Test_GetBattleStatusIconSpriteId(battler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE), spriteId);
 
             healthbox->x += 7;
             healthbox->y -= 3;
@@ -620,13 +620,13 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change indicator reloads after its graph
         TURN { MOVE(player, MOVE_CELEBRATE); }
     } THEN {
         u32 battler = B_POSITION_PLAYER_LEFT;
-        u32 spriteId = Test_GetNoOrderChangeIconSpriteId(battler);
+        u32 spriteId = Test_GetBattleStatusIconSpriteId(battler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE);
         ExpectNoOrderChangeIcon(battler, TRUE);
         if (spriteId < MAX_SPRITES)
         {
             u32 tileTag = gSprites[spriteId].template->tileTag;
             u32 paletteTag = gSprites[spriteId].template->paletteTag;
-            FreeNoOrderChangeIcons();
+            FreeBattleStatusIcons();
             EXPECT_EQ(GetSpriteTileStartByTag(tileTag), 0xFFFF);
             EXPECT_EQ(IndexOfSpritePaletteTag(paletteTag), 0xFF);
             EXPECT_EQ(HasNoOrderChange(battler), TRUE);
@@ -657,7 +657,7 @@ AI_DOUBLE_BATTLE_TEST("Arcanum No Order Change indicator fits every doubles heal
     } WHEN {
         TURN { }
     } THEN {
-        u32 spriteId = Test_GetNoOrderChangeIconSpriteId(battler);
+        u32 spriteId = Test_GetBattleStatusIconSpriteId(battler, BATTLE_STATUS_ICON_NO_ORDER_CHANGE);
         ExpectNoOrderChangeIcon(battler, TRUE);
         if (spriteId < MAX_SPRITES)
         {

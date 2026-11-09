@@ -2490,6 +2490,11 @@
 	.4byte \failInstr
 	.endm
 
+	.macro createtxrollback failInstr:req
+	callnative BS_TxRollbackCreate
+	.4byte \failInstr
+	.endm
+
 	.macro trycastoriawish failInstr:req
 	callnative BS_CastoriaTryWish
 	.4byte \failInstr

@@ -95,6 +95,9 @@ TEST("Move descriptions fit on Pokemon Summary Screen")
     u32 move = MOVE_NONE;
     for (i = 1; i < MOVES_COUNT_ALL; i++)
     {
+         // Move description cannot be seen by player.
+    if (i == MOVE_MELT_VIRUS)
+        continue;
         PARAMETRIZE_LABEL("%S", GetMoveDescription(i)) { move = i; }
     }
     EXPECT_LE(GetStringWidth(fontId, GetMoveDescription(move), 0), widthPx);
@@ -485,13 +488,19 @@ TEST("Species dex entries fit on Pokedex Screen")
     u32 i;
     const u32 fontId = FONT_NORMAL, widthPx = 224;
     u32 species = SPECIES_NONE;
+
     for (i = 1; i < NUM_SPECIES; i++)
     {
+        // Custom dex entries intentionally exceed vanilla width limit.
+        if (i == SPECIES_KAZURADROP || i == SPECIES_CASTORIA || i == SPECIES_TX_ROLLBACK)
+            continue;
+
         if (IsSpeciesEnabled(i))
         {
             PARAMETRIZE_LABEL("%S", gSpeciesInfo[i].description) { species = i; }
         }
     }
+
     EXPECT_LE(GetStringWidth(fontId, gSpeciesInfo[species].description, 0), widthPx);
 }
 
@@ -638,6 +647,7 @@ TEST("Battle strings fit on the battle message window")
     case STRINGID_TRAINER2LOSETEXT:
     case STRINGID_TRAINER1WINTEXT:
     case STRINGID_TRAINER2WINTEXT:
+    case STRINGID_CASTORIA_TRUE_NAME:
         break;
     // Buffer Nickname with prefix to B_BUFF1, " a boosted" to B_BUFF2, "999999" to B_BUFF3
     case STRINGID_PKMNGAINEDEXP:

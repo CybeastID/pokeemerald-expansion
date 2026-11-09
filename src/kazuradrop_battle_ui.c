@@ -1,12 +1,4 @@
-// Kazuradrop Battle UI - FGO-style buff icons + Bug Space threshold panel
-// Layout (top-left, above Kazuradrop's nameplate):
-//
-//   x=8              x=42  x=60
-//   ┌─────────────┐   🔶    💜
-//   │     150     │  Guts  Invin
-//   └─────────────┘
-//   (slides in)      (pop in when active)
-
+// Bug Space threshold panel and Kazuradrop dialogue window.
 #include "global.h"
 #include "battle.h"
 #include "battle_interface.h"
@@ -14,7 +6,7 @@
 #include "battle_controllers.h"
 #include "battle_message.h"
 #include "kazuradrop_battle_ui.h"
-#include "castoria_battle_ui.h"
+#include "battle_status_icons.h"
 #include "sprite.h"
 #include "palette.h"
 #include "string_util.h"
@@ -37,16 +29,6 @@
 static const u8 ALIGNED(4) sKazuPanelGfx[] =
     INCBIN_U8("graphics/special/kazfightui/kazu_panel.4bpp");
 
-// 16x16 buff icons
-static const u8 ALIGNED(4) sKazuGutsIconGfx[] =
-    INCBIN_U8("graphics/special/kazfightui/Guts8x8.4bpp");
-static const u8 ALIGNED(4) sKazuInvincibleIconGfx[] =
-    INCBIN_U8("graphics/special/kazfightui/Invin8x8.4bpp");
-
-// Shared palette for panel + buff icons
-static const u16 sKazuBuffIconsPal[] =
-    INCBIN_U16("graphics/special/kazfightui/kazu_buff_icons.gbapal");
-
 static const u8 ALIGNED(4) sKazuNumberGfx[256] = {1}; // 8 tiles for 32x16
 static const struct SpriteSheet sSpriteSheet_KazuNumber =
     { sKazuNumberGfx, sizeof(sKazuNumberGfx), TAG_KAZU_NUMBER };
@@ -59,32 +41,8 @@ static const u16 sKazuraBoxPal[] =
 static const u8 ALIGNED(4) sKazuraBoxTilemap[] =
     INCBIN_U8("graphics/battle_interface/textboxkaztiled.bin");
 
-// // 12x12 Alter Ego sigil in a 16x16 box (own palette)
-// static const u8 ALIGNED(4) sKazuAlterEgoSigilGfx[] =
-//     INCBIN_U8("graphics/special/kazfightui/Class16.4bpp");
-// static const u16 sKazuAlterEgoSigilPal[] =
-//     INCBIN_U16("graphics/special/kazfightui/Class16.gbapal");
-
-// static const struct SpriteSheet sSpriteSheet_KazuAlterEgoSigil =
-//     { sKazuAlterEgoSigilGfx, sizeof(sKazuAlterEgoSigilGfx), TAG_KAZU_ALTEREGO };
-// static const struct SpritePalette sSpritePalette_KazuAlterEgoSigil =
-//     { sKazuAlterEgoSigilPal, TAG_KAZU_ALTEREGO_PAL };
-
-// =====================================================================
-// Tags
-// =====================================================================
-
-
 static const struct SpriteSheet sSpriteSheet_KazuPanel =
     { sKazuPanelGfx, sizeof(sKazuPanelGfx), TAG_KAZU_PANEL };
-static const struct SpriteSheet sSpriteSheet_KazuGutsIcon =
-    { sKazuGutsIconGfx, sizeof(sKazuGutsIconGfx), TAG_KAZU_GUTS_ICON };
-static const struct SpriteSheet sSpriteSheet_KazuInvincibleIcon =
-    { sKazuInvincibleIconGfx, sizeof(sKazuInvincibleIconGfx), TAG_KAZU_INVINCIBLE_ICON };
-
-static const struct SpritePalette sSpritePalette_KazuBuffIcons =
-    { sKazuBuffIconsPal, TAG_KAZU_BUFF_PAL };
-
 // =====================================================================
 // OAM data
 // =====================================================================
@@ -98,19 +56,6 @@ static const struct OamData sOamData_Panel =
     .priority = 1,
 };
 
-static const struct OamData sOamData_16x16 =
-{
-    .shape    = ST_OAM_SQUARE,
-    .size     = 1,    // 16x16
-    .priority = 0,
-};
-
-static const struct OamData sOamData_8x8 =
-{
-    .shape    = ST_OAM_SQUARE,
-    .size     = 0,    // 8x8
-    .priority = 1,
-};
 static const struct OamData sOamData_Number =
 {
     .shape    = ST_OAM_H_RECTANGLE,
@@ -129,7 +74,6 @@ static const struct OamData sOamData_Number =
 #define tFlashing   data[3]
 #define tFlashTimer data[4]
 #define tSlideBack  data[5]
-#define tIconType   data[6]
 // =====================================================================
 // Panel layout constants
 // =====================================================================
@@ -142,12 +86,6 @@ static const struct OamData sOamData_Number =
 #define BUGSPACE_PANEL_Y_OFFSET  -22
 // Slide speed in pixels per frame
 #define BUGSPACE_PANEL_SLIDE_PX  6
-
-// Icon positions: immediately right of panel, same Y
-#define POS_GUTS_X_OFFSET       (BUGSPACE_PANEL_WIDTH + 4)
-#define POS_GUTS_Y_OFFSET       BUGSPACE_PANEL_Y_OFFSET
-#define POS_INVINCIBLE_X_OFFSET (BUGSPACE_PANEL_WIDTH + 14)
-#define POS_INVINCIBLE_Y_OFFSET BUGSPACE_PANEL_Y_OFFSET
 
 // Panel slide states
 #define PANEL_IDLE         0
@@ -173,30 +111,18 @@ static const struct OamData sOamData_Number =
 #define KAZ_TILE_HVFLIP        0x0C00
 
 
-// // Alter Ego sigil: healthbox left edge, on the HP-bar row (16x16).
-// // X from healthbox main (overlap left border); Y derived from the bar in the
-// // callback so it lands on the HP row without hardcoding the bar's offset.
-// #define POS_ALTEREGO_X_OFFSET  (25)   // overlap the healthbox left border  39 right  (original deltapos -17)
-// #define POS_ALTEREGO_Y_OFFSET  (-6)   // center the 16px icon on the HP bar row 9 up (original deltapos 3)
-
-
 // =====================================================================
 // State tracking
 // =====================================================================
 
 static u8 sBugSpacePanelSpriteId[MAX_BATTLERS_COUNT];
-static u8 sGutsSpriteId[MAX_BATTLERS_COUNT];
-static u8 sInvincibleSpriteId[MAX_BATTLERS_COUNT];
-static bool32 sKazuBuffIconsLoaded = FALSE;
 static u8 sNumberSpriteId[MAX_BATTLERS_COUNT];
 static u8 sKazuraDialogWindowId;
-static u8 sAlterEgoSpriteId[MAX_BATTLERS_COUNT];
 
 // =====================================================================
 // Forward declarations
 // =====================================================================
 
-static void LoadKazuBuffIconGfx(void);
 static void WriteThresholdIntoPanel(u32 spriteId);
 static u8 *AddTextPrinterForKazuPanel(const u8 *str, u32 x, u32 y, u32 bgColor, u32 *windowId);
 static void DrawKazuraWindowFrame(u8 windowId);
@@ -267,98 +193,18 @@ static void SpriteCb_BugSpacePanel(struct Sprite *sprite)
 }
 
 // =====================================================================
-// Buff icon sprite callbacks
-// =====================================================================
-
-static void SpriteCb_KazuBuffIcon(struct Sprite *sprite)
-{
-    u32 battler = sprite->tBattler;
-    sprite->x = gSprites[gHealthboxSpriteIds[battler]].x + sprite->tTargetX;
-    sprite->y = gSprites[gHealthboxSpriteIds[battler]].y + sprite->tState;
-    // Mirror healthbox visibility
-    sprite->invisible = gSprites[gHealthboxSpriteIds[battler]].invisible;
-}
-
-// Invincible icon: flashes then self-destructs
-static void SpriteCb_KazuInvincibleIcon(struct Sprite *sprite)
-{
-    SpriteCb_KazuBuffIcon(sprite);
-
-    sprite->tFlashTimer++;
-    if (sprite->tFlashTimer < 60)
-        sprite->invisible = (sprite->tFlashTimer / 4) % 2;
-    else
-        DestroyKazuradropBuffIcon(sprite->tBattler, KA_BUFF_INVINCIBLE);
-}
-
-// // Permanent sigil: tracks the healthbox's health-bar sprite so it rides the
-// // HP bar through slide-ins, menu reshow, and damage redraws.
-// // Permanent Alter Ego class sigil: rides the healthbox (main) at its left
-// // edge, vertically aligned to the HP-bar row. Copies x2/y2 from the healthbox
-// // so it slides in with the box (the bar child does the same).
-// static void SpriteCb_KazuAlterEgoSigil(struct Sprite *sprite)
-// {
-//     u32 battler = sprite->tBattler;
-//     if (GetBattlerVisualSpecies(battler) != SPECIES_KAZURADROP)
-//     {
-//         sprite->invisible = TRUE;
-//         return;
-//     }
-//     u8 healthboxId = gHealthboxSpriteIds[battler];
-//     if (healthboxId == MAX_SPRITES)
-//     {
-//         sprite->invisible = TRUE;
-//         return;
-//     }
-//     u8 barId = gSprites[healthboxId].hMain_HealthBarSpriteId;
-//     if (barId == MAX_SPRITES)
-//     {
-//         sprite->invisible = TRUE;
-//         return;
-//     }
-//     sprite->x  = gSprites[healthboxId].x + sprite->tTargetX;   // left edge (healthbox)
-//     sprite->y  = gSprites[barId].y + sprite->tState;           // HP row (bar)
-//     sprite->x2 = gSprites[healthboxId].x2;                      // ride the slide-in
-//     sprite->y2 = gSprites[healthboxId].y2;
-//     sprite->invisible = gSprites[healthboxId].invisible;
-// }
-
-
-// =====================================================================
 // Sprite and Window templates
 // =====================================================================
 
 static const struct SpriteTemplate sSpriteTemplate_KazuPanel =
 {
     .tileTag     = TAG_KAZU_PANEL,
-    .paletteTag  = TAG_KAZU_BUFF_PAL,
+    .paletteTag  = TAG_BATTLE_STATUS_ICON_PAL,
     .oam         = &sOamData_Panel,
     .anims       = gDummySpriteAnimTable,
     .images      = NULL,
     .affineAnims = gDummySpriteAffineAnimTable,
     .callback    = SpriteCb_BugSpacePanel,
-};
-
-static const struct SpriteTemplate sSpriteTemplate_KazuGutsIcon =
-{
-    .tileTag     = TAG_KAZU_GUTS_ICON,
-    .paletteTag  = TAG_KAZU_BUFF_PAL,
-    .oam         = &sOamData_8x8,
-    .anims       = gDummySpriteAnimTable,
-    .images      = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback    = SpriteCb_KazuBuffIcon,
-};
-
-static const struct SpriteTemplate sSpriteTemplate_KazuInvincibleIcon =
-{
-    .tileTag     = TAG_KAZU_INVINCIBLE_ICON,
-    .paletteTag  = TAG_KAZU_BUFF_PAL,
-    .oam         = &sOamData_8x8,
-    .anims       = gDummySpriteAnimTable,
-    .images      = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
-    .callback    = SpriteCb_KazuInvincibleIcon,
 };
 
 static const struct WindowTemplate sKazuPanelWindowTemplate = {
@@ -374,7 +220,7 @@ static const struct WindowTemplate sKazuPanelWindowTemplate = {
 static const struct SpriteTemplate sSpriteTemplate_KazuNumber =
 {
     .tileTag     = TAG_KAZU_NUMBER,
-    .paletteTag  = TAG_KAZU_BUFF_PAL,
+    .paletteTag  = TAG_BATTLE_STATUS_ICON_PAL,
     .oam         = &sOamData_Number,
     .anims       = gDummySpriteAnimTable,
     .images      = NULL,
@@ -392,29 +238,6 @@ static const struct WindowTemplate sKazuraDialogWindowTemplate = {
     .paletteNum  = KAZ_WIN_PALETTE_NUM,
     .baseBlock   = 0x0100,  // text tiles; frame gfx at KAZ_WIN_BASE_TILE_NUM (0x170)
 };
-
-// static const struct SpriteTemplate sSpriteTemplate_KazuAlterEgoSigil =
-// {
-//     .tileTag     = TAG_KAZU_ALTEREGO,
-//     .paletteTag  = TAG_KAZU_ALTEREGO_PAL,
-//     .oam         = &sOamData_16x16,
-//     .anims       = gDummySpriteAnimTable,
-//     .images      = NULL,
-//     .affineAnims = gDummySpriteAffineAnimTable,
-//     .callback    = SpriteCb_KazuAlterEgoSigil,
-// };
-// =====================================================================
-// Internal helpers
-// =====================================================================
-
-static void LoadKazuBuffIconGfx(void)
-{
-    if (!sKazuBuffIconsLoaded)
-    {
-        LoadSpritePalette(&sSpritePalette_KazuBuffIcons);
-        sKazuBuffIconsLoaded = TRUE;
-    }
-}
 
 // Writes the current bpThreshold value into the panel sprite's VRAM tiles.
 // Mirrors the pattern used by PrintHpOnHealthbox in battle_interface.c.
@@ -446,33 +269,25 @@ static void WriteThresholdIntoPanel(u32 panelSpriteId)
 // Initialization
 // =====================================================================
 
-void InitKazuradropBattleIcons(void)
+void InitKazuradropBattleUI(void)
 {
-    for (u32 i = 0; i < MAX_BATTLERS_COUNT; i++)
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
     {
-        sBugSpacePanelSpriteId[i] = MAX_SPRITES;
-        sGutsSpriteId[i]          = MAX_SPRITES;
-        sInvincibleSpriteId[i]    = MAX_SPRITES;
-        sNumberSpriteId[i] = MAX_SPRITES;
-        sAlterEgoSpriteId[i] = MAX_SPRITES;
-        InitServantSigils();
+        sBugSpacePanelSpriteId[battler] = MAX_SPRITES;
+        sNumberSpriteId[battler] = MAX_SPRITES;
     }
-    sKazuBuffIconsLoaded = FALSE;
+    InitServantSigils();
 }
 
-void FreeKazuradropBattleIconGfx(void)
+void FreeKazuradropBattleUI(void)
 {
-    FreeSpritePaletteByTag(TAG_KAZU_BUFF_PAL);
-    FreeSpriteTilesByTag(TAG_KAZU_PANEL);
-    FreeSpriteTilesByTag(TAG_KAZU_GUTS_ICON);
-    FreeSpriteTilesByTag(TAG_KAZU_INVINCIBLE_ICON);
-    FreeSpriteTilesByTag(TAG_KAZU_NUMBER);
-    // FreeSpritePaletteByTag(TAG_KAZU_ALTEREGO_PAL);
-    // FreeSpriteTilesByTag(TAG_KAZU_ALTEREGO);
+    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
+        DestroyBugSpacePanel(battler);
+    DestroyAllServantSigils();
     FreeServantSigilGfx();
-    sKazuBuffIconsLoaded = FALSE;
+    FreeSpriteTilesByTag(TAG_KAZU_PANEL);
+    FreeSpriteTilesByTag(TAG_KAZU_NUMBER);
 }
-
 
 // =====================================================================
 // Bug Space panel — public API
@@ -499,10 +314,17 @@ static u8 *AddTextPrinterForKazuPanel(const u8 *str, u32 x, u32 y, u32 bgColor, 
 
 void CreateBugSpacePanel(u32 battler)
 {
+    if (battler >= gBattlersCount)
+        return;
+    u32 healthbox = gHealthboxSpriteIds[battler];
+    if (healthbox >= MAX_SPRITES || !gSprites[healthbox].inUse
+     || gSprites[healthbox].data[6] != battler)
+        return;
     if (sBugSpacePanelSpriteId[battler] != MAX_SPRITES)
         return; // already exists
 
-    LoadKazuBuffIconGfx();
+    if (!LoadBattleStatusIconPalette())
+        return;
 
     if (GetSpriteTileStartByTag(TAG_KAZU_PANEL) == 0xFFFF)
         LoadSpriteSheet(&sSpriteSheet_KazuPanel);
@@ -602,208 +424,33 @@ void TriggerBugSpacePanelSlideIn(u32 battler)
 
 void DestroyBugSpacePanel(u32 battler)
 {
+    if (battler >= MAX_BATTLERS_COUNT)
+        return;
     u8 spriteId = sBugSpacePanelSpriteId[battler];
-    if (spriteId != MAX_SPRITES)
-    {
+    if (spriteId < MAX_SPRITES && gSprites[spriteId].inUse
+     && gSprites[spriteId].callback == SpriteCb_BugSpacePanel
+     && gSprites[spriteId].tBattler == battler)
         DestroySprite(&gSprites[spriteId]);
-        sBugSpacePanelSpriteId[battler] = MAX_SPRITES;
-        u8 numSpriteId = sNumberSpriteId[battler];
-        if (numSpriteId != MAX_SPRITES)
-        {
-            DestroySprite(&gSprites[numSpriteId]);
-            sNumberSpriteId[battler] = MAX_SPRITES;
-        }
-    }
+    sBugSpacePanelSpriteId[battler] = MAX_SPRITES;
+    u8 numSpriteId = sNumberSpriteId[battler];
+    if (numSpriteId < MAX_SPRITES && gSprites[numSpriteId].inUse
+     && gSprites[numSpriteId].callback == SpriteCb_KazuNumber
+     && gSprites[numSpriteId].tBattler == battler)
+        DestroySprite(&gSprites[numSpriteId]);
+    sNumberSpriteId[battler] = MAX_SPRITES;
 }
 
 void ReshowKazuradropBattleUI(void)
 {
-    ReshowMageArmorIcons();
-    // During ReshowBattleScreenAfterMenu / ReshowBlankBattleScreenAfterMenu,
-    // battle code clears sprite data + VRAM (and effectively frees palettes/tiles).
-    // Our cached "loaded" flags can be stale, so force reload paths.
+    // Menus reset sprites and VRAM, so discard the old panel IDs.
     for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
     {
         sBugSpacePanelSpriteId[battler] = MAX_SPRITES;
-        sGutsSpriteId[battler]          = MAX_SPRITES;
-        sInvincibleSpriteId[battler]    = MAX_SPRITES;
         sNumberSpriteId[battler] = MAX_SPRITES;
-   //     sAlterEgoSpriteId[battler] = MAX_SPRITES;
-        ReshowServantSigils();
     }
-
-    sKazuBuffIconsLoaded = FALSE;
-
-    if (gBattleStruct == NULL)
-        return;
-
-    // Panel only matters if Bug Space is active.
-    if (gBattleStruct->bugSpace.active == TRUE)
+    ReshowServantSigils();
+    if (gBattleStruct != NULL && gBattleStruct->bugSpace.active)
         CreateBugSpacePanel(gBattleStruct->bugSpace.sourceBattler);
-
-    // Recreate icons.
-    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
-    {
-        if (gBattleMons[battler].volatiles.kazuradropGuts)
-            CreateKazuradropBuffIcon(battler, KA_BUFF_GUTS);
-
-        if (gBattleStruct->bugSpace.invincibleActive & (1u << battler))
-            CreateKazuradropBuffIcon(battler, KA_BUFF_INVINCIBLE);
-        
-    }
-
-    // Ensure number is written if panel exists and is idle.
-    if (gBattleStruct->bugSpace.active == TRUE)
-        RefreshBugSpaceNumber(gBattleStruct->bugSpace.sourceBattler);
-    
-    // DEADCODE (NOT COMPILED): ALTER_EGO buff icon idea, never implemented (no KA_BUFF_ALTER_EGO exists). Kept for posterity.
-    // if (GetBattlerVisualSpecies(gBattleStruct->bugSpace.sourceBattler) == SPECIES_KAZURADROP)
-    //     CreateKazuradropBuffIcon(gBattleStruct->bugSpace.sourceBattler, KA_BUFF_ALTER_EGO);
-}
-
-// =====================================================================
-// Buff icons — public API
-// =====================================================================
-
-void CreateKazuradropBuffIcon(u32 battler, u32 iconType)
-{
-    LoadKazuBuffIconGfx();
-
-    switch (iconType)
-    {
-    case KA_BUFF_GUTS:
-        if (sGutsSpriteId[battler] != MAX_SPRITES)
-            return;
-        if (GetSpriteTileStartByTag(TAG_KAZU_GUTS_ICON) == 0xFFFF)
-            LoadSpriteSheet(&sSpriteSheet_KazuGutsIcon);
-        {
-            // Spawn at final position immediately (pop in)
-            s16 x = gSprites[gHealthboxSpriteIds[battler]].x + POS_GUTS_X_OFFSET;
-            s16 y = gSprites[gHealthboxSpriteIds[battler]].y + POS_GUTS_Y_OFFSET;
-            u32 spriteId = CreateSprite(&sSpriteTemplate_KazuGutsIcon, x, y, 0);
-            if (spriteId == MAX_SPRITES)
-                return;
-            gSprites[spriteId].tBattler  = battler;
-            gSprites[spriteId].tTargetX  = POS_GUTS_X_OFFSET;  // X offset stored here
-            gSprites[spriteId].tState    = POS_GUTS_Y_OFFSET;   // Y offset stored here
-            gSprites[spriteId].tIconType = KA_BUFF_GUTS;
-            sGutsSpriteId[battler] = spriteId;
-        }
-        break;
-
-    case KA_BUFF_INVINCIBLE:
-        if (gBattleStruct != NULL)
-            gBattleStruct->bugSpace.invincibleActive |= (1u << battler);
-        if (sInvincibleSpriteId[battler] != MAX_SPRITES)
-            return;
-        if (GetSpriteTileStartByTag(TAG_KAZU_INVINCIBLE_ICON) == 0xFFFF)
-            LoadSpriteSheet(&sSpriteSheet_KazuInvincibleIcon);
-        {
-            s16 x = gSprites[gHealthboxSpriteIds[battler]].x + POS_INVINCIBLE_X_OFFSET;
-            s16 y = gSprites[gHealthboxSpriteIds[battler]].y + POS_INVINCIBLE_Y_OFFSET;
-            u32 spriteId = CreateSprite(&sSpriteTemplate_KazuInvincibleIcon, x, y, 0);
-            if (spriteId == MAX_SPRITES)
-                return;
-            gSprites[spriteId].tBattler    = battler;
-            gSprites[spriteId].tTargetX    = POS_INVINCIBLE_X_OFFSET;
-            gSprites[spriteId].tState      = POS_INVINCIBLE_Y_OFFSET;
-            gSprites[spriteId].tIconType   = KA_BUFF_INVINCIBLE;
-            gSprites[spriteId].tFlashTimer = 0;
-            sInvincibleSpriteId[battler] = spriteId;
-        }
-        break;
-        // case KA_BUFF_ALTER_EGO:
-        //     if (sAlterEgoSpriteId[battler] != MAX_SPRITES)
-        //     return;
-        // {
-        //     u8 healthboxId = gHealthboxSpriteIds[battler];
-        //     if (healthboxId == MAX_SPRITES)
-        //         return;
-        //     u8 barId = gSprites[healthboxId].hMain_HealthBarSpriteId;
-        //     if (barId == MAX_SPRITES)
-        //         return;
-
-        //     if (IndexOfSpritePaletteTag(TAG_KAZU_ALTEREGO_PAL) == 0xFF)
-        //         LoadSpritePalette(&sSpritePalette_KazuAlterEgoSigil);
-        //     if (GetSpriteTileStartByTag(TAG_KAZU_ALTEREGO) == 0xFFFF)
-        //         LoadSpriteSheet(&sSpriteSheet_KazuAlterEgoSigil);
-
-        //     s16 x = gSprites[healthboxId].x + POS_ALTEREGO_X_OFFSET;   // match callback (healthbox)
-        //     s16 y = gSprites[barId].y      + POS_ALTEREGO_Y_OFFSET;    // match callback (bar row)
-        //     u32 spriteId = CreateSprite(&sSpriteTemplate_KazuAlterEgoSigil, x, y, 0);
-        //     if (spriteId == MAX_SPRITES)
-        //         return;
-        //     gSprites[spriteId].tBattler = battler;
-        //     gSprites[spriteId].tTargetX = POS_ALTEREGO_X_OFFSET;
-        //     gSprites[spriteId].tState   = POS_ALTEREGO_Y_OFFSET;
-        //     gSprites[spriteId].x2 = gSprites[healthboxId].x2;          // seed slide offset (no frame-0 jump)
-        //     gSprites[spriteId].y2 = gSprites[healthboxId].y2;
-        //     sAlterEgoSpriteId[battler] = spriteId;
-        // }
-        // break;
-    }
-}
-
-void DestroyKazuradropBuffIcon(u32 battler, u32 iconType)
-{
-    u8 spriteId;
-    switch (iconType)
-    {
-    case KA_BUFF_GUTS:
-        spriteId = sGutsSpriteId[battler];
-        if (spriteId != MAX_SPRITES)
-        {
-            DestroySprite(&gSprites[spriteId]);
-            sGutsSpriteId[battler] = MAX_SPRITES;
-        }
-        break;
-    case KA_BUFF_INVINCIBLE:
-        spriteId = sInvincibleSpriteId[battler];
-        if (gBattleStruct != NULL)
-            gBattleStruct->bugSpace.invincibleActive &= ~(1u << battler);
-        if (spriteId != MAX_SPRITES)
-        {
-            DestroySprite(&gSprites[spriteId]);
-            sInvincibleSpriteId[battler] = MAX_SPRITES;
-        }
-        break;
-    // case KA_BUFF_ALTER_EGO:
-    //     spriteId = sAlterEgoSpriteId[battler];
-    //     if (spriteId != MAX_SPRITES)
-    //     {
-    //         DestroySprite(&gSprites[spriteId]);
-    //         sAlterEgoSpriteId[battler] = MAX_SPRITES;
-    //     }
-    //     break;
-    }
-}
-
-void DestroyAllKazuradropBuffIcons(void)
-{
-    for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
-    {
-        DestroyKazuradropBuffIcon(battler, KA_BUFF_GUTS);
-        DestroyKazuradropBuffIcon(battler, KA_BUFF_INVINCIBLE);
-        DestroyAllServantSigils();
-    }
-}
-
-// =====================================================================
-// BS_callable wrappers
-// =====================================================================
-
-void BS_ShowKazuGutsIcon(void)
-{
-    NATIVE_ARGS();
-    CreateKazuradropBuffIcon(gBattlerAttacker, KA_BUFF_GUTS);
-    gBattlescriptCurrInstr = cmd->nextInstr;
-}
-
-void BS_ShowKazuInvincibleIcon(void)
-{
-    NATIVE_ARGS();
-    CreateKazuradropBuffIcon(gBattlerAttacker, KA_BUFF_INVINCIBLE);
-    gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
 void BS_BugSpacePanelSlideIn(void)
@@ -967,4 +614,3 @@ void HideKazuraDialogueBox(void)
 #undef tFlashing
 #undef tFlashTimer
 #undef tSlideBack
-#undef tIconType

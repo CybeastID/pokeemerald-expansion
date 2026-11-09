@@ -5,16 +5,16 @@ SINGLE_BATTLE_TEST("Polymorph changes the target's species to a random non-banne
 {
     GIVEN {
         ASSUME(GetMoveEffect(MOVE_POLYMORPH) == EFFECT_POLYMORPH);
-        PLAYER(SPECIES_WOBBUFFET) { Moves(MOVE_POLYMORPH, MOVE_CELEBRATE); }
-        OPPONENT(SPECIES_CASTORIA) { HP(100); }
+        PLAYER(SPECIES_CASTORIA) { Moves(MOVE_POLYMORPH, MOVE_CELEBRATE); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(100); }
     } WHEN {
-        TURN { MOVE(opponent, MOVE_POLYMORPH); }
+        TURN { MOVE(player, MOVE_POLYMORPH); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_POLYMORPH, player);
 //        MESSAGE("The enemy Caster transformed {B_DEF_NAME_WITH_PREFIX} into {B_BUFF1}!");
 //       MESSAGE("“N'awwww, it's cuter like that! Even more so than I expected!”");
     } THEN {
-        EXPECT_NE(player->species, SPECIES_WOBBUFFET);
+        EXPECT_NE(opponent->species, SPECIES_WOBBUFFET);
         EXPECT_EQ(player->species, SPECIES_CASTORIA);
     }
 }

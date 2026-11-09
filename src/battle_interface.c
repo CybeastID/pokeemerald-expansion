@@ -37,7 +37,6 @@
 #include "constants/items.h"
 #include "caps.h"
 #include "event_data.h"
-// #include "castoria_name_theft.h" // Optional Mage Armor healthbox offset below.
 
 enum
 {   // Corresponds to gHealthboxElementsGfxTable (and the tables after it) in graphics.c
@@ -640,7 +639,8 @@ static const struct WindowTemplate sHealthboxWindowTemplate = {
 // The same goes for a 2 vs 1 where opponent has only one pokemon.
 enum BattleCoordTypes GetBattlerCoordsIndex(u32 battler)
 {
-    if (GetBattlerPosition(battler) == B_POSITION_PLAYER_LEFT && gPlayerPartyCount == 1 && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+    if (GetBattlerPosition(battler) == B_POSITION_PLAYER_LEFT
+     && (gPlayerPartyCount == 1 || TxRollbackGetSlotPolicy(GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT)) == TX_SLOT_DISABLED) && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
         return BATTLE_COORDS_SINGLES;
     else if (GetBattlerPosition(battler) == B_POSITION_OPPONENT_LEFT && gEnemyPartyCount == 1 && !(gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS))
         return BATTLE_COORDS_SINGLES;
@@ -895,13 +895,6 @@ void GetBattlerHealthboxCoords(u8 battler, s16 *x, s16 *y)
 
     *x = sBattlerHealthboxCoords[index][position][0];
     *y = sBattlerHealthboxCoords[index][position][1];
-
-    /* Optional Mage Armor buff-row space; paired with the commented slide in
-     * castoria_battle_ui.c. Current layout uses the original healthbox position.
-    if (index == BATTLE_COORDS_SINGLES
-     && HasMageArmor(battler))
-        *y += 8;
-    */
 }
 
 void InitBattlerHealthboxCoords(u8 battler)
@@ -1229,6 +1222,11 @@ void SwapHpBarsWithHpText(void)
         {
             s32 currHp = GetMonData(mon, MON_DATA_HP);
             s32 maxHp = GetMonData(mon, MON_DATA_MAX_HP);
+            if (ReductionIsScaled(i))
+            {
+                currHp = gBattleMons[i].hp;
+                maxHp = gBattleMons[i].maxHP;
+            }
             bool8 noBars;
 
             gBattleSpritesDataPtr->battlerData[i].hpNumbersNoBars ^= 1;
@@ -1858,7 +1856,7 @@ static void UpdateStatusIconInHealthbox(u8 healthboxSpriteId)
     battler = gSprites[healthboxSpriteId].hMain_Battler;
     healthBarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
     status = GetMonData(GetBattlerMon(battler), MON_DATA_STATUS);
-    RefreshNoOrderChangeIcon(battler);
+    RefreshBattlerStatusIcons(battler);
     if (IsOnPlayerSide(battler))
     {
         switch (GetBattlerCoordsIndex(battler))
@@ -2041,13 +2039,18 @@ void UpdateHealthboxAttribute(u8 healthboxSpriteId, struct Pokemon *mon, u8 elem
     u32 battler = gSprites[healthboxSpriteId].hMain_Battler;
     s32 maxHp = GetMonData(mon, MON_DATA_MAX_HP);
     s32 currHp = GetMonData(mon, MON_DATA_HP);
+    if (ReductionIsScaled(battler))
+    {
+        maxHp = gBattleMons[battler].maxHP;
+        currHp = gBattleMons[battler].hp;
+    }
 
     if (IsOnPlayerSide(battler))
     {
         u8 isDoubles = GetBattlerCoordsIndex(battler) == BATTLE_COORDS_DOUBLES;
 
         if (elementId == HEALTHBOX_LEVEL || elementId == HEALTHBOX_ALL)
-            UpdateLvlInHealthbox(healthboxSpriteId, GetMonData(mon, MON_DATA_LEVEL), GetMonData(mon,MON_DATA_SPECIES));
+            UpdateLvlInHealthbox(healthboxSpriteId, ReductionIsScaled(battler) ? gBattleMons[battler].level : GetMonData(mon, MON_DATA_LEVEL), GetMonData(mon,MON_DATA_SPECIES));
 
         if (elementId == HEALTHBOX_ALL)
             UpdateHpTextInHealthbox(healthboxSpriteId, HP_BOTH, currHp, maxHp);

@@ -1667,6 +1667,8 @@
 
 #define GEN_CUSTOM_START                                SPECIES_FALINKS_MEGA + 1
 
+#define SPECIES_TX_ROLLBACK                             GEN_CUSTOM_START
+
 #define SPECIES_CASTORIA                                GEN_CUSTOM_START + 1
 #define SPECIES_RAZE_KIRLIA                             GEN_CUSTOM_START + 2
 #define SPECIES_KAZURADROP                              GEN_CUSTOM_START + 3

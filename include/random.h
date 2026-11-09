@@ -125,6 +125,8 @@ static inline void Shuffle(void *data, size_t n, size_t size)
 enum RandomTag
 {
     RNG_NONE,
+    RNG_TX_RECLAMATION_COUNT,
+    RNG_TX_RECLAMATION_BENEFIT,
     RNG_ACCURACY,
     RNG_CONFUSION,
     RNG_CRITICAL_HIT,

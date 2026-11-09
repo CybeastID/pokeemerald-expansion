@@ -741,6 +741,88 @@ static u32 PpStallReduction(u32 move, u32 battlerAtk)
     return returnValue;
 }
 
+static void ClearWishSelection(u32 battler)
+{
+    if (TxRollbackHasWishes(battler))
+    {
+        gBattleStruct->txRollback.wishCandidate = TX_WISH_NONE;
+        gBattleStruct->txRollback.wishOutcome = TX_WISH_NONE;
+        gBattleStruct->txRollback.wishCandidateTarget = MAX_BATTLERS_COUNT;
+        gBattleStruct->txRollback.wishTargetPartyIndex = PARTY_SIZE;
+    }
+    else if (GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
+    {
+        gBattleStruct->castoria.wishCandidate = CASTORIA_WISH_NONE;
+        gBattleStruct->castoria.wishOutcome = CASTORIA_WISH_NONE;
+    }
+}
+
+static void CommitWishSelection(u32 battler, u8 outcome, u8 partyIndex)
+{
+    if (TxRollbackHasWishes(battler))
+    {
+        gBattleStruct->txRollback.wishOutcome = outcome;
+        gBattleStruct->txRollback.wishTargetPartyIndex = partyIndex;
+    }
+    else
+        gBattleStruct->castoria.wishOutcome = outcome;
+}
+
+static u32 ChooseArcanumForTarget(u32 battler, u32 opposingBattler, s32 normalScore, s32 *bestScore, u8 *wishOutcome, u8 *wishTarget)
+{
+    s32 i;
+    bool32 tx = TxRollbackHasWishes(battler);
+    if (tx)
+    {
+        gBattleStruct->txRollback.wishCandidate = TX_WISH_NONE;
+        gBattleStruct->txRollback.wishCandidateTarget = MAX_BATTLERS_COUNT;
+    }
+    else
+        gBattleStruct->castoria.wishCandidate = CASTORIA_WISH_NONE;
+    // Extra slots are evaluated only by the fight's registered Special AI.
+    if ((gAiThinkingStruct->aiFlags[battler] & AI_FLAG_DYNAMIC_FUNC)
+     && sDynamicAiFunc != NULL
+     && GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
+    {
+        s32 bestNormalScore = normalScore;
+        u8 bestArcanumSlot = 0xFF;
+        s32 bestArcanumScore = 0;
+        u8 bestWishOutcome = CASTORIA_WISH_NONE;
+
+        for (i = MAX_MON_MOVES; i < GetBattlerMoveSlotCount(battler); i++)
+        {
+            if (!IsArcanumSlotUsable(battler, i))
+                continue;
+
+            u16 move = CastoriaGetMoveAtSlot(battler, i);
+            if (move == MOVE_NONE)
+                continue;
+
+            s32 score = RunDynamicAiFunc(battler, opposingBattler, move, AI_SCORE_DEFAULT, TRUE);
+
+            if (score > bestArcanumScore)
+            {
+                bestArcanumScore = score;
+                bestArcanumSlot = i;
+                bestWishOutcome = move == MOVE_ARCANUM_WISH
+                    ? (tx ? gBattleStruct->txRollback.wishCandidate : gBattleStruct->castoria.wishCandidate) : CASTORIA_WISH_NONE;
+                if (tx && gBattleStruct->txRollback.wishCandidateTarget < gBattlersCount)
+                    *wishTarget = gBattlerPartyIndexes[gBattleStruct->txRollback.wishCandidateTarget];
+            }
+        }
+
+        // Regular moves win ties, conserving spell resources.
+        if (bestArcanumSlot != 0xFF && bestArcanumScore > bestNormalScore)
+        {
+            *bestScore = bestArcanumScore;
+            *wishOutcome = bestWishOutcome;
+            return bestArcanumSlot;
+        }
+    }
+
+    return MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT;
+}
+
 static u32 ChooseMoveOrAction_Singles(u32 battler)
 {
     u8 currentMoveArray[MAX_MON_MOVES];
@@ -750,11 +832,7 @@ static u32 ChooseMoveOrAction_Singles(u32 battler)
     u64 flags = gAiThinkingStruct->aiFlags[battler];
     u32 opposingBattler = GetOppositeBattler(battler);
 
-    if (GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
-    {
-        gBattleStruct->castoria.wishCandidate = CASTORIA_WISH_NONE;
-        gBattleStruct->castoria.wishOutcome = CASTORIA_WISH_NONE;
-    }
+    ClearWishSelection(battler);
 
     gAiThinkingStruct->aiLogicId = 0;
     gAiThinkingStruct->movesetIndex = 0;
@@ -803,42 +881,15 @@ static u32 ChooseMoveOrAction_Singles(u32 battler)
             }
         }
     }
-    // Extra slots are evaluated only by the fight's registered Special AI.
-    if ((gAiThinkingStruct->aiFlags[battler] & AI_FLAG_DYNAMIC_FUNC)
-     && sDynamicAiFunc != NULL
-     && GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
+    s32 spellScore = 0;
+    u8 wishOutcome = CASTORIA_WISH_NONE;
+    u8 wishTarget = PARTY_SIZE;
+    u32 spell = ChooseArcanumForTarget(battler, opposingBattler,
+        gAiThinkingStruct->score[consideredMoveArray[0]], &spellScore, &wishOutcome, &wishTarget);
+    if (spell < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT)
     {
-        s32 bestNormalScore = gAiThinkingStruct->score[consideredMoveArray[0]];
-        u8 bestArcanumSlot = 0xFF;
-        s32 bestArcanumScore = 0;
-        u8 bestWishOutcome = CASTORIA_WISH_NONE;
-
-        for (i = MAX_MON_MOVES; i < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT; i++)
-        {
-            if (!IsArcanumSlotUsable(battler, i))
-                continue;
-
-            u16 move = CastoriaGetMoveAtSlot(battler, i);
-            if (move == MOVE_NONE)
-                continue;
-
-            s32 score = RunDynamicAiFunc(battler, opposingBattler, move, AI_SCORE_DEFAULT, TRUE);
-
-            if (score > bestArcanumScore)
-            {
-                bestArcanumScore = score;
-                bestArcanumSlot = i;
-                bestWishOutcome = move == MOVE_ARCANUM_WISH
-                    ? gBattleStruct->castoria.wishCandidate : CASTORIA_WISH_NONE;
-            }
-        }
-
-        // Regular moves win ties, conserving spell resources.
-        if (bestArcanumSlot != 0xFF && bestArcanumScore > bestNormalScore)
-        {
-            gBattleStruct->castoria.wishOutcome = bestWishOutcome;
-            return bestArcanumSlot;
-        }
+        CommitWishSelection(battler, wishOutcome, wishTarget);
+        return spell;
     }
 
     return consideredMoveArray[Random() % numOfBestMoves];
@@ -853,13 +904,16 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
     u8 actionOrMoveIndex[MAX_BATTLERS_COUNT];
     s32 mostViableMovesScores[MAX_MON_MOVES];
     u8 mostViableMovesIndices[MAX_MON_MOVES];
+    u8 wishOutcomes[MAX_BATTLERS_COUNT] = {0};
+    u8 wishTargets[MAX_BATTLERS_COUNT] = {PARTY_SIZE, PARTY_SIZE, PARTY_SIZE, PARTY_SIZE};
     u32 mostViableTargetsNo;
     u32 mostViableMovesNo;
     s32 mostMovePoints;
 
+    ClearWishSelection(battler);
     for (i = 0; i < MAX_BATTLERS_COUNT; i++)
     {
-        if (i == battler || gBattleMons[i].hp == 0)
+        if (i == battler || !IsBattlerAlive(i))
         {
             actionOrMoveIndex[i] = 0xFF;
             bestMovePointsForTarget[i] = -1;
@@ -919,6 +973,17 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
             }
             actionOrMoveIndex[i] = mostViableMovesIndices[Random() % mostViableMovesNo];
             bestMovePointsForTarget[i] = mostViableMovesScores[0];
+            if (!IsBattlerAlly(battler, i))
+            {
+                s32 spellScore = 0;
+                u32 spell = ChooseArcanumForTarget(battler, i, bestMovePointsForTarget[i], &spellScore, &wishOutcomes[i], &wishTargets[i]);
+                if (spell < MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT)
+                {
+                    actionOrMoveIndex[i] = spell;
+                    bestMovePointsForTarget[i] = spellScore;
+                }
+            }
+
 
             // Don't use a move against ally if it has less than 100 points.
             if (i == BATTLE_PARTNER(battler) && bestMovePointsForTarget[i] < AI_SCORE_DEFAULT)
@@ -954,6 +1019,8 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
 
     gBattlerTarget = mostViableTargetsArray[Random() % mostViableTargetsNo];
     gAiBattleData->chosenTarget[battler] = gBattlerTarget;
+    if (GetBattlerMoveSlotCount(battler) > MAX_MON_MOVES)
+        CommitWishSelection(battler, wishOutcomes[gBattlerTarget], wishTargets[gBattlerTarget]);
     return actionOrMoveIndex[gBattlerTarget];
 }
 

@@ -157,7 +157,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish leaves unimplemented and invalid outcomes unava
         {
             gBattleStruct->castoria.nameResult = name;
             for (outcome = CASTORIA_WISH_REDUCTION; outcome <= CASTORIA_WISH_NORMALITY; outcome++)
-                if (outcome != CASTORIA_WISH_ENDURANCE && outcome != CASTORIA_WISH_DEBILITATION)
+                if (outcome != CASTORIA_WISH_REDUCTION && outcome != CASTORIA_WISH_ENDURANCE && outcome != CASTORIA_WISH_DEBILITATION
+                 && outcome != CASTORIA_WISH_NORMALITY)
                     EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, outcome), FALSE);
         }
         EXPECT_EQ(CastoriaCanWishFor(B_POSITION_OPPONENT_LEFT, CASTORIA_WISH_NONE), FALSE);
