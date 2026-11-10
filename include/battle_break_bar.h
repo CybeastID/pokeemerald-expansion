@@ -38,6 +38,7 @@ struct BreakBarConfig
 bool32 ActivateBreakBar(u32 battler, const struct BreakBarConfig *config);
 u32 GetBreakBarCount(u32 battler);
 bool32 IsBreakBarBase(u32 battler);
+bool32 CanInterceptBreakBar(u32 battler);
 bool32 TryBreakBar(u32 battler, const u8 *returnInstr);
 bool32 QueueBreakBar(u32 battler);
 s32 ClampBreakBarPassiveDamage(u32 battler, s32 damage);

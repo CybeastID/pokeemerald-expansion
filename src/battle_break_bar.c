@@ -74,7 +74,7 @@ bool32 IsBreakBarBase(u32 battler)
         && owner->breakBarsRemaining == 0;
 }
 
-static bool32 CanInterceptBreakBar(u32 battler)
+bool32 CanInterceptBreakBar(u32 battler)
 {
     struct PartyState *owner = GetBreakBarOwner(battler);
     return owner != NULL && owner->breakBarConfig != NULL && owner->breakBarsRemaining != 0

@@ -137,5 +137,6 @@ void SetAiLogicDataForTurn(struct AiLogicData *aiData);
 // Such callbacks must not index ordinary caches with a virtual slot.
 bool32 BattleAI_IsScoringArcanum(void);
 void ResetDynamicAiFunc(void);
+void SetDynamicAiFunc(AiScoreFunc func);
 
 #endif // GUARD_BATTLE_AI_MAIN_H

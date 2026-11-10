@@ -145,6 +145,16 @@ void SetAIUsingGimmick(u32 battler, enum AIConsiderGimmick use);
 bool32 IsAIUsingGimmick(u32 battler);
 void DecideTerastal(u32 battler);
 bool32 CanEndureHit(u32 battler, u32 battlerTarget, u32 move);
+enum AiDamageOutcome
+{
+    AI_DAMAGE_ORDINARY,
+    AI_DAMAGE_SURVIVAL,
+    AI_DAMAGE_BREAK_LAYER,
+    AI_DAMAGE_REVEAL_SAVED_LAYER,
+    AI_DAMAGE_KO,
+};
+enum AiDamageOutcome AI_GetDamageOutcome(u32 attacker, u32 target, u32 move, s32 damage);
+u32 AI_GetReachableDamage(u32 target, s32 damage);
 
 // stat stage checks
 bool32 AnyStatIsRaised(u32 battlerId);

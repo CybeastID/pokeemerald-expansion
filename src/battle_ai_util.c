@@ -7,6 +7,8 @@
 #include "battle_ai_util.h"
 #include "battle_util.h"
 #include "battle_ai_main.h"
+#include "battle_break_bar.h"
+#include "battle_gimmick.h"
 #include "battle_ai_switch_items.h"
 #include "battle_factory.h"
 #include "battle_setup.h"
@@ -933,11 +935,21 @@ struct SimulatedDamage AI_CalcDamage(u32 move, u32 battlerAtk, u32 battlerDef, u
     bool32 toggledGimmickAtk = FALSE;
     bool32 toggledGimmickDef = FALSE;
     struct AiLogicData *aiData = gAiLogicData;
+    bool32 wasCalculating = aiData->aiCalcInProgress;
+    enum Type savedType = gBattleStruct->dynamicMoveType;
+    bool32 savedCategory = gBattleStruct->swapDamageCategory;
+    u32 savedHits = gMultiHitCounter;
+    u32 savedMagnitude = gBattleStruct->magnitudeBasePower;
+    u32 savedPresent = gBattleStruct->presentBasePower;
     gAiLogicData->aiCalcInProgress = TRUE;
 
     if (moveEffect == EFFECT_HIT_ENEMY_HEAL_ALLY
      && battlerDef == BATTLE_PARTNER(battlerAtk))
+    {
+        *typeEffectiveness = Q_4_12(0.0);
+        aiData->aiCalcInProgress = wasCalculating;
         return simDamage;
+    }
 
     if (moveEffect == EFFECT_NATURE_POWER)
         move = GetNaturePowerMove(battlerAtk);
@@ -957,6 +969,10 @@ struct SimulatedDamage AI_CalcDamage(u32 move, u32 battlerAtk, u32 battlerDef, u
         SetActiveGimmick(battlerDef, gBattleStruct->gimmick.usableGimmick[battlerDef]);
     }
 
+    // Derive this hypothetical move from a clean context, then restore the
+    // caller's context below (including nested simulations).
+    gBattleStruct->dynamicMoveType = 0;
+    gBattleStruct->swapDamageCategory = FALSE;
     SetDynamicMoveCategory(battlerAtk, battlerDef, move);
     SetTypeBeforeUsingMove(move, battlerAtk);
 
@@ -1043,13 +1059,16 @@ struct SimulatedDamage AI_CalcDamage(u32 move, u32 battlerAtk, u32 battlerDef, u
     *typeEffectiveness = ctx.typeEffectivenessModifier;
 
     // Undo temporary settings
-    gBattleStruct->dynamicMoveType = 0;
-    gBattleStruct->swapDamageCategory = FALSE;
+    gBattleStruct->dynamicMoveType = savedType;
+    gBattleStruct->swapDamageCategory = savedCategory;
+    gMultiHitCounter = savedHits;
+    gBattleStruct->magnitudeBasePower = savedMagnitude;
+    gBattleStruct->presentBasePower = savedPresent;
     if (toggledGimmickAtk)
         SetActiveGimmick(battlerAtk, GIMMICK_NONE);
     if (toggledGimmickDef)
         SetActiveGimmick(battlerDef, GIMMICK_NONE);
-    gAiLogicData->aiCalcInProgress = FALSE;
+    gAiLogicData->aiCalcInProgress = wasCalculating;
     return simDamage;
 }
 
@@ -1500,6 +1519,10 @@ s32 AI_WhoStrikesFirst(u32 battlerAI, u32 battler, u32 aiMoveConsidered, u32 pla
 
 bool32 CanEndureHit(u32 battler, u32 battlerTarget, u32 move)
 {
+    // A layer consumes the entire attack, including remaining multi-hit strikes.
+    // Query the execution policy, including absent/Transform exceptions.
+    if (CanInterceptBreakBar(battlerTarget))
+        return TRUE;
     enum BattleMoveEffects effect = GetMoveEffect(move);
     if (!AI_BattlerAtMaxHp(battlerTarget) || effect == EFFECT_MULTI_HIT || gAiLogicData->abilities[battler]  == ABILITY_PARENTAL_BOND)
         return FALSE;
@@ -1517,6 +1540,24 @@ bool32 CanEndureHit(u32 battler, u32 battlerTarget, u32 move)
     }
 
     return FALSE;
+}
+
+u32 AI_GetReachableDamage(u32 target, s32 damage)
+{
+    return min(max(0, damage), gBattleMons[target].hp);
+}
+
+enum AiDamageOutcome AI_GetDamageOutcome(u32 attacker, u32 target, u32 move, s32 damage)
+{
+    if (damage <= 0 || gBattleMons[target].hp == 0 || damage < gBattleMons[target].hp)
+        return AI_DAMAGE_ORDINARY;
+    if (CanInterceptBreakBar(target))
+    {
+        const struct PartyState *owner = GetBattlerPartyState(target);
+        return owner->breakBarSavedMaxHp[owner->breakBarsRemaining - 1] != 0
+            ? AI_DAMAGE_REVEAL_SAVED_LAYER : AI_DAMAGE_BREAK_LAYER;
+    }
+    return CanEndureHit(attacker, target, move) ? AI_DAMAGE_SURVIVAL : AI_DAMAGE_KO;
 }
 
 // Check if target has means to faint ai mon.
@@ -1632,6 +1673,9 @@ u32 GetBestDmgFromBattler(u32 battler, u32 battlerTarget, enum DamageCalcContext
 // If numHits > 1, check if the target will be KO'ed by that number of hits (ignoring healing effects)
 bool32 CanAIFaintTarget(u32 battlerAtk, u32 battlerDef, u32 numHits)
 {
+    // Do not extrapolate current-form damage through an unexecuted layer script.
+    if (CanInterceptBreakBar(battlerDef))
+        return FALSE;
     struct AiLogicData *aiData = gAiLogicData;
     s32 moveIndex, dmg;
     u16 *moves = gBattleMons[battlerAtk].moves;
@@ -1682,6 +1726,8 @@ bool32 CanBattlerKOTargetIgnoringSturdy(u32 battlerAtk, u32 battlerDef)
 
 bool32 CanTargetMoveFaintAi(u32 move, u32 battlerDef, u32 battlerAtk, u32 nHits)
 {
+    if (CanInterceptBreakBar(battlerAtk))
+        return FALSE;
     u32 indexSlot = GetMoveSlot(GetMovesArray(battlerDef), move);
     if (indexSlot < MAX_MON_MOVES)
     {
@@ -4458,6 +4504,10 @@ bool32 ShouldUseWishAromatherapy(u32 battlerAtk, u32 battlerDef, u32 move)
 
     for (i = 0; i < PARTY_SIZE; i++)
     {
+        // No Order Change forbids bringing a reserve into this Wish position.
+        if (GetMoveEffect(move) == EFFECT_WISH && HasNoOrderChange(battlerAtk)
+         && i != gBattlerPartyIndexes[battlerAtk])
+            continue;
         u32 currHp = GetMonData(&party[i], MON_DATA_HP);
         u32 maxHp = GetMonData(&party[i], MON_DATA_MAX_HP);
 
@@ -5366,6 +5416,7 @@ void DecideTerastal(u32 battler)
     struct SimulatedDamage noDmg = {0};
 
     uq4_12_t effectivenessTakenWithTera[MAX_MON_MOVES];
+    uq4_12_t effectivenessDealtWithoutTera[MAX_MON_MOVES] = {0};
 
     u16* aiMoves = GetMovesArray(battler);
     u16* oppMoves = GetMovesArray(opposingBattler);
@@ -5375,7 +5426,10 @@ void DecideTerastal(u32 battler)
     for (int i = 0; i < MAX_MON_MOVES; i++)
     {
         if (!IsMoveUnusable(i, aiMoves[i], gAiLogicData->moveLimitations[battler]) && !IsBattleMoveStatus(aiMoves[i]))
+        {
             altCalcs.dealtWithoutTera[i] = AI_CalcDamage(aiMoves[i], battler, opposingBattler, &effectiveness, NO_GIMMICK, NO_GIMMICK, AI_GetWeather());
+            effectivenessDealtWithoutTera[i] = effectiveness;
+        }
         else
             altCalcs.dealtWithoutTera[i] = noDmg;
 
@@ -5409,7 +5463,11 @@ void DecideTerastal(u32 battler)
     {
         // Damage calcs for damage dealt assumed we would tera. Adjust that so that further AI decisions are more accurate.
         for (int i = 0; i < MAX_MON_MOVES; i++)
+        {
             gAiLogicData->simulatedDmg[battler][opposingBattler][i] = altCalcs.dealtWithoutTera[i];
+            if (!IsBattleMoveStatus(aiMoves[i]))
+                gAiLogicData->effectiveness[battler][opposingBattler][i] = effectivenessDealtWithoutTera[i];
+        }
     }
 
     SetAIUsingGimmick(battler, res);
@@ -5433,12 +5491,11 @@ enum AIConsiderGimmick ShouldTeraFromCalcs(u32 battler, u32 opposingBattler, str
         if (GetMonData(&party[i], MON_DATA_HP) != 0
          && GetMonData(&party[i], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE
          && GetMonData(&party[i], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG
-         && GetMonData(&party[i], MON_DATA_TERA_TYPE) > 0)
+         && ShouldTrainerPartyMonUseGimmick(battler, i, GIMMICK_TERA))
             numPossibleTera++;
     }
 
     u16 aiHp = gBattleMons[battler].hp;
-    u16 oppHp = gBattleMons[opposingBattler].hp;
 
     u16* aiMoves = GetMovesArray(battler);
     u16* oppMoves = GetMovesArray(opposingBattler);
@@ -5449,13 +5506,13 @@ enum AIConsiderGimmick ShouldTeraFromCalcs(u32 battler, u32 opposingBattler, str
 
     for (int i = 0; i < MAX_MON_MOVES; i++)
     {
-        if (dealtWithTera[i].median >= oppHp)
+        if (AI_GetDamageOutcome(battler, opposingBattler, aiMoves[i], dealtWithTera[i].median) == AI_DAMAGE_KO)
         {
             u16 move = aiMoves[i];
             if (killingMove == MOVE_NONE || GetBattleMovePriority(battler, gAiLogicData->abilities[battler], move) > GetBattleMovePriority(battler, gAiLogicData->abilities[battler], killingMove))
                 killingMove = move;
         }
-        if (dealtWithoutTera[i].median >= oppHp)
+        if (AI_GetDamageOutcome(battler, opposingBattler, aiMoves[i], dealtWithoutTera[i].median) == AI_DAMAGE_KO)
             hasKoWithout = TRUE;
     }
 

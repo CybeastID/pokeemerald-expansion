@@ -65,10 +65,15 @@ enum Gimmick GetActiveGimmick(u32 battler)
 // Returns whether a trainer mon is intended to use an unrestrictive gimmick via .useGimmick (i.e Tera).
 bool32 ShouldTrainerBattlerUseGimmick(u32 battler, enum Gimmick gimmick)
 {
+    return ShouldTrainerPartyMonUseGimmick(battler, gBattlerPartyIndexes[battler], gimmick);
+}
+
+bool32 ShouldTrainerPartyMonUseGimmick(u32 battler, u32 partyIndex, enum Gimmick gimmick)
+{
     // There are no trainer party settings in battles, but the AI needs to know which gimmick to use.
     if (TESTING)
     {
-        return gimmick == TestRunner_Battle_GetChosenGimmick(GetBattlerSide(battler), gBattlerPartyIndexes[battler]);
+        return gimmick == TestRunner_Battle_GetChosenGimmick(GetBattlerSide(battler), partyIndex);
     }
     // The player can bypass these checks because they can choose through the controller.
     else if (IsOnPlayerSide(battler)
@@ -79,9 +84,9 @@ bool32 ShouldTrainerBattlerUseGimmick(u32 battler, enum Gimmick gimmick)
     // Check the trainer party data to see if a gimmick is intended.
     else
     {
-        if (gimmick == GIMMICK_TERA && gBattleStruct->opponentMonCanTera & 1 << gBattlerPartyIndexes[battler])
+        if (gimmick == GIMMICK_TERA && gBattleStruct->opponentMonCanTera & 1 << partyIndex)
             return TRUE;
-        if (gimmick == GIMMICK_DYNAMAX && gBattleStruct->opponentMonCanDynamax & 1 << gBattlerPartyIndexes[battler])
+        if (gimmick == GIMMICK_DYNAMAX && gBattleStruct->opponentMonCanDynamax & 1 << partyIndex)
             return TRUE;
     }
 

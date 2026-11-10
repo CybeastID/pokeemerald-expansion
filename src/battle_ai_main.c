@@ -626,6 +626,11 @@ static void CalcBattlerAiMovesData(struct AiLogicData *aiData, u32 battlerAtk, u
         uq4_12_t effectiveness = Q_4_12(0.0);
         move = moves[moveIndex];
 
+        // This helper also refreshes an individual candidate. Clear removed or
+        // newly unusable slots rather than retaining a previous form's estimate.
+        aiData->simulatedDmg[battlerAtk][battlerDef][moveIndex] = dmg;
+        aiData->effectiveness[battlerAtk][battlerDef][moveIndex] = effectiveness;
+        aiData->moveAccuracy[battlerAtk][battlerDef][moveIndex] = 0;
         if (IsMoveUnusable(moveIndex, move, moveLimitations))
             continue;
 
@@ -681,6 +686,12 @@ void SetAiLogicDataForTurn(struct AiLogicData *aiData)
         CycleCountStart();
     for (battlerAtk = 0; battlerAtk < battlersCount; battlerAtk++)
     {
+        // Refresh topology only at the next fresh turn. Preserve encounter,
+        // dynamic-function and sequence flags; never reroll committed actions.
+        if (IsDoubleBattle() && gAiThinkingStruct->aiFlags[battlerAtk] != 0)
+            gAiThinkingStruct->aiFlags[battlerAtk] |= AI_FLAG_DOUBLE_BATTLE;
+        else
+            gAiThinkingStruct->aiFlags[battlerAtk] &= ~AI_FLAG_DOUBLE_BATTLE;
         if (!IsBattlerAlive(battlerAtk))
             continue;
 
@@ -857,30 +868,57 @@ static void ScoreMoves_Singles(u32 battler)
     {
         if (flags & 1)
         {
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+            s32 scoreBefore = gAiThinkingStruct->score[0];
+#endif
             if (IsBattlerPredictedToSwitch(opposingBattler) && (gAiThinkingStruct->aiFlags[battler] & AI_FLAG_PREDICT_INCOMING_MON))
                 BattleAI_DoAIProcessing_PredictedSwitchin(gAiThinkingStruct, gAiLogicData, battler, opposingBattler);
             else
                 BattleAI_DoAIProcessing(gAiThinkingStruct, battler, opposingBattler);
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+            KoankoSmeargleDiagPass(battler, gAiThinkingStruct->aiLogicId, scoreBefore, gAiThinkingStruct->score[0]);
+#endif
         }
         flags >>= (u64)1;
         gAiThinkingStruct->aiLogicId++;
     }
 
     if (gAiThinkingStruct->aiFlags[battler] & AI_FLAG_CHECK_VIABILITY)
+    {
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+        s32 scoreBefore = gAiThinkingStruct->score[0];
+#endif
         AI_CompareDamagingMoves(battler, opposingBattler);
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+        KoankoSmeargleDiagPass(battler, 64, scoreBefore, gAiThinkingStruct->score[0]);
+#endif
+    }
+}
+
+static u32 ChooseMoveOrAction_Singles(u32 battler)
+{
+    s32 currentMoveArray[MAX_MON_MOVES];
+    u8 consideredMoveArray[MAX_MON_MOVES];
+    u32 numOfBestMoves;
+    s32 i;
+    u32 opposingBattler = GetOppositeBattler(battler);
+
+    ClearWishSelection(battler);
+    ScoreMoves_Singles(battler);
 
     for (i = 0; i < MAX_MON_MOVES; i++)
     {
         gAiBattleData->finalScore[battler][opposingBattler][i] = gAiThinkingStruct->score[i];
     }
 
-    numOfBestMoves = 1;
-    currentMoveArray[0] = gAiThinkingStruct->score[0];
+    numOfBestMoves = 0;
+    currentMoveArray[0] = INT32_MIN;
     consideredMoveArray[0] = 0;
 
-    for (i = 1; i < MAX_MON_MOVES; i++)
+    for (i = 0; i < MAX_MON_MOVES; i++)
     {
-        if (gBattleMons[battler].moves[i] != MOVE_NONE)
+        if (gBattleMons[battler].moves[i] != MOVE_NONE
+         && !(gAiLogicData->moveLimitations[battler] & (1u << i)))
         {
             // In ruby, the order of these if statements is reversed.
             if (currentMoveArray[0] == gAiThinkingStruct->score[i])
@@ -896,6 +934,9 @@ static void ScoreMoves_Singles(u32 battler)
             }
         }
     }
+    // Leave all-unusable fallback to the ordinary Struggle/action machinery.
+    if (numOfBestMoves == 0)
+        numOfBestMoves = 1;
     s32 spellScore = 0;
     u8 wishOutcome = CASTORIA_WISH_NONE;
     u8 wishTarget = PARTY_SIZE;
@@ -931,7 +972,7 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
         if (i == battler || !IsBattlerAlive(i))
         {
             actionOrMoveIndex[i] = 0xFF;
-            bestMovePointsForTarget[i] = -1;
+            bestMovePointsForTarget[i] = INT32_MIN;
         }
         else
         {
@@ -962,12 +1003,13 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
             if (gAiThinkingStruct->aiFlags[battler] & AI_FLAG_CHECK_VIABILITY)
                 AI_CompareDamagingMoves(battler, gBattlerTarget);
 
-            mostViableMovesScores[0] = gAiThinkingStruct->score[0];
+            mostViableMovesScores[0] = INT32_MIN;
             mostViableMovesIndices[0] = 0;
-            mostViableMovesNo = 1;
-            for (j = 1; j < MAX_MON_MOVES; j++)
+            mostViableMovesNo = 0;
+            for (j = 0; j < MAX_MON_MOVES; j++)
             {
-                if (gBattleMons[battler].moves[j] != 0)
+                if (gBattleMons[battler].moves[j] != MOVE_NONE
+                 && !(gAiLogicData->moveLimitations[battler] & (1u << j)))
                 {
                     if (!CanTargetBattler(battler, i, gBattleMons[battler].moves[j]))
                         continue;
@@ -986,6 +1028,11 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
                     }
                 }
             }
+            if (mostViableMovesNo == 0)
+            {
+                mostViableMovesNo = 1;
+                mostViableMovesScores[0] = 0;
+            }
             actionOrMoveIndex[i] = mostViableMovesIndices[Random() % mostViableMovesNo];
             bestMovePointsForTarget[i] = mostViableMovesScores[0];
             if (!IsBattlerAlly(battler, i))
@@ -1003,7 +1050,8 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
             // Don't use a move against ally if it has less than 100 points.
             if (i == BATTLE_PARTNER(battler) && bestMovePointsForTarget[i] < AI_SCORE_DEFAULT)
             {
-                bestMovePointsForTarget[i] = -1;
+                bestMovePointsForTarget[i] = INT32_MIN;
+                actionOrMoveIndex[i] = 0xFF;
             }
 
             for (j = 0; j < MAX_MON_MOVES; j++)
@@ -1013,12 +1061,15 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
         }
     }
 
-    mostMovePoints = bestMovePointsForTarget[0];
-    mostViableTargetsArray[0] = 0;
-    mostViableTargetsNo = 1;
+    mostMovePoints = INT32_MIN;
+    mostViableTargetsNo = 0;
 
-    for (i = 1; i < MAX_BATTLERS_COUNT; i++)
+    for (i = 0; i < MAX_BATTLERS_COUNT; i++)
     {
+        // Target validity must be separate from score: INT32_MIN itself can
+        // be a legal signed score, tied with our diagnostic sentinel.
+        if (actionOrMoveIndex[i] == 0xFF)
+            continue;
         if (mostMovePoints == bestMovePointsForTarget[i])
         {
             mostViableTargetsArray[mostViableTargetsNo] = i;
@@ -1030,6 +1081,13 @@ static u32 ChooseMoveOrAction_Doubles(u32 battler)
             mostViableTargetsArray[0] = i;
             mostViableTargetsNo = 1;
         }
+    }
+
+    if (mostViableTargetsNo == 0)
+    {
+        gBattlerTarget = GetOppositeBattler(battler);
+        gAiBattleData->chosenTarget[battler] = gBattlerTarget;
+        return 0; // Ordinary executor handles no surviving target; never rescore.
     }
 
     gBattlerTarget = mostViableTargetsArray[Random() % mostViableTargetsNo];
@@ -5998,6 +6056,17 @@ static s32 AI_CalcAdditionalEffectScore(u32 battlerAtk, u32 battlerDef, u32 move
 
             switch (additionalEffect->moveEffect)
             {
+            case MOVE_EFFECT_HEAL_TEAM:
+                // Finale heals living active allies only, never reserves or
+                // covered Break Bar HP. Its ordinary damage remains in slot caches.
+                for (u32 recipient = 0; recipient < gBattlersCount; recipient++)
+                {
+                    if (IsBattlerAlive(recipient) && IsBattlerAlly(battlerAtk, recipient)
+                     && !gBattleMons[recipient].volatiles.healBlock && !IsBreakBarPending(recipient)
+                     && gBattleMons[recipient].hp < gBattleMons[recipient].maxHP)
+                        ADJUST_SCORE(gBattleMons[recipient].maxHP - gBattleMons[recipient].hp >= gBattleMons[recipient].maxHP / 6 ? DECENT_EFFECT : WEAK_EFFECT);
+                }
+                break;
             case MOVE_EFFECT_FLINCH:
                 score += ShouldTryToFlinch(battlerAtk, battlerDef, aiData->abilities[battlerAtk], aiData->abilities[battlerDef], move);
                 break;
@@ -7551,6 +7620,11 @@ void ScriptSetDynamicAiFunc(struct ScriptContext *ctx)
     Script_RequestEffects(SCREFF_V1);
 
     AiScoreFunc func = (AiScoreFunc)ScriptReadWord(ctx);
+    SetDynamicAiFunc(func);
+}
+
+void SetDynamicAiFunc(AiScoreFunc func)
+{
     sDynamicAiFunc = func;
 }
 
