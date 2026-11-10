@@ -11,5 +11,6 @@ enum KoankoPhase
 bool32 TryStartKoankoConjuring(const u8 *returnInstr);
 void ConjureKoankoTeam(void);
 void BS_ConjureKoankoTeam(void);
+void KoankoOnSwitchIn(u32 battler);
 
 #endif

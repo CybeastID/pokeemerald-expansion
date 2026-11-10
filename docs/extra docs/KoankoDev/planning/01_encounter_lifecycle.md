@@ -22,6 +22,8 @@ Confirmed later design decision, superseding the original handoff: clear only Ko
 - `include/constants/songs.h` contains `MUS_VICTORY_TRAINER` and `MUS_KAZURADROP_APPEARS`, no `MUS_GRAND_BATTLE`. Kazuradrop has a fake-victory/music-change precedent in `battle_script_commands.c`.
 - `test/battle/koanko.c` covers replacement state preservation, twelve faints, residual/recoil/Destiny Bond, simultaneous faints with/without player reserves, hazards and new AI moves. `TEMPSCRIPTS/koanko-tests.log` records these nine passing historically; no fresh run performed here.
 
+Current-code addendum (2026-11-10, Stage11 reinspection): `ConjureKoankoTeam` now contains the one-time opponent-left Tera-used reset and SEQUENCE_SWITCHING assignment; `KoankoOnSwitchIn`, declared in the Koanko header and called by `SwitchInClearSetData`, reapplies No Order Change during the conjured phase. The Koanko unit test now asserts preservation of player Tera/opponent Dynamax and no repeated Tera renewal. These outside changes supersede the earlier snapshot's missing-policy assessment. Preserve and validate them rather than recreate them; this addendum does not claim a new passing test run or completion of the presentation/other lifecycle work below.
+
 ## 3. Implementation design and order
 
 1. Extend existing Koanko encounter state in `include/battle_koanko.h`/`include/battle.h` with named encounter event flags and a completed-conjured-turn counter. Keep battle-wide state outside `PartyState`; per-boss state is keyed to enemy party identity, never just current species. Initialize/cleanup with the existing battle lifecycle.

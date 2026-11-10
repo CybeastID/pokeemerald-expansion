@@ -12,6 +12,7 @@
 #include "test_runner.h"
 #include "trainer_break_bars.h"
 #include "constants/abilities.h"
+#include "constants/battle_ai.h"
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/trainers.h"
@@ -60,6 +61,18 @@ void ConjureKoankoTeam(void)
     gBattleStruct->opponentMonCanTera = 0;
     gBattleStruct->opponentMonCanDynamax = 0;
     gBattleStruct->arenaLostOpponentMons = 0;
+
+    // Confirmed design: the conjured team gets one fresh ordinary Tera opportunity. Clear ONLY the
+    // opponent trainer's Tera-used flag. The player's Tera usage and the opponent's Dynamax/other
+    // gimmick usage are deliberately preserved. This cannot repeat: the function only proceeds in
+    // KOANKO_CONJURING and finishes in KOANKO_CONJURED_TEAM. It never activates Tera by itself.
+    gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA] = FALSE;
+
+    // The conjured team enters in exactly party order and never switches mid-battle. First-team AI
+    // flags are untouched (this runs only at the one-time transition). Guarded because the unit
+    // test drives this function without an AI thinking struct.
+    if (gAiThinkingStruct != NULL)
+        gAiThinkingStruct->aiFlags[B_POSITION_OPPONENT_LEFT] |= AI_FLAG_SEQUENCE_SWITCHING;
 
     struct Trainer trainer = *GetTrainerStructFromId(TRAINER_KOANKO);
     trainer.party = sKoankoConjuredParty;
@@ -117,4 +130,15 @@ void BS_ConjureKoankoTeam(void)
     NATIVE_ARGS();
     ConjureKoankoTeam();
     gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+// Called at the end of SwitchInClearSetData, which clears noOrderChange. Living conjured owners cannot be
+// moved out of sequence (Roar etc.). Genuine faint replacement is unaffected: the open-party-screen
+// guard only blocks when the occupant is still alive.
+void KoankoOnSwitchIn(u32 battler)
+{
+    if (gBattleStruct != NULL
+     && gBattleStruct->koankoPhase == KOANKO_CONJURED_TEAM
+     && GetBattlerSide(battler) == B_SIDE_OPPONENT)
+        gBattleStruct->battlerState[battler].noOrderChange = TRUE;
 }

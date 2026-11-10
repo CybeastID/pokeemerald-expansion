@@ -8,6 +8,7 @@
 #include "battle_end_turn.h"
 #include "battle_hold_effects.h"
 #include "battle_interface.h"
+#include "battle_koanko.h"
 #include "battle_main.h"
 #include "battle_message.h"
 #include "battle_pyramid.h"
@@ -3318,6 +3319,7 @@ void SwitchInClearSetData(u32 battler, struct Volatiles *volatilesCopy)
     }
     #endif // TESTING
 
+    KoankoOnSwitchIn(battler);
     Ai_UpdateSwitchInData(battler);
 }
 

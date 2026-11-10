@@ -2,6 +2,8 @@
 
 Status: **fully planned**; integration follows all mandatory stages. Snapshot: `mypatch`, 2026-11-09.
 
+Dependency update: 2026-11-10. [Stage11 AI behavior and tactical validation](11_koanko_ai_validation.md) is required before this stage's final acceptance, despite its later document number.
+
 ## 1. Objective and scope
 
 Verify the complete intended twelve-mon battle, close cross-stage lifecycle gaps and produce implementation acceptance evidence. Preserve all mandatory mechanics, player item access and existing Castoria/Kazuradrop behavior. This stage is not a license to rebalance levels/stats or add unapproved phases. Optional Aurora Beam is assessed below and recommended for omission.
@@ -21,7 +23,7 @@ Apply later confirmed user decisions over conflicting handoff wording: reset onl
 
 ## 3. Implementation design and order
 
-1. Integrate stage branches/changes in index dependency order. At every stage retain a runnable focused fixture; do not replace the original transition engine or postpone all tests until the final encounter.
+1. Integrate feature work and focused tests from stages01–09, complete Stage11's cross-stage AI validation/hardening gate, then finish this stage's final encounter acceptance. Provisional integration fixtures may be developed earlier and reused by Stage11; completed Stage10 is not its prerequisite. At every stage retain a runnable focused fixture; do not replace the original transition engine or postpone all tests until the final encounter.
 2. Add an end-to-end **Koanko Integration** fixture that traverses the ordinary party and exact conjured sequence, uses the real profiles/events rather than test-only substitutes, and verifies final-only outcome/rewards. Assert the opponent-only one-time Tera-used reset while player Tera and all other trainer gimmick-used flags stay unchanged. Add shorter pairwise fixtures at TX→Calyrex, Calyrex→Eternatus, Eternamax→Dialga and Dialga→Arceus to make failures independently diagnosable; cover Calyrex transforming with active Fire Tera and with Tera still inactive under ordinary AI choice.
 3. Ensure all returning event scripts preserve attacker/target/chosen move/slot/action cursor and controller synchronization. Event flags commit before yield, cancel on genuine defeat, and never give replacement occupants their predecessor's actions. Audit combined script-stack depth across saved-bar restore, Wishful Thinking, Reciprocity, phase scripts, form visuals and ally entry/departure.
 4. Exercise all allowed player items through ordinary execution: Max Revive on real reserves, Ether PP changes, Full Restore HP/status and held Break Charm saved layers. Never normalize away real recovery or let revivals populate a disabled/retired auxiliary slot. Koanko Reduction remains until final battle cleanup; each new occupant starts fresh accumulated loss.
@@ -44,6 +46,7 @@ Proposed changes: focused integration tests and small cross-stage fixes in their
 - 04 establishes correct TX ownership/curse/phases, then 05 adds Meteo and tactical selection.
 - 06 adds genuine boss form transitions; 07 adds independent ally storage/topology and closes it before Dialga.
 - 08 validates existing Dialga mechanics; 09 adds final Arceus sequence. These are all mandatory before complete-encounter acceptance.
+- [11](11_koanko_ai_validation.md) reviews and validates AI introduced by 01/03–09 plus 02's stat-refresh contract. It must pass before Stage10 final acceptance. The dependency is feature work → 11 AI gate → 10 final acceptance; Stage11 does not depend on completed Stage10 and does not replace earlier feature responsibilities.
 - Review 07's ownership-storage change and 09's HP-floor/saved-layer hook as separate high-risk reviews before enabling the full encounter. An unresolved mandatory issue remains a blocker; do not ship a weaker substitute merely because old tests pass.
 
 ## 5. Edge cases and invariants
@@ -58,6 +61,8 @@ Native Stellar TX has no weaknesses or resistances against player-accessible att
 
 No tests are run for this planning stage. During implementation first use `wsl make check TESTS='Koanko Integration'` plus all new stage-specific prefixes, then separately run `Koanko`, `TX Wishes`, `Wishful Thinking`, `Roar of Eternity`, `Arcanum Wish More Wishes`, `Arcanum Wish Reduction`, `Arcanum No Order Change`, `Break Bar`, `Trainer Break Bar`, `Kazuradrop`, `Conversion 2`, `Multitype`, `Intrepid Sword`, and the affected ordinary doubles/form/recharge groups. File filters such as `TESTS=test/battle/break_bar_exit_hp.c` are supported when name prefixes are ambiguous.
 
+Before treating those runs as final acceptance, require Stage11's production-profile `wsl make check TESTS='Koanko AI'` gate and its targeted ordinary AI controls. Cover all thirteen encounter combatants, active versus inactive Calyrex Tera, layer-break versus genuine-KO valuation, virtual/ordinary scoring and commitment, correct converted Judgment/approved Behemoth damage, and cache/ownership changes across temporary doubles. Existing TX tests that inject a chosen Wish scorer remain mechanism evidence; they cannot substitute for tactical cases using the production dispatcher. Reuse Stage11's allowed alternative sets and observable-effect assertions rather than require a hardcoded move rotation.
+
 Coverage must include direct/residual/recoil/instant/deferred/simultaneous KOs, pending original and saved bars, hazards chaining replacements, player resource exhaustion, item-only turns, paused actions, forced switch attempts, allocation failure, menu reconstruction and loss during scripted events. Run a normal `wsl make` ROM build only when implementation changes warrant it. Broader suites are a later implementation decision supported by actual changes/failures; never initiate a full suite merely to prepare this plan.
 
 Update `Koanko`, `Koanko Calyrex` and `Koanko Integration` expectations for the later Tera decisions: seed opponent/player Tera-used and opponent Dynamax/other gimmick-used states, verify only opponent Tera usage clears at transition, then consume it and prove repeated transition/entry/controller paths do not clear it again. Cover ordinary AI choosing and deferring Fire Tera, transformations with active versus inactive Tera, unused eligibility surviving transformation, and already-consumed usage preventing a later activation. Remove expectations of forced entry Tera. Add an exact-text presentation assertion for `Alter Ego's Bug Space` with Arceus's ability still Multitype.
@@ -69,6 +74,8 @@ Text-width failures require the exact test, string and current baseline evidence
 ## 7. Completion criteria
 
 All mandatory stage completion gates pass and the uninterrupted encounter visibly matches the handoff as superseded by later confirmed user decisions and recorded approved defaults. The opponent-only one-time Tera-used reset and ordinary optional Calyrex Fire Tera, including preservation through transformation when active, are proven. Focused test selections have nonzero coverage, current successful logs and no unexplained new failures. Runtime presentation/cleanup/resource evidence complements tests. Player-party canaries remain intact except for legitimate battle effects; a following ordinary encounter is normal. Optional Aurora Beam is explicitly omitted, not silently half-implemented.
+
+**Required AI acceptance gate:** Stage11's completion criteria and production-profile tactical scenarios pass, with approved flag/tactical choices recorded and a validation record linked from the implementation results. No unresolved mandatory AI architecture defect affecting this encounter may be waived by generic suite results, injected test scores or a new KNOWN_FAILING marker. Stage10 remains incomplete until this gate is satisfied.
 
 ## 8. Open questions and release readiness
 

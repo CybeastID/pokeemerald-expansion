@@ -921,11 +921,12 @@
 #define MOVE_MAGEARMOR               (MOVES_GEN_CUSTOM_START + 8)   // 856 — Mage Armor
 #define MOVE_MAGICMISSILE            (MOVES_GEN_CUSTOM_START + 9)   // 857 — Magic Missile
 #define MOVE_ARCANUM_WISH            (MOVES_GEN_CUSTOM_START + 10)  // 858 — Castoria's Wish
-#define MOVES_COUNT_GEN_CUSTOM       11
+#define MOVE_ROAR_OF_ETERNITY        (MOVES_GEN_CUSTOM_START + 11)  // 859 — Koanko's Dialga
+#define MOVES_COUNT_GEN_CUSTOM       12
 
 #define MOVES_COUNT_GEN9 848   // Gen 1-9 only
 
-#define MOVES_COUNT        (MOVES_COUNT_GEN9 + MOVES_COUNT_GEN_CUSTOM)  // 859
+#define MOVES_COUNT        (MOVES_COUNT_GEN9 + MOVES_COUNT_GEN_CUSTOM)  // 860
 
 // Z Moves
 #define MOVE_BREAKNECK_BLITZ (MOVES_COUNT + 0)

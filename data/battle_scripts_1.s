@@ -9532,6 +9532,10 @@ BattleScript_PolymorphFailed:
 
 @ Victory-check continuation, after faint and EXP processing.
 BattleScript_KoankoConjureTeam::
+    @ Fake victory: the first team's defeat sounds like the end. The battle outcome stays 0 and no win/reward code runs.
+    @ Sting and crossfade reuse the Kazuradrop natives (mus_vs_kazuradrop = MUS_KAZURADROP_APPEARS, verified in song_table.inc).
+    callnative BS_KazuradropFakeVictorySting
     call BattleScript_TrainerASlideMsgRet
+    callnative BS_KazuradropSendoutMusic
     callnative BS_ConjureKoankoTeam
     return

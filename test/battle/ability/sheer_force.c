@@ -609,6 +609,7 @@ static inline bool32 IsMoveSheerForceBoosted(u32 move)
         case MOVE_MELT_VIRUS:
     //    case MOVE_TRASH_CRUSH:
         case MOVE_CRACK_ICE:
+        case MOVE_ROAR_OF_ETERNITY:
             return TRUE;
         case MOVE_RAPID_SPIN:
             return B_SPEED_BUFFING_RAPID_SPIN >= GEN_8;

@@ -18,6 +18,8 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     gBattleStruct->opponentMonCanTera = 0x3F;
     gBattleStruct->opponentMonCanDynamax = 0x3F;
     gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_DYNAMAX] = TRUE;
+    gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA] = TRUE;
+    gBattleStruct->gimmick.activated[B_POSITION_PLAYER_LEFT][GIMMICK_TERA] = TRUE;
     gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarConfig = &gTrainerBreakBarProfiles[0];
     gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarsRemaining = 1;
     gAiPartyData->mons[B_SIDE_PLAYER][0].species = SPECIES_PICHU;
@@ -56,6 +58,9 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     EXPECT_EQ((u32)gBattleStruct->opponentMonCanTera, 1 << 2);
     EXPECT_EQ((u32)gBattleStruct->opponentMonCanDynamax, 0);
     EXPECT_EQ(gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_DYNAMAX], TRUE);
+    // Only the opponent's Tera-used flag is renewed; the player's Tera usage is untouched.
+    EXPECT_EQ(gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA], FALSE);
+    EXPECT_EQ(gBattleStruct->gimmick.activated[B_POSITION_PLAYER_LEFT][GIMMICK_TERA], TRUE);
     EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarsRemaining, 1);
     EXPECT_EQ(gAiPartyData->mons[B_SIDE_PLAYER][0].species, SPECIES_PICHU);
     EXPECT_EQ(gBattleHistory->trainerItems[0], ITEM_POTION);
@@ -72,6 +77,10 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     SetMonData(&gEnemyParty[0], MON_DATA_HP, &hp);
     ConjureKoankoTeam();
     EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 0);
+    // ...and cannot renew the Tera opportunity a second time once it has been consumed.
+    gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA] = TRUE;
+    ConjureKoankoTeam();
+    EXPECT_EQ(gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA], TRUE);
     Free(gBattleHistory);
     Free(gAiLogicData);
     Free(gAiPartyData);

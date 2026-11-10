@@ -21571,6 +21571,39 @@ const struct MoveInfo gMovesInfo[MOVES_COUNT_ALL] =
         .battleAnimScript = gBattleAnimMove_Wish,
     },
 
+    [MOVE_ROAR_OF_ETERNITY] =
+    {
+        .name = COMPOUND_STRING("Roar of Eternity"),
+        .mirrorMoveBanned = TRUE,
+        .metronomeBanned = TRUE,
+        .sketchBanned = TRUE,
+        .mimicBanned = TRUE,
+        .copycatBanned = TRUE,
+        .meFirstBanned = TRUE,
+        .assistBanned = TRUE,
+        .description = COMPOUND_STRING(
+            "A roar that may freeze the\n"
+            "target in time. The user\n"
+            "must recharge next turn."),
+        .effect = EFFECT_HIT,
+        .power = 150,
+        .type = TYPE_DRAGON,
+        .accuracy = 90,
+        .pp = 5,
+        .target = MOVE_TARGET_SELECTED,
+        .priority = 0,
+        .category = DAMAGE_CATEGORY_SPECIAL,
+        .battleAnimScript = gBattleAnimMove_RoarOfTime,
+        .additionalEffects = ADDITIONAL_EFFECTS({
+            .moveEffect = MOVE_EFFECT_RECHARGE,
+            .self = TRUE,
+        },
+        {
+            .moveEffect = MOVE_EFFECT_TIMESTOP,
+            .chance = 50,
+        }),
+    },
+
     // Z-Moves
     [MOVE_BREAKNECK_BLITZ] =
     {

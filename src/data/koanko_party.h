@@ -79,10 +79,10 @@ static const struct TrainerMon sKoankoConjuredParty[] =
         .nature = NATURE_MODEST,
         .dynamaxLevel = MAX_DYNAMAX_LEVEL,
         .moves = {
-            MOVE_ROAR_OF_TIME,
+            MOVE_ROAR_OF_ETERNITY,
             MOVE_FLASH_CANNON,
             MOVE_EARTH_POWER,
-            MOVE_STEALTH_ROCK,
+            MOVE_THUNDERBOLT,
         },
     },
     {
@@ -96,9 +96,9 @@ static const struct TrainerMon sKoankoConjuredParty[] =
         .dynamaxLevel = MAX_DYNAMAX_LEVEL,
         .moves = {
             MOVE_JUDGMENT,
-            MOVE_CALM_MIND,
-            MOVE_RECOVER,
             MOVE_EARTH_POWER,
+            MOVE_ICE_BEAM,
+            MOVE_RECOVER,
         },
     },
 };
