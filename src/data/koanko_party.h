@@ -11,28 +11,26 @@ static const struct TrainerMon sKoankoConjuredParty[] =
         .lvl = 100,
         .nature = NATURE_TIMID,
         .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+        // Slot 0 is the only real move; Any Move overwrites it each action. Placeholder until then.
         .moves = {
             MOVE_SEISMIC_TOSS,
-            MOVE_NIGHT_SHADE,
-            MOVE_SPORE,
-            MOVE_ENDEAVOR,
         },
     },
     {
-        .species = SPECIES_JIRACHI,
+        .species = SPECIES_TX_ROLLBACK,
         .gender = TRAINER_MON_RANDOM_GENDER,
         .heldItem = ITEM_STEELIUM_Z,
         .ev = TRAINER_PARTY_EVS(4, 252, 0, 252, 0, 0),
         .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
-        .ability = ABILITY_SERENE_GRACE,
+        .ability = ABILITY_WISHFUL_THINKING,
         .lvl = 101,
         .nature = NATURE_JOLLY,
         .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+        // Fourth real slot is intentionally empty.
         .moves = {
-            MOVE_IRON_HEAD,
-            MOVE_ZEN_HEADBUTT,
-            MOVE_THUNDER_WAVE,
             MOVE_WISH,
+            MOVE_DOOM_DESIRE,
+            MOVE_PROTECT,
         },
     },
     {

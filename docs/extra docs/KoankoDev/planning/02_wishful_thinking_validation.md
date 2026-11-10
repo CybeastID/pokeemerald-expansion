@@ -18,6 +18,8 @@ Establish the existing Wishful Thinking implementation as a reliable shared foun
 
 The user reports repaired targeted tests passed. This planning task inspected their current bodies but did not rerun them or find a fresh Wishful Thinking run in the inspected Koanko logs. Old progress comments saying unrun are not authoritative current execution evidence.
 
+Current-code addendum (2026-11-10, Stage11 reinspection): the older direct caster-only `BS_WishfulThinkingTry` description above is no longer the current dispatch shape. `BattleScript_WishfulThinking` now loops over battler targets; `BS_WishfulThinkingTry` delegates to `AbilityBattleEffects(ABILITYEFFECT_WISH, target, ...)`, whose branch grows/heals each living effective holder. Raw-stat helpers/refresh ownership remain relevant, but the intended caster-only versus all-holder trigger scope must be confirmed before the tactical tests assume either rule. Stage11 records own-Wish/other-Wish/multiple-holder validation. These are observed outside changes, preserved without implementation or a new test run by this planning task.
+
 ## 3. Implementation design and order
 
 1. Preserve 10% tuning and current round-to-nearest integer behavior. Add missing behavioral coverage first; change production code only for demonstrated contract gaps.

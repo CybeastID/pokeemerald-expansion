@@ -469,7 +469,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes first-break Wish triggers Wishful Thinking once
     GIVEN {
         AI_FLAGS(AI_FLAG_DYNAMIC_FUNC);
         TxWishFixture(TX_WISH_NONE, SEED_NONE);
-        PLAYER(SPECIES_ARTICUNO) { Level(100); Speed(1000); Moves(MOVE_CELEBRATE, MOVE_SHEER_COLD); }
+        PLAYER(SPECIES_ARTICUNO) { Ability(ABILITY_WISHFUL_THINKING); Level(100); Speed(1000); Moves(MOVE_CELEBRATE, MOVE_SHEER_COLD); }
         OPPONENT(SPECIES_CASTORIA) { Level(50); Speed(100); Moves(MOVE_CELEBRATE); }
         OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
         OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
@@ -487,12 +487,47 @@ AI_SINGLE_BATTLE_TEST("TX Wishes first-break Wish triggers Wishful Thinking once
         for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
             total += state->wishfulGrowth[stat];
         EXPECT_EQ(total, 1);
+        total = 0;
+        for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
+            total += GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->wishfulGrowth[stat];
+        EXPECT_EQ(total, 1);
         EXPECT_EQ(gBattleMons[3].statStages[STAT_ATK], DEFAULT_STAT_STAGE);
         EXPECT_EQ(gBattleMons[3].attack,    GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_ATK),   state->wishfulGrowth[STAT_ATK]));
         EXPECT_EQ(gBattleMons[3].defense,   GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_DEF),   state->wishfulGrowth[STAT_DEF]));
         EXPECT_EQ(gBattleMons[3].speed,     GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_SPEED), state->wishfulGrowth[STAT_SPEED]));
         EXPECT_EQ(gBattleMons[3].spAttack,  GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_SPATK), state->wishfulGrowth[STAT_SPATK]));
         EXPECT_EQ(gBattleMons[3].spDefense, GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_SPDEF), state->wishfulGrowth[STAT_SPDEF]));
+    }
+}
+
+AI_SINGLE_BATTLE_TEST("TX Wishes scripted Reversal activates an opposing Wishful Thinking holder")
+{
+    GIVEN {
+        AI_FLAGS(AI_FLAG_DYNAMIC_FUNC);
+        TxWishFixture(TX_WISH_REVERSAL, SEED_BOOSTS);
+        PLAYER(SPECIES_WYNAUT) { Ability(ABILITY_WISHFUL_THINKING); MaxHP(320); HP(100); Speed(1); Moves(MOVE_CELEBRATE); }
+        OPPONENT(SPECIES_CASTORIA) { Speed(100); Moves(MOVE_CELEBRATE); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_CELEBRATE); }
+        SUMMONED_OPPONENT();
+        TURN { MOVE(player, MOVE_CELEBRATE); }
+    } SCENE {
+        MESSAGE("A wish for Reversal turned your team's boosts into penalties!");
+        ABILITY_POPUP(player, ABILITY_WISHFUL_THINKING);
+        HP_BAR(player, damage: -20);
+        MESSAGE("Wynaut's HP was restored.");
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, player);
+        ABILITY_POPUP(&gBattleMons[3], ABILITY_WISHFUL_THINKING);
+    } THEN {
+        u32 total = 0;
+        for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
+            total += GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->wishfulGrowth[stat];
+        EXPECT_EQ(total, 1);
+        EXPECT_EQ(player->hp, 120);
     }
 }
 

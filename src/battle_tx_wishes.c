@@ -314,29 +314,11 @@ void BS_TxRollbackTryWish(void)
 
 void BS_WishfulThinkingTry(void)
 {
-    NATIVE_ARGS(const u8 *endInstr, const u8 *noHealInstr);
-    u32 battler = gBattlerAttacker;
+    NATIVE_ARGS();
 
-    if (!IsBattlerAlive(battler) || GetBattlerAbility(battler) != ABILITY_WISHFUL_THINKING)
-    {
-        gBattlescriptCurrInstr = cmd->endInstr;
-        return;
-    }
-
-    enum Stat stat = RandomUniform(RNG_WISHFUL_THINKING, STAT_ATK, STAT_SPDEF);
-    WishfulThinkingGrowStat(battler, stat);
-    PREPARE_STAT_BUFFER(gBattleTextBuff1, stat);
-    gBattleScripting.animArg1 = STAT_ANIM_PLUS1 + stat;
-
-    if (gBattleMons[battler].hp < gBattleMons[battler].maxHP)
-    {
-        SetHealAmount(battler, max(1, gBattleMons[battler].maxHP / 16));
-        gBattlescriptCurrInstr = cmd->nextInstr;
-    }
-    else
-    {
-        gBattlescriptCurrInstr = cmd->noHealInstr;
-    }
+    // Return after this command, so the script advances to the next holder exactly once.
+    gBattlescriptCurrInstr = cmd->nextInstr;
+    AbilityBattleEffects(ABILITYEFFECT_WISH, gBattlerTarget, ABILITY_NONE, 0, 0);
 }
 
 void BS_TxRollbackEndurance(void)

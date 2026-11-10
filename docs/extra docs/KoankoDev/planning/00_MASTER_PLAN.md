@@ -2,10 +2,13 @@
 
 Planning snapshot: 2026-11-09, local `mypatch` worktree. Planning documents only; no implementation is authorized by these documents. The latest user instruction authorizes writing these Markdown files despite the original handoff's read-only wording.
 
+AI planning supplement: 2026-11-10. Stage11 adds encounter-wide tactical validation; its numbering preserves existing filenames. No code implementation or test execution is included.
+
 ## Authority and current state
 
 - Design: `TEMPSCRIPTS/KOANKO_CODEX_PLANNING_HANDOFF.md`, as superseded by later confirmed user decisions. In particular, reset only opponent Tera usage once at the team transition and let ordinary AI optionally choose Calyrex Fire Tera. Repository source is authoritative for implemented behavior. Older proposal/progress notes contain superseded claims and are not implementation evidence.
 - Existing: in-place second-party replacement and nine Koanko tests; corrected first/conjured party data; levels 100–105; TX species tuning; Wishful Thinking; Roar of Eternity. Inspect and preserve these rather than rebuilding them.
+- Latest Stage11 reinspection (2026-11-10): one-time opponent Tera-used reset, conjured sequence switching and the Koanko switch-in No Order Change hook are now present, with unit assertions for the reset. Wishful Thinking now dispatches over all living effective holders; intended trigger scope needs confirmation against the earlier caster-local design. Small source-audit addenda in 01/02 preserve these outside changes and avoid duplicate work; no new test-run claim is made.
 - Remaining: encounter presentation/order enforcement, Any Move, solo-TX ownership/Wish policy, Koanko Reduction, TX maxHP deterioration, Meteo, form transitions, independent allied Zacian, Arceus staging/adaptation, integration coverage.
 - Preserve every pre-existing dirty file, including existing C/header/script/test changes and MageArmor16 artwork. No resets, generated-source edits, commits, pushes, or full test-suite runs during planning.
 - Evidence status: source inspected; existing logs are historical evidence, not tests executed by this planning task. Detailed coverage and limitations belong in each stage.

@@ -5606,6 +5606,21 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, u32 battler, enum Ability ab
             break;
         }
         break;
+    case ABILITYEFFECT_WISH:
+        if (gLastUsedAbility == ABILITY_WISHFUL_THINKING && IsBattlerAlive(battler))
+        {
+            enum Stat stat = RandomUniform(RNG_WISHFUL_THINKING, STAT_ATK, STAT_SPDEF);
+
+            gBattlerAbility = gBattleScripting.battler = battler;
+            WishfulThinkingGrowStat(battler, stat);
+            PREPARE_STAT_BUFFER(gBattleTextBuff1, stat);
+            gBattleScripting.animArg1 = STAT_ANIM_PLUS1 + stat;
+            if (gBattleMons[battler].hp < gBattleMons[battler].maxHP)
+                SetHealAmount(battler, max(1, gBattleMons[battler].maxHP / 16));
+            BattleScriptCall(BattleScript_WishfulThinkingActivates);
+            effect++;
+        }
+        break;
     case ABILITYEFFECT_MOVE_END_OTHER: // Abilities that activate on *another* battler's moveend: Dancer, Soul-Heart, Receiver, Symbiosis
         switch (GetBattlerAbility(battler))
         {

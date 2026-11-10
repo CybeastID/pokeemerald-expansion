@@ -9395,20 +9395,29 @@ BattleScript_TxWishReciprocity::
     goto BattleScript_MoveEnd
 
 BattleScript_WishfulThinking::
-    BattleScript_WishfulThinking::
-    trywishfulthinking BattleScript_WishfulThinkingEnd, BattleScript_WishfulThinkingGrow
-    playanimation BS_ATTACKER, B_ANIM_WISH_HEAL
+    savetarget
+    setbyte gBattlerTarget, 0
+BattleScript_WishfulThinkingLoop:
+    trywishfulthinking
+    addbyte gBattlerTarget, 1
+    jumpifbytenotequal gBattlerTarget, gBattlersCount, BattleScript_WishfulThinkingLoop
+    restoretarget
+    return
+
+BattleScript_WishfulThinkingActivates::
+    call BattleScript_AbilityPopUp
+    jumpiffullhp BS_SCRIPTING, BattleScript_WishfulThinkingGrow
+    playanimation BS_SCRIPTING, B_ANIM_WISH_HEAL
     waitanimation
-    healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE
-    datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+    healthbarupdate BS_SCRIPTING, PASSIVE_HP_UPDATE
+    datahpupdate BS_SCRIPTING, PASSIVE_HP_UPDATE
     printstring STRINGID_PKMNREGAINEDHEALTH
     waitmessage B_WAIT_TIME_LONG
 BattleScript_WishfulThinkingGrow:
-    playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+    playanimation BS_SCRIPTING, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
     waitanimation
     printstring STRINGID_WISHFUL_THINKING_GROW
     waitmessage B_WAIT_TIME_LONG
-BattleScript_WishfulThinkingEnd:
     return
 
 BattleScript_TxReciprocityHeal::
