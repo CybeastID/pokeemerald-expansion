@@ -8638,6 +8638,16 @@ static inline uq4_12_t GetOtherModifiers(struct DamageContext *ctx)
     dmg = uq4_12_multiply_by_int_half_down(modifier, dmg); \
 } while (0)
 
+static inline u32 GetDamageRollMaximum(u32 battlerAtk)
+{
+    if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+     && TRAINER_BATTLE_PARAM.opponentA == TRAINER_KOANKO
+     && GetBattlerSide(battlerAtk) == B_SIDE_OPPONENT)
+        return 102;
+
+    return DMG_ROLL_PERCENT_HI;
+}
+
 static inline s32 DoMoveDamageCalcVars(struct DamageContext *ctx)
 {
     s32 dmg;
@@ -8661,7 +8671,8 @@ static inline s32 DoMoveDamageCalcVars(struct DamageContext *ctx)
 
     if (ctx->randomFactor)
     {
-        dmg *= DMG_ROLL_PERCENT_HI - RandomUniform(RNG_DAMAGE_MODIFIER, 0, DMG_ROLL_PERCENT_HI - DMG_ROLL_PERCENT_LO);
+        u32 maxRoll = GetDamageRollMaximum(ctx->battlerAtk);
+        dmg *= maxRoll - RandomUniform(RNG_DAMAGE_MODIFIER, 0, maxRoll - DMG_ROLL_PERCENT_LO);
         dmg /= 100;
     }
     else // Apply rest of modifiers in the ai function
@@ -8781,7 +8792,8 @@ static inline s32 DoFutureSightAttackDamageCalcVars(struct DamageContext *ctx)
 
     if (ctx->randomFactor)
     {
-        dmg *= DMG_ROLL_PERCENT_HI - RandomUniform(RNG_DAMAGE_MODIFIER, 0, DMG_ROLL_PERCENT_HI - DMG_ROLL_PERCENT_LO);
+        u32 maxRoll = GetDamageRollMaximum(ctx->battlerAtk);
+        dmg *= maxRoll - RandomUniform(RNG_DAMAGE_MODIFIER, 0, maxRoll - DMG_ROLL_PERCENT_LO);
         dmg /= 100;
     }
 

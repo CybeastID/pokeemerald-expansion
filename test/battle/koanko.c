@@ -232,5 +232,141 @@ AI_SINGLE_BATTLE_TEST("Koanko AI sends the conjured lead and selects from its ne
     } THEN {
         EXPECT_EQ(opponent->species, SPECIES_SMEARGLE);
         EXPECT_EQ(gAiPartyData->count[B_SIDE_OPPONENT], PARTY_SIZE);
+        // The living conjured occupant cannot be moved out of sequence, and the AI now follows party order.
+        EXPECT(HasNoOrderChange(B_POSITION_OPPONENT_LEFT));
+        EXPECT(gAiThinkingStruct->aiFlags[B_POSITION_OPPONENT_LEFT] & AI_FLAG_SEQUENCE_SWITCHING);
+    }
+}
+
+// NOT RUN when authored. Shaped on the AI test above (same transition setup).
+AI_SINGLE_BATTLE_TEST("Koanko living conjured Pokemon cannot be phazed out of sequence")
+{
+    gBattleTestRunnerState->data.recordedBattle.opponentA = TRAINER_KOANKO;
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET) { Speed(1000); Moves(MOVE_SEISMIC_TOSS, MOVE_ROAR); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(1); Speed(50); Moves(MOVE_CELEBRATE); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_SEISMIC_TOSS); EXPECT_SEND_OUT(opponent, 0); }
+        TURN { MOVE(player, MOVE_ROAR); }
+    } THEN {
+        // Roar would normally drag in another of the five living conjured Pokemon.
+        EXPECT_EQ(opponent->species, SPECIES_SMEARGLE);
+        EXPECT_EQ(gBattlerPartyIndexes[B_POSITION_OPPONENT_LEFT], 0);
+    }
+}
+
+
+SINGLE_BATTLE_TEST("Koanko Loaded Dice allows 102 and 101 percent damage and retains 85 percent minimum")
+{
+    s16 damage;
+    u32 roll;
+    s16 expectedDamage;
+
+    gBattleTestRunnerState->data.recordedBattle.opponentA = TRAINER_KOANKO;
+
+    PARAMETRIZE { roll = 0;  expectedDamage = 173; } // 102%
+    PARAMETRIZE { roll = 1;  expectedDamage = 171; } // 101%
+    PARAMETRIZE { roll = 17; expectedDamage = 144; } // 85%
+
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET) {
+            Level(100);
+            Defense(100);
+            HP(1000);
+            MaxHP(1000);
+            Moves(MOVE_CELEBRATE);
+        }
+        OPPONENT(SPECIES_WOBBUFFET) {
+            Level(100);
+            Attack(500);
+            Moves(MOVE_SCRATCH);
+        }
+    } WHEN {
+        TURN {
+            MOVE(player, MOVE_CELEBRATE);
+            MOVE(opponent, MOVE_SCRATCH,
+                 WITH_RNG(RNG_DAMAGE_MODIFIER, roll),
+                 criticalHit: FALSE);
+        }
+    } SCENE {
+        HP_BAR(player, captureDamage: &damage);
+    } THEN {
+        EXPECT_EQ(expectedDamage, damage);
+    }
+}
+
+SINGLE_BATTLE_TEST("Koanko Loaded Dice does not affect ordinary trainers")
+{
+    s16 damage;
+    u32 roll;
+    s16 expectedDamage;
+
+    gBattleTestRunnerState->data.recordedBattle.opponentA = TRAINER_ROXANNE_1;
+
+    PARAMETRIZE { roll = 0;  expectedDamage = 170; } // 100%
+    PARAMETRIZE { roll = 15; expectedDamage = 144; } // 85%
+
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET) {
+            Level(100);
+            Defense(100);
+            HP(1000);
+            MaxHP(1000);
+            Moves(MOVE_CELEBRATE);
+        }
+        OPPONENT(SPECIES_WOBBUFFET) {
+            Level(100);
+            Attack(500);
+            Moves(MOVE_SCRATCH);
+        }
+    } WHEN {
+        TURN {
+            MOVE(player, MOVE_CELEBRATE);
+            MOVE(opponent, MOVE_SCRATCH,
+                 WITH_RNG(RNG_DAMAGE_MODIFIER, roll),
+                 criticalHit: FALSE);
+        }
+    } SCENE {
+        HP_BAR(player, captureDamage: &damage);
+    } THEN {
+        EXPECT_EQ(expectedDamage, damage);
+    }
+}
+
+SINGLE_BATTLE_TEST("Koanko Loaded Dice does not improve the player's damage")
+{
+    s16 damage;
+    u32 roll;
+    s16 expectedDamage;
+
+    gBattleTestRunnerState->data.recordedBattle.opponentA = TRAINER_KOANKO;
+
+    PARAMETRIZE { roll = 0;  expectedDamage = 170; } // 100%
+    PARAMETRIZE { roll = 15; expectedDamage = 144; } // 85%
+
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET) {
+            Level(100);
+            Attack(500);
+            Moves(MOVE_SCRATCH);
+        }
+        OPPONENT(SPECIES_WOBBUFFET) {
+            Level(100);
+            Defense(100);
+            HP(1000);
+            MaxHP(1000);
+            Moves(MOVE_CELEBRATE);
+        }
+    } WHEN {
+        TURN {
+            MOVE(player, MOVE_SCRATCH,
+                 WITH_RNG(RNG_DAMAGE_MODIFIER, roll),
+                 criticalHit: FALSE);
+            MOVE(opponent, MOVE_CELEBRATE);
+        }
+    } SCENE {
+        HP_BAR(opponent, captureDamage: &damage);
+    } THEN {
+        EXPECT_EQ(expectedDamage, damage);
     }
 }
