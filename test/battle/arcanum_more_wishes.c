@@ -699,8 +699,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish More Wishes encounter properties do not belong 
         EXPECT_EQ(GetBreakBarCount(0), 0);
         EXPECT_EQ(HasNoOrderChange(0), FALSE);
         EXPECT_EQ(TxRollbackCanRevive(B_SIDE_PLAYER, 0), TRUE);
-        EXPECT_EQ(gSpeciesInfo[SPECIES_TX_ROLLBACK].baseHP, gSpeciesInfo[SPECIES_JIRACHI].baseHP);
-        EXPECT_EQ(gSpeciesInfo[SPECIES_TX_ROLLBACK].abilities[0], ABILITY_SERENE_GRACE);
+        EXPECT_EQ(gSpeciesInfo[SPECIES_TX_ROLLBACK].baseHP, 125);
+        EXPECT_EQ(gSpeciesInfo[SPECIES_TX_ROLLBACK].abilities[0], ABILITY_WISHFUL_THINKING);
     }
 }
 

@@ -4160,6 +4160,7 @@ BattleScript_EffectWish::
 	trywish BattleScript_ButItFailed
 	attackanimation
 	waitanimation
+	call BattleScript_WishfulThinking
 	goto BattleScript_MoveEnd
 
 BattleScript_EffectIngrain::
@@ -9314,6 +9315,7 @@ BattleScript_TxRollbackBreakWish::
     trywish BattleScript_TxRollbackPhaseFailed
     playmoveanimation MOVE_WISH
     waitanimation
+    call BattleScript_WishfulThinking
     goto BattleScript_TxRollbackPhaseEnd
 
 BattleScript_TxRollbackBreakDoomDesire::
@@ -9346,6 +9348,7 @@ BattleScript_TxWishReversal::
     waitanimation
     printstring STRINGID_TX_WISH_REVERSAL
     waitmessage B_WAIT_TIME_LONG
+    call BattleScript_WishfulThinking
     goto BattleScript_MoveEnd
 
 BattleScript_TxWishReclamation::
@@ -9362,6 +9365,7 @@ BattleScript_TxWishReclamation::
 BattleScript_TxWishReclamationMessage:
     printstring STRINGID_TX_WISH_RECLAMATION
     waitmessage B_WAIT_TIME_LONG
+    call BattleScript_WishfulThinking
     goto BattleScript_MoveEnd
 
 BattleScript_TxWishCalamity::
@@ -9369,6 +9373,7 @@ BattleScript_TxWishCalamity::
     waitanimation
     printstring STRINGID_TX_WISH_CALAMITY
     waitmessage B_WAIT_TIME_LONG
+    call BattleScript_WishfulThinking
     goto BattleScript_MoveEnd
 
 BattleScript_TxWishRestoration::
@@ -9378,6 +9383,7 @@ BattleScript_TxWishRestoration::
     animatesavedbreakbar BS_SCRIPTING
     printstring STRINGID_TX_WISH_RESTORATION
     waitmessage B_WAIT_TIME_LONG
+    call BattleScript_WishfulThinking
     goto BattleScript_MoveEnd
 
 BattleScript_TxWishReciprocity::
@@ -9385,7 +9391,25 @@ BattleScript_TxWishReciprocity::
     waitanimation
     printstring STRINGID_TX_WISH_RECIPROCITY
     waitmessage B_WAIT_TIME_LONG
+    call BattleScript_WishfulThinking
     goto BattleScript_MoveEnd
+
+BattleScript_WishfulThinking::
+    BattleScript_WishfulThinking::
+    trywishfulthinking BattleScript_WishfulThinkingEnd, BattleScript_WishfulThinkingGrow
+    playanimation BS_ATTACKER, B_ANIM_WISH_HEAL
+    waitanimation
+    healthbarupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+    datahpupdate BS_ATTACKER, PASSIVE_HP_UPDATE
+    printstring STRINGID_PKMNREGAINEDHEALTH
+    waitmessage B_WAIT_TIME_LONG
+BattleScript_WishfulThinkingGrow:
+    playanimation BS_ATTACKER, B_ANIM_STATS_CHANGE, sB_ANIM_ARG1
+    waitanimation
+    printstring STRINGID_WISHFUL_THINKING_GROW
+    waitmessage B_WAIT_TIME_LONG
+BattleScript_WishfulThinkingEnd:
+    return
 
 BattleScript_TxReciprocityHeal::
     waitstate

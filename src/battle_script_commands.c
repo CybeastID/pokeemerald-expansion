@@ -7806,6 +7806,7 @@ static void Cmd_switchindataupdate(void)
         }
     }
 
+    WishfulThinkingReapplyGrowth(battler);
     gBattleMons[battler].types[0] = GetSpeciesType(gBattleMons[battler].species, 0);
     gBattleMons[battler].types[1] = GetSpeciesType(gBattleMons[battler].species, 1);
     gBattleMons[battler].types[2] = TYPE_MYSTERY;

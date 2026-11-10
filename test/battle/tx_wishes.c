@@ -363,7 +363,8 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reciprocity mirrors actual recovery proportiona
         HP_BAR(&gBattleMons[3], damage: -80);
         MESSAGE("Reciprocity restored TX Rollback's HP!");
     } THEN {
-        EXPECT_EQ(gBattleMons[3].hp, 180);
+        // Casting Reciprocity also triggers Wishful Thinking's 1/16 max-HP heal.
+        EXPECT_EQ(gBattleMons[3].hp, sSeedHp + 400 / 16 + 80);
         EXPECT_EQ(TxRollbackCanWishFor(3, TX_WISH_RECIPROCITY, 3), FALSE);
     }
 }
@@ -454,6 +455,47 @@ AI_SINGLE_BATTLE_TEST("TX Wishes original breaks schedule Wish and Reduction wit
     }
 }
 
+static u32 GrownByCount(u32 value, u32 count)
+{
+    while (count--)
+        value = (value * 11 + 5) / 10;
+    return value;
+}
+
+// The scripted first-break ordinary Wish (BattleScript_TxRollbackBreakWish) must trigger
+// Wishful Thinking exactly once; the second break (Doom Desire) is not a Wish and must not.
+AI_SINGLE_BATTLE_TEST("TX Wishes first-break Wish triggers Wishful Thinking once, Doom Desire does not")
+{
+    GIVEN {
+        AI_FLAGS(AI_FLAG_DYNAMIC_FUNC);
+        TxWishFixture(TX_WISH_NONE, SEED_NONE);
+        PLAYER(SPECIES_ARTICUNO) { Level(100); Speed(1000); Moves(MOVE_CELEBRATE, MOVE_SHEER_COLD); }
+        OPPONENT(SPECIES_CASTORIA) { Level(50); Speed(100); Moves(MOVE_CELEBRATE); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(1); HP(0); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_CELEBRATE); }
+        SUMMONED_OPPONENT();
+        TURN { MOVE(player, MOVE_SHEER_COLD, target: &gBattleMons[3]); }
+        // After the first break: Wish ran, so exactly one growth.
+    } THEN {
+        struct PartyState *state = GetBattlerPartyState(3);
+        u32 total = 0;
+        EXPECT_EQ(gBattleMons[3].ability, ABILITY_WISHFUL_THINKING);
+        for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
+            total += state->wishfulGrowth[stat];
+        EXPECT_EQ(total, 1);
+        EXPECT_EQ(gBattleMons[3].statStages[STAT_ATK], DEFAULT_STAT_STAGE);
+        EXPECT_EQ(gBattleMons[3].attack,    GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_ATK),   state->wishfulGrowth[STAT_ATK]));
+        EXPECT_EQ(gBattleMons[3].defense,   GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_DEF),   state->wishfulGrowth[STAT_DEF]));
+        EXPECT_EQ(gBattleMons[3].speed,     GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_SPEED), state->wishfulGrowth[STAT_SPEED]));
+        EXPECT_EQ(gBattleMons[3].spAttack,  GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_SPATK), state->wishfulGrowth[STAT_SPATK]));
+        EXPECT_EQ(gBattleMons[3].spDefense, GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_SPDEF), state->wishfulGrowth[STAT_SPDEF]));
+    }
+}
+
 AI_SINGLE_BATTLE_TEST("TX Wishes Calamity expires through normal faint and saved bar handling")
 {
     bool32 playerBar;
@@ -516,7 +558,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reciprocity excludes Pain Split and reserve hea
         MESSAGE("TX Rollback wished for Reciprocity!");
         NOT MESSAGE("Reciprocity restored TX Rollback's HP!");
     } THEN {
-        EXPECT_EQ(gBattleMons[3].hp, sSeedHp);
+        EXPECT_EQ(gBattleMons[3].hp, sSeedHp + 400 / 16);
     }
 }
 
@@ -568,7 +610,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reciprocity mirrors passive and ability recover
         TURN { MOVE(player, ability ? MOVE_RAIN_DANCE : MOVE_CELEBRATE); }
         TURN { MOVE(player, MOVE_CELEBRATE); }
     } THEN {
-        EXPECT_EQ(gBattleMons[3].hp, 148);
+        EXPECT_EQ(gBattleMons[3].hp, sSeedHp + 400 / 16 + 48);
     }
 }
 
@@ -590,7 +632,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reciprocity mirrors draining recovery using the
         TURN { MOVE(player, MOVE_GIGA_DRAIN, target: opponent); }
     } THEN {
         EXPECT_GT(player->hp, 1);
-        EXPECT_EQ(gBattleMons[3].hp, min(400, 100 + (player->hp - 1) * 4));
+        EXPECT_EQ(gBattleMons[3].hp, min(400, sSeedHp + 400 / 16 + (player->hp - 1) * 4));
     }
 }
 
@@ -615,7 +657,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reciprocity rounds small gains and caps healing
         TURN { MOVE(player, MOVE_CELEBRATE); }
         TURN { MOVE(player, MOVE_RECOVER); }
     } THEN {
-        EXPECT_EQ(gBattleMons[3].hp, cap ? 400 : 101);
+        EXPECT_EQ(gBattleMons[3].hp, cap ? 400 : sSeedHp + 400 / 16 + 1);
     }
 }
 

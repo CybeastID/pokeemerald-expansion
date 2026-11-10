@@ -2562,3 +2562,9 @@
     .byte \amount
     .endm
 
+    .macro trywishfulthinking endInstr:req, skipHealInstr:req
+    callnative BS_WishfulThinkingTry
+ @   .byte \first
+    .4byte \endInstr
+    .4byte \skipHealInstr
+    .endm

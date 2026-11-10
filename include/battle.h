@@ -663,6 +663,12 @@ struct PartyState
     u16 breakBarSavedHp[BREAK_BAR_MAX_EXTRA_BARS];
     u16 breakBarSavedMaxHp[BREAK_BAR_MAX_EXTRA_BARS];
     u8 breakBarFillPixels;
+    // Wishful Thinking: number of x1.10 raw-stat growths per stat (index = enum Stat; HP slot unused).
+    // Battle-only: never written to party data, never touches statStages.
+    // NOT literally unbounded: the count saturates at 255 and gBattleMons raw stats are u16, so a
+    // stat tops out at 65535. A 100-base stat reaches that after ~70 growths, so the count cap is
+    // never the binding limit; the u16 stat ceiling is.
+    u8 wishfulGrowth[NUM_STATS];
 };
 
 struct EventStates

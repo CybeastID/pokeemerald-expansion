@@ -40,7 +40,7 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
         gAiPartyData->mons[B_SIDE_OPPONENT][i].isFainted = TRUE;
     }
     ConjureKoankoTeam();
-    static const u16 species[] = {SPECIES_SMEARGLE, SPECIES_JIRACHI, SPECIES_CALYREX_ICE, SPECIES_ETERNATUS, SPECIES_DIALGA_ORIGIN, SPECIES_ARCEUS};
+    static const u16 species[] = {SPECIES_SMEARGLE, SPECIES_TX_ROLLBACK, SPECIES_CALYREX_ICE, SPECIES_ETERNATUS, SPECIES_DIALGA_ORIGIN, SPECIES_ARCEUS};
     for (u32 i = 0; i < PARTY_SIZE; i++)
     {
         EXPECT_EQ(GetMonData(&gEnemyParty[i], MON_DATA_SPECIES), species[i]);
@@ -101,7 +101,7 @@ SINGLE_BATTLE_TEST("Koanko conjures a second team and victory requires twelve ge
             MESSAGE("The opposing Wobbuffet fainted!");
         MESSAGE("You thought that was all?\nThen watch what I can create!{PAUSE_UNTIL_PRESS}");
         MESSAGE("The opposing Smeargle fainted!");
-        MESSAGE("The opposing Jirachi fainted!");
+        MESSAGE("The opposing TX Rollback fainted!");
         MESSAGE("The opposing Calyrex fainted!");
         MESSAGE("The opposing Eternatus fainted!");
         MESSAGE("The opposing Dialga fainted!");

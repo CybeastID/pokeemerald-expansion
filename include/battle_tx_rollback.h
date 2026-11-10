@@ -75,6 +75,7 @@ bool32 TxRollbackHasWishes(u32 battler);
 bool32 TxRollbackCanWishFor(u32 battler, u32 wish, u32 target);
 bool32 TxRollbackHasUsableWish(u32 battler);
 void BS_TxRollbackTryWish(void);
+void BS_WishfulThinkingTry(void);
 void BS_TxRollbackEndurance(void);
 void BS_TxRollbackBeginPhase(void);
 void BS_TxRollbackEndPhase(void);

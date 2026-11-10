@@ -5,6 +5,7 @@
 #include "battle_script_commands.h"
 #include "battle_scripts.h"
 #include "battle_util.h"
+#include "battle_anim.h"
 #include "pokemon.h"
 #include "random.h"
 #include "constants/battle_string_ids.h"
@@ -304,6 +305,37 @@ void BS_TxRollbackTryWish(void)
         data->reciprocity = TRUE;
         gBattlescriptCurrInstr = BattleScript_TxWishReciprocity;
         break;
+    }
+}
+
+// Wishful Thinking, called after a Wish has succeeded (never from delayed Wish recovery).
+// 1/16 of current in-battle max HP (ignores Heal Block, never repairs a Break Bar), then one
+// uniformly random non-HP raw stat grows by x1.10 with the ordinary stat-up animation.
+
+void BS_WishfulThinkingTry(void)
+{
+    NATIVE_ARGS(const u8 *endInstr, const u8 *noHealInstr);
+    u32 battler = gBattlerAttacker;
+
+    if (!IsBattlerAlive(battler) || GetBattlerAbility(battler) != ABILITY_WISHFUL_THINKING)
+    {
+        gBattlescriptCurrInstr = cmd->endInstr;
+        return;
+    }
+
+    enum Stat stat = RandomUniform(RNG_WISHFUL_THINKING, STAT_ATK, STAT_SPDEF);
+    WishfulThinkingGrowStat(battler, stat);
+    PREPARE_STAT_BUFFER(gBattleTextBuff1, stat);
+    gBattleScripting.animArg1 = STAT_ANIM_PLUS1 + stat;
+
+    if (gBattleMons[battler].hp < gBattleMons[battler].maxHP)
+    {
+        SetHealAmount(battler, max(1, gBattleMons[battler].maxHP / 16));
+        gBattlescriptCurrInstr = cmd->nextInstr;
+    }
+    else
+    {
+        gBattlescriptCurrInstr = cmd->noHealInstr;
     }
 }
 

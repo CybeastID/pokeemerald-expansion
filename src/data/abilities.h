@@ -2424,4 +2424,16 @@ const struct AbilityInfo gAbilitiesInfo[ABILITIES_COUNT] =
         .cantBeOverwritten = TRUE,
         .failsOnImposter = TRUE,
     },
+
+    [ABILITY_WISHFUL_THINKING] =
+    {
+        .name = _("Wishful Thinking"),
+        .description = COMPOUND_STRING("Wishes heal a bit\nand raise a stat."),
+        .aiRating = 6,
+        .cantBeCopied = TRUE,
+        .cantBeSwapped = TRUE,
+        .cantBeTraced = TRUE,
+        .cantBeOverwritten = TRUE,
+        .failsOnImposter = TRUE,
+    },
 };

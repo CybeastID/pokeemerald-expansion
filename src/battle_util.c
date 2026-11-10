@@ -10290,6 +10290,63 @@ static void SetRandomMultiHitCounter()
         gMultiHitCounter = RandomWeighted(RNG_HITS, 0, 0, 3, 3, 1, 1); // 37.5%: 2 hits, 37.5%: 3 hits, 12.5% 4 hits, 12.5% 5 hits.
 }
 
+// Wishful Thinking: each activation multiplies one raw battle stat by 1.10 (rounded).
+// Engine limit, not infinity: raw stats are u16 (ceiling 65535) and the per-stat growth count
+// saturates at 255. Re-applying a saturated count to a clamped stat still yields 65535, so the
+// two limits cannot disagree.
+// Growth is stored as a per-party-slot count so it survives switching and stat reloads.
+//
+// INVARIANT: WishfulThinkingReapplyGrowth() must only be called immediately after the raw stats
+// were overwritten from clean party data. Party data is never grown (growth is battle-only), so
+// every reload path rebuilds from clean values and reapplies exactly once. The sites are:
+//   - Cmd_switchindataupdate (whole BattlePokemon copied from the controller buffer)
+//   - CopyMonLevelAndBaseStatsToBattleMon (every stat assigned from the mon)
+// Not hooked, on purpose: DoBattleIntro (counts are 0 at battle start) and
+// Cmd_updatebattlermoves (copies moves/PP only).
+static u16 *GetBattlerRawStat(u32 battler, enum Stat stat)
+{
+    switch (stat)
+    {
+    case STAT_ATK:   return &gBattleMons[battler].attack;
+    case STAT_DEF:   return &gBattleMons[battler].defense;
+    case STAT_SPEED: return &gBattleMons[battler].speed;
+    case STAT_SPATK: return &gBattleMons[battler].spAttack;
+    case STAT_SPDEF: return &gBattleMons[battler].spDefense;
+    default:         return NULL;
+    }
+}
+
+static u16 WishfulThinkingGrow(u16 value)
+{
+    u32 grown = ((u32)value * 11 + 5) / 10;
+    return min(grown, (u32)0xFFFF);
+}
+
+void WishfulThinkingReapplyGrowth(u32 battler)
+{
+    struct PartyState *state = GetBattlerPartyState(battler);
+    for (enum Stat stat = STAT_ATK; stat < NUM_STATS; stat++)
+    {
+        u16 *raw = GetBattlerRawStat(battler, stat);
+        for (u32 i = 0; i < state->wishfulGrowth[stat]; i++)
+            *raw = WishfulThinkingGrow(*raw);
+    }
+}
+
+void WishfulThinkingGrowStat(u32 battler, enum Stat stat)
+{
+    struct PartyState *state = GetBattlerPartyState(battler);
+    u16 *raw = GetBattlerRawStat(battler, stat);
+    if (raw == NULL)
+        return;
+    // Canonical mutation so a Reduction overlay re-derives from the grown stat.
+    ReductionBeginMutation(battler);
+    *raw = WishfulThinkingGrow(*raw);
+    ReductionEndMutation(battler);
+    if (state->wishfulGrowth[stat] < 0xFF)
+        state->wishfulGrowth[stat]++;
+}
+
 void CopyMonLevelAndBaseStatsToBattleMon(u32 battler, struct Pokemon *mon)
 {
     gBattleMons[battler].level = GetMonData(mon, MON_DATA_LEVEL);
@@ -10300,6 +10357,7 @@ void CopyMonLevelAndBaseStatsToBattleMon(u32 battler, struct Pokemon *mon)
     gBattleMons[battler].speed = GetMonData(mon, MON_DATA_SPEED);
     gBattleMons[battler].spAttack = GetMonData(mon, MON_DATA_SPATK);
     gBattleMons[battler].spDefense = GetMonData(mon, MON_DATA_SPDEF);
+    WishfulThinkingReapplyGrowth(battler);
     ReductionOnStatsCopied(battler);
 }
 
