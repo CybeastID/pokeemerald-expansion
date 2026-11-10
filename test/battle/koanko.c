@@ -1,6 +1,7 @@
 #include "global.h"
 #include "test/battle.h"
 #include "battle_koanko.h"
+#include "battle_koanko_smeargle.h"
 #include "battle_setup.h"
 #include "data.h"
 #include "malloc.h"
@@ -227,23 +228,37 @@ SINGLE_BATTLE_TEST("Koanko conjures after Destiny Bond with a surviving player r
     }
 }
 
+static s32 ScoreKoankoLeadBoomburst(u32 battler, u16 move)
+{
+    return move == MOVE_BOOMBURST ? 100 : 0;
+}
+
 AI_SINGLE_BATTLE_TEST("Koanko AI sends the conjured lead and selects from its new moves")
 {
     gBattleTestRunnerState->data.recordedBattle.opponentA = TRAINER_KOANKO;
     GIVEN {
-        PLAYER(SPECIES_WOBBUFFET) { Speed(1000); Moves(MOVE_SEISMIC_TOSS, MOVE_CELEBRATE); }
+        Test_SetKoankoSmeargleScorer(ScoreKoankoLeadBoomburst);
+        PLAYER(SPECIES_WOBBUFFET) { SpDefense(9999); Speed(1000); Moves(MOVE_SEISMIC_TOSS, MOVE_CELEBRATE); }
         OPPONENT(SPECIES_WOBBUFFET) { HP(1); Speed(50); Moves(MOVE_SEISMIC_TOSS, MOVE_NIGHT_SHADE, MOVE_SPORE, MOVE_ENDEAVOR); }
     } WHEN {
         TURN { MOVE(player, MOVE_SEISMIC_TOSS); EXPECT_SEND_OUT(opponent, 0); }
-        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVES(opponent, MOVE_SEISMIC_TOSS, MOVE_NIGHT_SHADE, MOVE_SPORE, MOVE_ENDEAVOR); }
+        // The replacement changes slot 0 at runtime. A named move expectation
+        // would try to add Tackle to the original, already full fixture moveset.
+        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(opponent, moveSlot: 0); }
     } SCENE {
         MESSAGE("You thought that was all?\nThen watch what I can create!{PAUSE_UNTIL_PRESS}");
+        MESSAGE("The opposing Smeargle used Boomburst!");
     } THEN {
         EXPECT_EQ(opponent->species, SPECIES_SMEARGLE);
         EXPECT_EQ(gAiPartyData->count[B_SIDE_OPPONENT], PARTY_SIZE);
         // The living conjured occupant cannot be moved out of sequence, and the AI now follows party order.
         EXPECT(HasNoOrderChange(B_POSITION_OPPONENT_LEFT));
         EXPECT(gAiThinkingStruct->aiFlags[B_POSITION_OPPONENT_LEFT] & AI_FLAG_SEQUENCE_SWITCHING);
+        EXPECT_EQ(opponent->moves[0], MOVE_BOOMBURST);
+        EXPECT_EQ(opponent->moves[1], MOVE_NONE);
+        EXPECT_EQ(opponent->moves[2], MOVE_NONE);
+        EXPECT_EQ(opponent->moves[3], MOVE_NONE);
+        Test_SetKoankoSmeargleScorer(NULL);
     }
 }
 

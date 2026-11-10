@@ -5,12 +5,12 @@ static const struct TrainerMon sKoankoConjuredParty[] =
         .species = SPECIES_SMEARGLE,
         .gender = TRAINER_MON_RANDOM_GENDER,
         .heldItem = ITEM_FOCUS_SASH,
-        .ev = TRAINER_PARTY_EVS(252, 0, 0, 252, 0, 4),
+        .ev = TRAINER_PARTY_EVS(0, 252, 0, 4, 252, 0),
         .iv = TRAINER_PARTY_IVS(31, 31, 31, 31, 31, 31),
         .ability = ABILITY_OWN_TEMPO,
         .lvl = 100,
-        .nature = NATURE_TIMID,
         .dynamaxLevel = MAX_DYNAMAX_LEVEL,
+        .nature = NATURE_HASTY,
         // Slot 0 is the only real move; Any Move overwrites it each action. Placeholder until then.
         .moves = {
             MOVE_SEISMIC_TOSS,

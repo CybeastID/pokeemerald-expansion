@@ -5,12 +5,16 @@
 #include "castoria_name_theft.h"
 #include "battle_anim.h"
 #include "battle_ai_util.h"
+#include "battle_koanko_smeargle.h"
+#include "battle_koanko.h"
+#include "battle_koanko_smeargle_diagnostics.h"
 #include "battle_ai_main.h"
 #include "battle_script_commands.h"
 #include "battle_controllers.h"
 #include "battle_factory.h"
 #include "battle_setup.h"
 #include "battle_z_move.h"
+#include "battle_dynamax.h"
 #include "battle_terastal.h"
 #include "data.h"
 #include "debug.h"
@@ -235,6 +239,10 @@ static u64 GetAiFlags(u16 trainerId, u32 battler)
 
 void BattleAI_SetupFlags(void)
 {
+    // Encounter-owned registration also covers Koanko's original six. Explicit
+    // script/test callbacks retain precedence; normal cleanup clears the hook.
+    if (sDynamicAiFunc == NULL)
+        KoankoSetupTrainerAi();
     if (IsAiVsAiBattle())
         gAiThinkingStruct->aiFlags[B_POSITION_PLAYER_LEFT] = GetAiFlags(gPartnerTrainerId, B_POSITION_PLAYER_LEFT);
     else
@@ -411,8 +419,18 @@ static u32 ChooseMoveOrAction(u32 battler)
 u32 BattleAI_ChooseMoveIndex(u32 battler)
 {
     u32 chosenMoveIndex;
+    u64 savedAiFlags = gAiThinkingStruct->aiFlags[battler];
 
     SetAIUsingGimmick(battler, USE_GIMMICK);
+
+    // Koanko's conjured Smeargle only: CHECK_VIABILITY on, and Any Move sampled on a fresh choice.
+    // Flags are per battler position, so they are restored below for the other Koanko Pokemon.
+    if (KoankoSmeargleAnyMoveActive(battler))
+    {
+        gAiThinkingStruct->aiFlags[battler] |= AI_FLAG_CHECK_VIABILITY;
+        if (KoankoSmeargleIsFreshChoice(battler))
+            KoankoSmeargleChooseAnyMove(battler);
+    }
 
     if (gBattleStruct->gimmick.usableGimmick[battler] == GIMMICK_TERA && (gAiThinkingStruct->aiFlags[battler] & AI_FLAG_SMART_TERA))
         DecideTerastal(battler);
@@ -429,6 +447,7 @@ u32 BattleAI_ChooseMoveIndex(u32 battler)
     TestRunner_Battle_CheckAiMoveScores(battler);
     #endif // TESTING
 
+    gAiThinkingStruct->aiFlags[battler] = savedAiFlags;
     return chosenMoveIndex;
 }
 
@@ -823,16 +842,12 @@ static u32 ChooseArcanumForTarget(u32 battler, u32 opposingBattler, s32 normalSc
     return MAX_MON_MOVES + CASTORIA_ARCANUM_COUNT;
 }
 
-static u32 ChooseMoveOrAction_Singles(u32 battler)
+// Shared by ordinary singles selection and Koanko's hypothetical slot-0 candidates.
+// Keep the enabled passes and damage comparison in one place when updating upstream AI.
+static void ScoreMoves_Singles(u32 battler)
 {
-    u8 currentMoveArray[MAX_MON_MOVES];
-    u8 consideredMoveArray[MAX_MON_MOVES];
-    u32 numOfBestMoves;
-    s32 i;
     u64 flags = gAiThinkingStruct->aiFlags[battler];
     u32 opposingBattler = GetOppositeBattler(battler);
-
-    ClearWishSelection(battler);
 
     gAiThinkingStruct->aiLogicId = 0;
     gAiThinkingStruct->movesetIndex = 0;
@@ -1204,6 +1219,9 @@ static s32 AI_CheckBadMove(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
     enum Ability abilityAtk = aiData->abilities[battlerAtk];
     enum Ability abilityDef = aiData->abilities[battlerDef];
     s32 atkPriority = GetBattleMovePriority(battlerAtk, abilityAtk, move);
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagPriority(battlerAtk, atkPriority);
+#endif
 
     SetTypeBeforeUsingMove(move, battlerAtk);
     moveType = GetBattleMoveType(move);
@@ -4175,6 +4193,54 @@ static void AI_CompareDamagingMoves(u32 battlerAtk, u32 battlerDef)
     }
 }
 
+// Koanko's conjured Smeargle ("Any Move"): place one hypothetical move in real slot 0 and refresh
+// everything the ordinary AI reads for that slot. Slots 1-3 stay MOVE_NONE.
+void BattleAI_PrepareSlot0Move(u32 battler, u16 move)
+{
+    u32 pp = GetMovePP(move);
+
+    gBattleMons[battler].moves[0] = move;
+    gBattleMons[battler].pp[0] = pp != 0 ? pp : 1; // PP is exempt for this Pokemon; just keep the slot usable
+    gAiLogicData->moveLimitations[battler] = CheckMoveLimitations(battler, 0, MOVE_LIMITATIONS_ALL);
+
+    // CalcBattlerAiMovesData skips unusable slots, so clear slot 0 first to avoid stale values.
+    for (u32 battlerDef = 0; battlerDef < gBattlersCount; battlerDef++)
+    {
+        gAiLogicData->simulatedDmg[battler][battlerDef][0] = (struct SimulatedDamage){0};
+        gAiLogicData->effectiveness[battler][battlerDef][0] = Q_4_12(0.0);
+        gAiLogicData->moveAccuracy[battler][battlerDef][0] = 0;
+    }
+    SetBattlerAiMovesData(gAiLogicData, battler, gBattlersCount, AI_GetWeather());
+}
+
+// Scores the move in slot 0 through the same flag passes as ChooseMoveOrAction_Singles
+// (including the CHECK_VIABILITY comparison when the flag is set for this battler).
+// Singles only. Returns the final slot-0 score; a score <= 0 means "not acceptable".
+s32 BattleAI_ScoreSlot0Candidate(u32 battler, u16 move)
+{
+    struct ProtectStruct savedProtect[MAX_BATTLERS_COUNT];
+    s32 score;
+
+    // Priority/damage evaluation can set scratch flags (e.g. pranksterElevated).
+    // A rejected candidate must not change the next candidate's starting state.
+    memcpy(savedProtect, gProtectStructs, sizeof(savedProtect));
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagCandidateBegin(battler, move);
+#endif
+    BattleAI_PrepareSlot0Move(battler, move);
+    BattleAI_SetupAIData(0x1, battler);
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagPrepared(battler, move);
+#endif
+    ScoreMoves_Singles(battler);
+    score = gAiThinkingStruct->score[0];
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagCandidateEnd(battler, score);
+#endif
+    memcpy(gProtectStructs, savedProtect, sizeof(savedProtect));
+    return score;
+}
+
 static s32 AI_CalcHoldEffectMoveScore(u32 battlerAtk, u32 battlerDef, u32 move, struct AiLogicData *aiData)
 {
     enum HoldEffect holdEffect = aiData->holdEffects[battlerAtk];
@@ -6161,9 +6227,34 @@ static s32 AI_CheckViability(u32 battlerAtk, u32 battlerDef, u32 move, s32 score
         }
     }
 
+    // Keep real slots and cached base-move damage, but value the effects that
+    // execution will actually use. In particular Recover becomes Max Guard,
+    // and Dazzling Gleam becomes G-Max Finale rather than a bare Fairy hit.
+    if (GetActiveGimmick(battlerAtk) == GIMMICK_DYNAMAX
+     || (IsAIUsingGimmick(battlerAtk) && gBattleStruct->gimmick.usableGimmick[battlerAtk] == GIMMICK_DYNAMAX))
+    {
+        enum Type savedType = gBattleStruct->dynamicMoveType;
+        move = GetMaxMove(battlerAtk, move);
+        gBattleStruct->dynamicMoveType = savedType;
+    }
+
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    s32 scoreBeforePart = score;
+#endif
     ADJUST_SCORE(AI_CalcMoveEffectScore(battlerAtk, battlerDef, move, aiData));
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagViability(battlerAtk, 0, scoreBeforePart, score);
+    scoreBeforePart = score;
+#endif
     ADJUST_SCORE(AI_CalcAdditionalEffectScore(battlerAtk, battlerDef, move, aiData));
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagViability(battlerAtk, 1, scoreBeforePart, score);
+    scoreBeforePart = score;
+#endif
     ADJUST_SCORE(AI_CalcHoldEffectMoveScore(battlerAtk, battlerDef, move, aiData));
+#if KOANKO_SMEARGLE_DIAGNOSTICS
+    KoankoSmeargleDiagViability(battlerAtk, 2, scoreBeforePart, score);
+#endif
 
     return score;
 }

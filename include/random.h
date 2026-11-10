@@ -227,6 +227,8 @@ enum RandomTag
     RNG_FISHING_GEN3_STICKY,
     RNG_TRASH_CRUSH_OHKO,
     RNG_POLYMORPH,
+    RNG_KOANKO_SMEARGLE_DRAW,
+    RNG_KOANKO_SMEARGLE_TIE,
 };
 
 #define RandomWeighted(tag, ...) \

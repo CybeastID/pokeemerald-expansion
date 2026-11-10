@@ -77,6 +77,7 @@
 #include "castoria_name_theft.h"
 #include "battle_break_bar.h"
 #include "battle_koanko.h"
+#include "battle_koanko_smeargle.h"
 #include "gba/isagbprint.h"
 #include "constants/flags.h"
 
@@ -12051,6 +12052,7 @@ static void Cmd_trysetencore(void)
      || gLastMoves[gBattlerTarget] == MOVE_UNAVAILABLE
      || gBattleMons[gBattlerTarget].pp[i] == 0
      || gDisableStructs[gBattlerTarget].encoredMove != MOVE_NONE
+     || KoankoSmeargleAnyMoveActive(gBattlerTarget)
      || GetMoveEffect(gChosenMoveByBattler[gBattlerTarget]) == EFFECT_SHELL_TRAP)
     {
         gBattlescriptCurrInstr = cmd->failInstr;

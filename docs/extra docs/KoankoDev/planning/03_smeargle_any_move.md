@@ -1,6 +1,8 @@
 # Stage 03 — Smeargle Any Move through the ordinary AI pipeline
 
-Status: **fully planned**, implementation pending. Snapshot: `mypatch`, 2026-11-09.
+Status: **integrated, uncompiled and untested**, `mypatch`, 2026-11-10. The design below
+is the original plan; current implementation, deviations, audit and validation commands
+are in [the Stage 03 integration note](../PROGRESS_stage03_smeargle_2026-11-10.md).
 
 ## 1. Objective and scope
 

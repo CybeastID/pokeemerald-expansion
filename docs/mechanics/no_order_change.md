@@ -7,12 +7,35 @@ Arcanum Wish for Debilitation applies it alongside six nonvolatile ailments.
 
 ## Indicator
 
-The FGO Order Change Seal icon appears below the affected Pokemon's healthbox,
+The FGO Order Change Seal icon appears beside the affected Pokemon's healthbox,
 independently of the ordinary ailment badge. It follows the panel's movement and
 visibility in singles and doubles. Status cures and bar breaks leave it visible;
-clearing No Order Change removes the sprite. Its trailing-corner placement is
-staggered to clear the next healthbox in doubles. Healthbox reconstruction after menus
+clearing No Order Change removes the sprite. It is vertically centered beside the
+panel: on the left for players and the right for opponents, in singles and doubles.
+Healthbox reconstruction after menus
 recreates it from battle state, and battle cleanup frees its tiles and palette.
+
+`src/battle_status_icons.c` owns placement in its No Order Change table entry:
+player X -32, opponent X +72 and Y -2 relative to the healthbox origin. The taller
+singles player panel adds 6 to Y; `GetBattlerCoordsIndex` selects the actual panel
+layout, including a singles-style panel in a 2-vs-1 battle. Shared x2/y2 tracking
+preserves healthbox slides and shaking. The placement update changes no condition
+state, initialization, lifetime or cleanup, and adds no upstream engine hooks.
+
+Placement update validation (2026-11-10): the user reports both focused suites below
+pass. No agent build/test was run; in-game visual confirmation is pending.
+Updated existing doubles geometry assertions
+cover side placement, vertical alignment, screen bounds and adjacent-panel clearance.
+Keep `src/battle_status_icons.c` and `test/battle/battle_status_icons.c` stable during
+validation. From WSL at the repository root:
+
+```sh
+make check -j4 TESTS='Battle status icons'
+make check -j4 TESTS='Arcanum No Order Change indicator'
+```
+
+Also visually check both sides in singles/doubles and after returning from a menu;
+automated geometry checks do not establish the final pixel appearance.
 
 The user supplied `bufficon_554.png`; the original is retained as
 `graphics/battle_interface/no_order_change_source.png`. The game uses the reduced

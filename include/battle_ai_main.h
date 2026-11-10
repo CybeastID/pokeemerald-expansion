@@ -127,6 +127,8 @@ void BattleAI_SetupFlags(void);
 void BattleAI_SetupAIData(u8 defaultScoreMoves, u32 battler);
 void ComputeBattlerDecisions(u32 battler);
 u32 BattleAI_ChooseMoveIndex(u32 battler);
+void BattleAI_PrepareSlot0Move(u32 battler, u16 move);
+s32 BattleAI_ScoreSlot0Candidate(u32 battler, u16 move);
 void Ai_InitPartyStruct(void);
 void Ai_UpdateSwitchInData(u32 battler);
 void Ai_UpdateFaintData(u32 battler);

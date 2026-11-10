@@ -60,6 +60,7 @@ struct BattleStatusIconInfo
     s16 playerX;
     s16 opponentX;
     s16 y;
+    s16 playerSinglesYAdjust;
     u16 duration;
     u8 flashInterval;
     bool8 singlesOnly;
@@ -109,9 +110,10 @@ static const struct BattleStatusIconInfo sIcons[BATTLE_STATUS_ICON_COUNT] =
         .template = ICON_TEMPLATE(TAG_BATTLE_STATUS_NO_ORDER_CHANGE, TAG_BATTLE_STATUS_NO_ORDER_CHANGE, &sOam16x16),
         .palette = &sNoOrderChangePalette,
         .isActive = HasNoOrderChange,
-        // Below the trailing corner. The horizontal stagger clears the next
-        // healthbox in doubles instead of placing a badge above its name/HP.
-        .playerX = -32, .opponentX = 96, .y = 24,
+        // Beside the visible panel: left for players, right for opponents.
+        // The taller singles player panel has a lower visual center.
+        .playerX = -32, .opponentX = 72, .y = -2,
+        .playerSinglesYAdjust = 6,
     },
 };
 
@@ -159,6 +161,8 @@ static void UpdateIconPosition(struct Sprite *sprite)
 
     sprite->x = gSprites[healthbox].x + (IsOnPlayerSide(battler) ? info->playerX : info->opponentX);
     sprite->y = gSprites[healthbox].y + info->y;
+    if (IsOnPlayerSide(battler) && GetBattlerCoordsIndex(battler) == BATTLE_COORDS_SINGLES)
+        sprite->y += info->playerSinglesYAdjust;
     sprite->x2 = gSprites[healthbox].x2;
     sprite->y2 = gSprites[healthbox].y2;
     sprite->invisible = gSprites[healthbox].invisible

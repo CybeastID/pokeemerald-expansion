@@ -159,7 +159,12 @@ Debug_EventScript_Script_2::
 	end
 
 Debug_EventScript_Script_3::
-	release
+	lockall
+	getpartysize
+	goto_if_eq VAR_RESULT, 0, Debug_NoPokemon
+	setdynamicaifunc AI_KoankoTrainer
+	callnative Script_StartKoankoSmeargleDebugBattle, TRUE
+	releaseall
 	end
 
 Debug_EventScript_Script_4::

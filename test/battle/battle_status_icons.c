@@ -174,7 +174,7 @@ SINGLE_BATTLE_TEST("Battle status icons do not destroy unrelated sprites that re
     }
 }
 
-DOUBLE_BATTLE_TEST("Battle status icons place No Order Change below each panel without clipping or overlapping the next panel")
+DOUBLE_BATTLE_TEST("Battle status icons place No Order Change beside each panel without clipping or overlapping the next panel")
 {
     GIVEN {
         PLAYER(SPECIES_WOBBUFFET);
@@ -193,16 +193,22 @@ DOUBLE_BATTLE_TEST("Battle status icons place No Order Change below each panel w
                 continue;
             struct Sprite *icon = &gSprites[iconId];
             struct Sprite *panel = &gSprites[gHealthboxSpriteIds[battler]];
-            EXPECT_GE(icon->y - 8, panel->y + 16);
+            // The complete badge fits the panel's vertical band, beside its art.
+            EXPECT_GE(icon->y - 8, panel->y - 16);
+            EXPECT_LE(icon->y + 8, panel->y + 16);
+            if (IsOnPlayerSide(battler))
+                EXPECT_LE(icon->x + 8, panel->x - 24);
+            else
+                EXPECT_GE(icon->x - 8, panel->x + 64);
             EXPECT_GE(icon->x - 8, 0);
             EXPECT_LE(icon->x + 8, DISPLAY_WIDTH);
             EXPECT_LE(icon->y + 8, DISPLAY_HEIGHT);
         }
         struct Sprite *upperPlayer = &gSprites[Test_GetBattleStatusIconSpriteId(B_POSITION_PLAYER_LEFT, BATTLE_STATUS_ICON_NO_ORDER_CHANGE)];
         struct Sprite *lowerPlayerPanel = &gSprites[gHealthboxSpriteIds[B_POSITION_PLAYER_RIGHT]];
-        EXPECT_LE(upperPlayer->x + 8, lowerPlayerPanel->x - 32);
+        EXPECT_LE(upperPlayer->y + 8, lowerPlayerPanel->y - 16);
         struct Sprite *upperOpponent = &gSprites[Test_GetBattleStatusIconSpriteId(B_POSITION_OPPONENT_LEFT, BATTLE_STATUS_ICON_NO_ORDER_CHANGE)];
         struct Sprite *lowerOpponentPanel = &gSprites[gHealthboxSpriteIds[B_POSITION_OPPONENT_RIGHT]];
-        EXPECT_GE(upperOpponent->x - 8, lowerOpponentPanel->x + 96);
+        EXPECT_LE(upperOpponent->y + 8, lowerOpponentPanel->y - 16);
     }
 }

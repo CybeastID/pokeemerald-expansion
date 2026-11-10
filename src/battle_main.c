@@ -2047,6 +2047,8 @@ static u8 CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum, bool8 fir
 {
     u8 retVal;
     const struct TrainerBreakBarRules *rules = Script_TakeTrainerBreakBarOverride(trainerNum);
+    if (KoankoTryCreateDebugSmeargleParty(party, trainerNum, firstTrainer))
+        return 1;
     if (rules == NULL && trainerNum < TRAINERS_COUNT)
         rules = GetTrainerBreakBarRules(trainerNum, GetTrainerDifficultyLevel(trainerNum));
     if (trainerNum == TRAINER_SECRET_BASE)

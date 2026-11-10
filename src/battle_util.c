@@ -55,6 +55,7 @@
 #include "constants/pokemon.h"
 #include "kazuradrop_battle_ui.h"
 #include "castoria_name_theft.h"
+#include "battle_koanko_smeargle.h"
 #include "battle_break_bar.h"
 #include "trainer_break_bars.h"
 
@@ -2509,6 +2510,7 @@ static enum MoveCanceler CancelerChoiceLock(struct BattleContext *ctx)
     enum HoldEffect holdEffect = GetBattlerHoldEffect(ctx->battlerAtk);
 
     if (gChosenMove != MOVE_STRUGGLE
+     && !KoankoSmeargleAnyMoveActive(ctx->battlerAtk)
      && (*choicedMoveAtk == MOVE_NONE || *choicedMoveAtk == MOVE_UNAVAILABLE)
      && (IsHoldEffectChoice(holdEffect) || ctx->abilities[ctx->battlerAtk] == ABILITY_GORILLA_TACTICS))
         *choicedMoveAtk = gChosenMove;
@@ -2664,7 +2666,8 @@ static enum MoveCanceler CancelerPPDeduction(struct BattleContext *ctx)
      && (ctx->currentMove != gLastResultingMoves[ctx->battlerAtk] || WasUnableToUseMove(ctx->battlerAtk)))
         gBattleStruct->metronomeItemCounter[ctx->battlerAtk] = 0;
 
-    if (movePosition < MAX_MON_MOVES)   // Arcanum slots (4+) cost MP, not PP
+    // Koanko's conjured Smeargle never spends PP (this also skips Pressure).
+    if (movePosition < MAX_MON_MOVES && !KoankoSmeargleAnyMoveActive(ctx->battlerAtk))   // Arcanum slots (4+) cost MP, not PP
     {
         if (gBattleMons[ctx->battlerAtk].pp[movePosition] > ppToDeduct)
             gBattleMons[ctx->battlerAtk].pp[movePosition] -= ppToDeduct;

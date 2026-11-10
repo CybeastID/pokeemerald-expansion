@@ -8,11 +8,17 @@
 #include "battle_scripts.h"
 #include "battle_setup.h"
 #include "data.h"
+#include "debug.h"
+#include "main.h"
+#include "overworld.h"
 #include "pokemon.h"
+#include "script.h"
 #include "test_runner.h"
 #include "trainer_break_bars.h"
+#include "trainer_see.h"
 #include "constants/abilities.h"
 #include "constants/battle_ai.h"
+#include "constants/battle_setup.h"
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/trainers.h"
@@ -20,6 +26,70 @@
 #include "data/koanko_party.h"
 
 static const u8 sKoankoConjuringMessage[] = _("You thought that was all?\nThen watch what I can create!{PAUSE_UNTIL_PRESS}");
+static const u8 sDebugSmeargleDefeatText[] = _("That concludes the\nSmeargle demonstration!");
+static EWRAM_DATA bool8 sDebugSmeargleBattlePending = FALSE;
+
+static void CB2_EndKoankoSmeargleDebugBattle(void)
+{
+    sDebugSmeargleBattlePending = FALSE;
+    // This singles encounter did not back up a follower party. Avoid the normal
+    // trainer callback's follower restore and permanent trainer-defeated flags.
+    SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
+}
+
+// Debug Menu -> Scripts -> Script 3. Use the normal trainer identity/AI, but
+// the debug battle launcher fixes the format to singles even with a follower.
+void Script_StartKoankoSmeargleDebugBattle(struct ScriptContext *ctx)
+{
+    Script_RequestEffects(SCREFF_V1 | SCREFF_ANY);
+    memset(&gTrainerBattleParameter, 0, sizeof(gTrainerBattleParameter));
+    TRAINER_BATTLE_PARAM.mode = TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT;
+    TRAINER_BATTLE_PARAM.opponentA = TRAINER_KOANKO;
+    TRAINER_BATTLE_PARAM.defeatTextA = (u8 *)sDebugSmeargleDefeatText;
+    gNoOfApproachingTrainers = 0;
+    gBattleTypeFlags = BATTLE_TYPE_TRAINER;
+    // TRUE would skip normal party initialization and substitute gDebugAIFlags.
+    gIsDebugBattle = FALSE;
+    sDebugSmeargleBattlePending = TRUE;
+    BattleSetup_StartTrainerBattle_Debug();
+    gMain.savedCallback = CB2_EndKoankoSmeargleDebugBattle;
+}
+
+// Called after battle resources and normal trainer AI flags are initialized,
+// before the opening controller requests copy party slot 0 into gBattleMons.
+
+static void BuffKoankoSmeargle(struct Pokemon *party)
+{
+    // Effective base 120 Attack and Sp. Atk.
+    // Level 100, 31 IVs, 252 EVs, Hasty nature.
+    u32 attack = 339;
+    u32 spAttack = 339;
+
+    SetMonData(&party[0], MON_DATA_ATK, &attack);
+    SetMonData(&party[0], MON_DATA_SPATK, &spAttack);
+}
+
+bool32 KoankoTryCreateDebugSmeargleParty(struct Pokemon *party, u16 trainerNum, bool32 firstTrainer)
+{
+    if (!sDebugSmeargleBattlePending)
+        return FALSE;
+    sDebugSmeargleBattlePending = FALSE;
+    if (party != gEnemyParty || !firstTrainer || trainerNum != TRAINER_KOANKO
+     || gBattleTypeFlags != BATTLE_TYPE_TRAINER || gBattleStruct == NULL)
+        return FALSE;
+
+    struct Trainer trainer = *GetTrainerStructFromId(TRAINER_KOANKO);
+    trainer.party = sKoankoConjuredParty;
+    trainer.partySize = 1; // Only the real conjured Smeargle, in its owned slot 0.
+    trainer.poolSize = 0;
+    trainer.overrideTrainer = TRAINER_NONE;
+    CreateNPCTrainerPartyWithBreakBars(party, &trainer, TRUE, gBattleTypeFlags, &gKoankoConjuredBreakBars);
+    BuffKoankoSmeargle(party);
+    gBattleStruct->koankoPhase = KOANKO_CONJURED_TEAM;
+    gBattleStruct->battlerState[B_POSITION_OPPONENT_LEFT].noOrderChange = TRUE;
+    gAiThinkingStruct->aiFlags[B_POSITION_OPPONENT_LEFT] |= AI_FLAG_SEQUENCE_SWITCHING;
+    return TRUE;
+}
 
 bool32 TryStartKoankoConjuring(const u8 *returnInstr)
 {
@@ -72,7 +142,8 @@ void ConjureKoankoTeam(void)
     // flags are untouched (this runs only at the one-time transition). Guarded because the unit
     // test drives this function without an AI thinking struct.
     if (gAiThinkingStruct != NULL)
-        gAiThinkingStruct->aiFlags[B_POSITION_OPPONENT_LEFT] |= AI_FLAG_SEQUENCE_SWITCHING;
+        gAiThinkingStruct->aiFlags[B_POSITION_OPPONENT_LEFT] |= AI_FLAG_SEQUENCE_SWITCHING | AI_FLAG_DYNAMIC_FUNC;
+    SetDynamicAiFunc(AI_KoankoTrainer);
 
     struct Trainer trainer = *GetTrainerStructFromId(TRAINER_KOANKO);
     trainer.party = sKoankoConjuredParty;
@@ -80,6 +151,7 @@ void ConjureKoankoTeam(void)
     trainer.poolSize = 0;
     trainer.overrideTrainer = TRAINER_NONE;
     CreateNPCTrainerPartyWithBreakBars(gEnemyParty, &trainer, TRUE, BATTLE_TYPE_TRAINER, &gKoankoConjuredBreakBars);
+    BuffKoankoSmeargle(gEnemyParty);
     for (u32 slot = 0; slot < PARTY_SIZE; slot++)
     {
         TryFormChange(slot, B_SIDE_OPPONENT, FORM_CHANGE_BEGIN_BATTLE);
