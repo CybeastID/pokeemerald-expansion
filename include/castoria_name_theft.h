@@ -97,6 +97,15 @@ struct PolymorphBackup
     u32 exp;
 };
 const struct PolymorphBackup *Test_GetPolymorphBackup(u32 side, u32 partyIndex);
+u32 PolymorphPickBestSample(const u32 *scores, u32 count);
+struct PolymorphSelectionDebug
+{
+    u16 sampleCount; // scored samples that fit the hardware band; 0 means the random fallback ran
+    u16 bestSampled; // species of the best-scoring sample (SPECIES_NONE when there were none)
+    u16 chosen;      // species actually returned
+};
+const struct PolymorphSelectionDebug *Test_GetPolymorphSelectionDebug(void);
+void Test_SetPolymorphDrawSpecies(const u16 *species, u32 count); // NULL/0 restores random draws
 #endif
 
 // Returns the move ID for any logical slot (0-3 normal, 4-7 arcanum).

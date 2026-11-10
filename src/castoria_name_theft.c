@@ -1178,16 +1178,43 @@ struct PolymorphCandidate
     u16 score;
 };
 
+// Index of the best-scoring sample. Strict ">" keeps the earliest sample on a tie; samples are stored
+// in random draw order, so that is a uniform pick among equal best scores. Caller guarantees count > 0.
+u32 PolymorphPickBestSample(const u32 *scores, u32 count)
+{
+    u32 bestIdx = 0;
+    for (u32 i = 1; i < count; i++)
+        if (scores[i] > scores[bestIdx])
+            bestIdx = i;
+    return bestIdx;
+}
+
+#if TESTING
+static struct PolymorphSelectionDebug sPolymorphSelectionDebug;
+const struct PolymorphSelectionDebug *Test_GetPolymorphSelectionDebug(void)
+{
+    return &sPolymorphSelectionDebug;
+}
+
+// Under the battle test runner an untagged RandomUniformExcept always returns the same value (the
+// highest non-rejected id), so 600 draws are 600 copies of one species. Tests inject the species
+// the sampler "draws" instead; the caller must supply legal, in-band species.
+static const u16 *sTestDrawSpecies;
+static u32 sTestDrawCount;
+void Test_SetPolymorphDrawSpecies(const u16 *species, u32 count)
+{
+    sTestDrawSpecies = species;
+    sTestDrawCount = count;
+}
+#endif
+
 u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMoveBudget)
 {
-    struct PolymorphCandidate top[POLYMORPH_TOP_CANDIDATES];
-
     u32 currentThreat = CalculateMonTotalThreat(playerMon);
     u32 targetThreat = (currentThreat > POLYMORPH_PENALTY) ? (currentThreat - POLYMORPH_PENALTY) : 100;
     u32 minHardwareBudget = (targetThreat * 40) / 100;
     u32 maxHardwareBudget = (targetThreat * 65) / 100;
-    u32 topCount = 0;
-    u32 i, hardware;
+    u32 hardware;
     u16 chosen;
     u16 score;
 
@@ -1203,7 +1230,13 @@ u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMo
     while (sampleCount < 60 && attempts < 600)
     {
         attempts++;
-        u16 testSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
+        u16 testSpecies;
+#if TESTING
+        if (sTestDrawSpecies != NULL && sTestDrawCount != 0)
+            testSpecies = sTestDrawSpecies[(attempts - 1) % sTestDrawCount];
+        else
+#endif
+        testSpecies = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
         hardware = EvaluateSpeciesHardware(testSpecies);
 
         if (hardware < minHardwareBudget || hardware > maxHardwareBudget)
@@ -1222,13 +1255,9 @@ u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMo
     }
     else
     {
-        // Pick the best-scoring sample
-        u32 bestIdx = 0;
-        for (i = 1; i < sampleCount; i++)
-        {
-            if (sampleScores[i] > sampleScores[bestIdx])
-                bestIdx = i;
-        }
+        // Pick the best-scoring sample. This result is final: it used to be overwritten below by an
+        // unconditional random fallback, so the cruelty score never influenced the species.
+        u32 bestIdx = PolymorphPickBestSample(sampleScores, sampleCount);
         chosen = samples[bestIdx];
 #if TESTING
         DebugPrintf("POLY chosen=%u (%s) hw=%u cruelty=%u samples=%u attempts=%u",
@@ -1236,14 +1265,12 @@ u16 CastoriaSelectPolymorphTargetAndBudget(struct Pokemon *playerMon, u32 *outMo
 #endif
     }
 
-    if (topCount == 0) // nothing fit the band: any legal species
-        chosen = RandomUniformExcept(RNG_POLYMORPH, SPECIES_NONE + 1, NUM_SPECIES, ShouldRejectPolymorphSpecies);
-    else
-        chosen = top[RandomUniform(RNG_POLYMORPH, 0, topCount - 1)].species;
-
     hardware = EvaluateSpeciesHardware(chosen);
     *outMoveBudget = (targetThreat > hardware) ? (targetThreat - hardware) : 150;
 #if TESTING
+    sPolymorphSelectionDebug.sampleCount = sampleCount;
+    sPolymorphSelectionDebug.chosen = chosen;
+    sPolymorphSelectionDebug.bestSampled = sampleCount != 0 ? samples[PolymorphPickBestSample(sampleScores, sampleCount)] : SPECIES_NONE;
     DebugPrintf("POLY cur=%d target=%d band=%d-%d chosen=%d", currentThreat, targetThreat,
                 minHardwareBudget, maxHardwareBudget, chosen);
 #endif
