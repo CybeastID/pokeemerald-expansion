@@ -1,4 +1,5 @@
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_reduction.h"
 #include "battle_util.h"
@@ -257,7 +258,7 @@ bool32 ReductionEndTurn(u32 battler)
         {
             PREPARE_BYTE_NUMBER_BUFFER(gBattleTextBuff1, 3, gBattleMons[battler].level);
             gBattleScripting.battler = battler;
-            BattleScriptExecute(BattleScript_ReductionTick);
+            BattleScriptCall(BattleScript_ReductionTick);
             effect = TRUE;
         }
     }
@@ -290,7 +291,7 @@ void ReductionNormalizeRequest(u32 battler, u32 request, u32 monMask, void *data
     // A controller can update an explicitly selected partner/bench member.
     for (u32 target = 0; target < gBattlersCount; target++)
     {
-        if (GetBattlerSide(target) != GetBattlerSide(battler)
+        if (GetBattlerTrainer(target) != GetBattlerTrainer(battler)
          || (monMask == 0 ? target != battler : !(monMask & (1u << gBattlerPartyIndexes[target])))
          || !ReductionIsScaled(target))
             continue;

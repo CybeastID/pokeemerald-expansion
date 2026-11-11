@@ -1,5 +1,7 @@
 #include "global.h"
 #include "battle.h"
+#include "config/quickstart.h"
+#include "quickstart.h"
 #include "title_screen.h"
 #include "sprite.h"
 #include "gba/m4a_internal.h"
@@ -73,24 +75,24 @@ static void SpriteCB_PokemonLogoShine(struct Sprite *sprite);
 static bool8 sShinesCleared = FALSE;
 
 // const rom data
-static const u16 sUnusedUnknownPal[] = INCBIN_U16("graphics/title_screen/unused.gbapal");
+static const u16 sUnusedUnknownPal[] = INCGFX_U16("graphics/title_screen/unused.pal", ".gbapal");
 #ifndef NEW_TITLE_SCREEN_BETA
-static const u32 sTitleScreenRayquazaGfx[] = INCBIN_U32("graphics/title_screen/rayquaza.4bpp.smol");
+static const u32 sTitleScreenRayquazaGfx[] = INCGFX_U32("graphics/title_screen/rayquaza.png", ".4bpp.smol");
 static const u32 sTitleScreenRayquazaTilemap[] = INCBIN_U32("graphics/title_screen/rayquaza.bin.smolTM");
 #endif
 #ifdef NEW_TITLE_SCREEN_BETA
-static const u32 sTitleScreenRayquazaGfx[] = INCBIN_U32("graphics/title_screen/titlebg_1.4bpp.smol");
+static const u32 sTitleScreenRayquazaGfx[] = INCGFX_U32("graphics/title_screen/titlebg_1.png", ".4bpp.smol");
 static const u32 sTitleScreenRayquazaTilemap[] = INCBIN_U32("graphics/title_screen/titlebg_1.bin.smolTM");
-// static const u16 sTitleScreenRayquazaPal[] = INCBIN_U16("graphics/title_screen/titlebg_1.gbapal");
+// static const u16 sTitleScreenRayquazaPal[] = INCGFX_U16("graphics/title_screen/titlebg_1.png", ".gbapal");
 static u16 sOriginalBgPalette[16];
 static bool8 sPaletteStored = FALSE;
 #endif
-static const u32 sTitleScreenLogoShineGfx[] = INCBIN_U32("graphics/title_screen/logo_shine.4bpp.smol");
-static const u32 sTitleScreenCloudsGfx[] = INCBIN_U32("graphics/title_screen/clouds.4bpp.smol");
+static const u32 sTitleScreenLogoShineGfx[] = INCGFX_U32("graphics/title_screen/logo_shine.png", ".4bpp.smol");
+static const u32 sTitleScreenCloudsGfx[] = INCGFX_U32("graphics/title_screen/clouds.png", ".4bpp.smol");
 
 #ifdef NEW_TITLE_SCREEN
-static const u16 gTitleScreenAltPal[] = INCBIN_U16("graphics/title_screen/titlebg_2_1.gbapal");
-static const u32 sTitleScreenAltGfx[] = INCBIN_U32("graphics/title_screen/titlebg_2_1.4bpp.smol");
+static const u16 gTitleScreenAltPal[] = INCGFX_U16("graphics/title_screen/titlebg_2_1.pal", ".gbapal");
+static const u32 sTitleScreenAltGfx[] = INCGFX_U32("graphics/title_screen/titlebg_2_1.png", ".4bpp.smol");
 static const u32 sTitleScreenAltTilemap[] = INCBIN_U32("graphics/title_screen/titlebg_2_1.bin.smolTM");
 #endif
 
@@ -196,8 +198,6 @@ static const struct SpriteTemplate sVersionBannerLeftSpriteTemplate =
     .paletteTag = TAG_VERSION,
     .oam = &sVersionBannerLeftOamData,
     .anims = sVersionBannerLeftAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCB_VersionBannerLeft,
 };
 
@@ -207,8 +207,6 @@ static const struct SpriteTemplate sVersionBannerRightSpriteTemplate =
     .paletteTag = TAG_VERSION,
     .oam = &sVersionBannerRightOamData,
     .anims = sVersionBannerRightAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCB_VersionBannerRight,
 };
 
@@ -315,8 +313,6 @@ static const struct SpriteTemplate sStartCopyrightBannerSpriteTemplate =
     .paletteTag = TAG_PRESS_START_COPYRIGHT,
     .oam = &sOamData_CopyrightBanner,
     .anims = sStartCopyrightBannerAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCB_PressStartCopyrightBanner,
 };
 
@@ -373,8 +369,6 @@ static const struct SpriteTemplate sPokemonLogoShineSpriteTemplate =
     .paletteTag = TAG_PRESS_START_COPYRIGHT,
     .oam = &sPokemonLogoShineOamData,
     .anims = sPokemonLogoShineAnimTable,
-    .images = NULL,
-    .affineAnims = gDummySpriteAffineAnimTable,
     .callback = SpriteCB_PokemonLogoShine,
 };
 
@@ -643,6 +637,11 @@ static void VBlankCB(void)
 
 void CB2_InitTitleScreen(void)
 {
+    if (IS_FRLG)
+    {
+        CB2_InitTitleScreenFrlg();
+        return;
+    }
     switch (gMain.state)
     {
     default:
@@ -711,7 +710,7 @@ LoadPalette(blackPalette, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
 // bg1 (clouds - we'll disable below)
 
 // Override with your custom palette (replaces shared one for BG0)
-// LoadPalette(sTitleScreenRayquazaPal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);  // sTitleScreenRayquazaPal = INCBIN_U16("graphics/title_screen/rayquaza.gbapal");
+// LoadPalette(sTitleScreenRayquazaPal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);  // sTitleScreenRayquazaPal = INCGFX_U16("graphics/title_screen/rayquaza.png", ".gbapal");
 #endif
         // second bg3
 
@@ -927,6 +926,8 @@ SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2
         CreatePressStartBanner(START_BANNER_X, 108);
         #endif
         CreateCopyrightBanner(START_BANNER_X, 148);
+        if (QUICKSTART && QUICKSTART_HUD)
+            CreateQuickstartHud();
         gTasks[taskId].tBg1Y = 0;
         #ifdef NEW_TITLE_SCREEN_BETA
         gTasks[taskId].data[7] = 0;  // Reset background fade counter
@@ -982,6 +983,9 @@ static void Task_TitleScreenPhase3(u8 taskId)
         }
     }
     #endif
+    if (QUICKSTART && JOY_NEW(SELECT_BUTTON))
+        Quickstart();
+
     if (JOY_NEW(A_BUTTON) || JOY_NEW(START_BUTTON))
     {
         FadeOutBGM(4);

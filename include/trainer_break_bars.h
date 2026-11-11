@@ -39,6 +39,10 @@ extern const struct TrainerBreakBarRules gEmptyTrainerBreakBars;
 const struct TrainerBreakBarRules *GetTrainerBreakBarRules(u16 trainerId, enum DifficultyLevel difficulty);
 const struct BreakBarConfig *ResolveTrainerBreakBar(const struct TrainerBreakBarRules *rules, u32 species, u32 sourceEntry);
 void InitializeTrainerBreakBar(u32 partySlot, const struct TrainerBreakBarRules *rules, u32 species, u32 sourceEntry);
+void TrainerBreakBarsBeginParty(struct Pokemon *party);
+void TrainerBreakBarsRecordGeneratedMon(struct Pokemon *party, u32 partySlot, u32 species, u32 sourceEntry);
+void TrainerBreakBarsApplyPending(void);
+void TrainerBreakBarsClearPending(void);
 void BS_ActivateBreakBar(void);
 
 #if TESTING

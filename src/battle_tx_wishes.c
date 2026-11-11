@@ -1,4 +1,5 @@
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_break_bar.h"
 #include "battle_controllers.h"
@@ -34,6 +35,7 @@ struct TxScriptContext
     u8 currentMovePos;
     u8 chosenMovePos;
     u8 multiHitCounter;
+    bool8 unableToUseMove;
 };
 
 static EWRAM_DATA struct TxScriptContext sPhaseContext = {0};
@@ -54,6 +56,7 @@ static void SaveContext(struct TxScriptContext *ctx)
     ctx->currentMovePos = gCurrMovePos;
     ctx->chosenMovePos = gChosenMovePos;
     ctx->multiHitCounter = gMultiHitCounter;
+    ctx->unableToUseMove = gBattleStruct->unableToUseMove;
 }
 
 static void RestoreContext(const struct TxScriptContext *ctx)
@@ -70,6 +73,7 @@ static void RestoreContext(const struct TxScriptContext *ctx)
     gCurrMovePos = ctx->currentMovePos;
     gChosenMovePos = ctx->chosenMovePos;
     gMultiHitCounter = ctx->multiHitCounter;
+    gBattleStruct->unableToUseMove = ctx->unableToUseMove;
 }
 
 bool32 TxRollbackHasWishes(u32 battler)
@@ -80,7 +84,7 @@ bool32 TxRollbackHasWishes(u32 battler)
          || (gBattleStruct->txRollback.combatProfile == TX_PROFILE_CASTORIA_SUMMON
           && gBattleStruct->txRollback.stage >= TX_ROLLBACK_AMBUSH_PENDING
           && gBattleStruct->txRollback.stage != TX_ROLLBACK_DEFEATED))
-        && TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler]);
+        && TxRollbackOwnsPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler]);
 }
 
 static const u8 sSummonedWishes[] =
@@ -123,8 +127,9 @@ static bool32 IsOriginalAlly(u32 battler)
     if (gBattleStruct->txRollback.combatProfile != TX_PROFILE_CASTORIA_SUMMON
      || battler >= gBattlersCount || IsOnPlayerSide(battler) || !IsBattlerAlive(battler))
         return FALSE;
-    return gBattlerPartyIndexes[battler] == gBattleStruct->txRollback.casterPartyIndex
-        || TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler]);
+    return (GetBattlerTrainer(battler) == gBattleStruct->txRollback.ownerTrainer
+         && gBattlerPartyIndexes[battler] == gBattleStruct->txRollback.casterPartyIndex)
+        || TxRollbackOwnsPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler]);
 }
 
 // One entry is one transferable benefit. Side benefits appear once, even in doubles.
@@ -256,9 +261,9 @@ static void StealBenefit(u32 tx, struct TxBenefitEntry entry)
     }
     else if (benefit == TX_BENEFIT_SUBSTITUTE)
     {
-        gDisableStructs[tx].substituteHP = max(1, (u32)gDisableStructs[b].substituteHP
+        gBattleMons[tx].volatiles.substituteHP = max(1, (u32)gBattleMons[b].volatiles.substituteHP
             * gBattleMons[tx].maxHP / max(1, gBattleMons[b].maxHP));
-        gDisableStructs[b].substituteHP = 0;
+        gBattleMons[b].volatiles.substituteHP = 0;
         gBattleMons[b].volatiles.substitute = FALSE;
         gBattleMons[tx].volatiles.substitute = TRUE;
         gEffectBattler = b;
@@ -294,7 +299,7 @@ void BS_TxRollbackTryWish(void)
     data->wishOutcome = TX_WISH_NONE;
     data->wishTargetPartyIndex = PARTY_SIZE;
     for (u32 b = 0; b < gBattlersCount; b++)
-        if (GetBattlerSide(b) == data->ownerSide && gBattlerPartyIndexes[b] == targetPartyIndex)
+        if (GetBattlerTrainer(b) == data->ownerTrainer && gBattlerPartyIndexes[b] == targetPartyIndex)
             target = b;
     if (!IsArcanumAction(tx) || gChosenMove != MOVE_ARCANUM_WISH
      || gCurrentMove != MOVE_ARCANUM_WISH || !TxRollbackCanWishFor(tx, wish, target))
@@ -317,7 +322,7 @@ void BS_TxRollbackTryWish(void)
             if (IsOnPlayerSide(b) && IsBattlerAlive(b) && !gBattleMons[b].volatiles.perishSong)
             {
                 gBattleMons[b].volatiles.perishSong = TRUE;
-                gDisableStructs[b].perishSongTimer = 3;
+                gBattleMons[b].volatiles.perishSongTimer = 3;
             }
         gBattlescriptCurrInstr = BattleScript_TxWishCalamity;
         break;
@@ -400,7 +405,8 @@ void BS_TxRollbackBeginPhase(void)
     gMultiHitCounter = 0;
     gBattleScripting.animTurn = gBattleScripting.animTargetsHit = 0;
     memset(gBattleStruct->moveResultFlags, 0, sizeof(gBattleStruct->moveResultFlags));
-    gHitMarker &= ~(HITMARKER_DISABLE_ANIMATION | HITMARKER_UNABLE_TO_USE_MOVE);
+    gHitMarker &= ~HITMARKER_DISABLE_ANIMATION;
+    gBattleStruct->unableToUseMove = FALSE;
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -427,7 +433,7 @@ void BS_TxRollbackPrepareDoomDesire(void)
 {
     NATIVE_ARGS(const u8 *failInstr);
     gBattlerTarget = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
-    if (!IsBattlerAlive(gBattlerTarget) || gWishFutureKnock.futureSightCounter[gBattlerTarget] != 0)
+    if (!IsBattlerAlive(gBattlerTarget) || gBattleStruct->futureSight[gBattlerTarget].counter != 0)
         gBattlescriptCurrInstr = cmd->failInstr;
     else
         gBattlescriptCurrInstr = cmd->nextInstr;

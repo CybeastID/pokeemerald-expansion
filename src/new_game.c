@@ -1,6 +1,8 @@
 #include "global.h"
+#include "clock.h"
 #include "new_game.h"
 #include "random.h"
+#include "clock.h"
 #include "pokemon.h"
 #include "roamer.h"
 #include "pokemon_size_record.h"
@@ -19,6 +21,7 @@
 #include "event_data.h"
 #include "money.h"
 #include "trainer_hill.h"
+#include "trainer_tower.h"
 #include "tv.h"
 #include "coins.h"
 #include "text.h"
@@ -40,6 +43,7 @@
 #include "pokemon_jump.h"
 #include "decoration_inventory.h"
 #include "secret_base.h"
+#include "string_util.h"
 #include "player_pc.h"
 #include "field_specials.h"
 #include "berry_powder.h"
@@ -59,6 +63,7 @@
 #define NEW_GAME_STARTER_LEVEL 5
 
 extern const u8 EventScript_ResetAllMapFlags[];
+extern const u8 EventScript_ResetAllMapFlagsFrlg[];
 extern const u8 EventScript_InitSimplifiedNewGame[];
 
 static void ClearFrontierRecord(void);
@@ -115,7 +120,6 @@ static void SetDefaultOptions(void)
 
 static void ClearPokedexFlags(void)
 {
-    gUnusedPokedexU8 = 0;
     memset(&gSaveBlock1Ptr->dexCaught, 0, sizeof(gSaveBlock1Ptr->dexCaught));
     memset(&gSaveBlock1Ptr->dexSeen, 0, sizeof(gSaveBlock1Ptr->dexSeen));
 }
@@ -171,9 +175,15 @@ void ResetMenuAndMonGlobals(void)
 
 void NewGameInitData(void)
 {
+#if IS_FRLG
+    u8 rivalName[PLAYER_NAME_LENGTH + 1];
+#endif
     if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_CORRUPT)
         RtcReset();
 
+#if IS_FRLG
+    StringCopy(rivalName, gSaveBlock1Ptr->rivalName);
+#endif
     gDifferentSaveFile = TRUE;
     gSaveBlock2Ptr->encryptionKey = 0;
     ZeroPlayerPartyMons();
@@ -201,7 +211,7 @@ void NewGameInitData(void)
     ClearPlayerLinkBattleRecords();
     InitSeedotSizeRecord();
     InitLotadSizeRecord();
-    gPlayerPartyCount = 0;
+    gPartiesCount[B_TRAINER_PLAYER] = 0;
     ZeroPlayerPartyMons();
     ResetPokemonStorageSystem();
     DeactivateAllRoamers();
@@ -215,16 +225,14 @@ void NewGameInitData(void)
     InitDewfordTrend();
     ResetFanClub();
     ResetLotteryCorner();
-    RunScriptImmediately(EventScript_ResetAllMapFlags);
-    // Chuck all these items in the bag:
-/* AddBagItem(ITEM_MEGA_RING, 1);
-AddBagItem(ITEM_TERA_ORB, 1);
-AddBagItem(ITEM_FULL_RESTORE, 3);
-AddBagItem(ITEM_MOOMOO_MILK, 4);
-AddBagItem(ITEM_SUPER_POTION, 10);
-AddBagItem(ITEM_HYPER_POTION, 3); */
-    // 
-
+    UpdateDailySeed();
+    if (IS_FRLG)
+        RunScriptImmediately(EventScript_ResetAllMapFlagsFrlg);
+    else
+        RunScriptImmediately(EventScript_ResetAllMapFlags);
+#if IS_FRLG
+        StringCopy(gSaveBlock1Ptr->rivalName, rivalName);
+#endif
     ResetMiniGamesRecords();
     InitUnionRoomChatRegisteredTexts();
     InitLilycoveLady();
@@ -234,6 +242,7 @@ AddBagItem(ITEM_HYPER_POTION, 3); */
     ClearMysteryGift();
     WipeTrainerNameRecords();
     ResetTrainerHillResults();
+    ResetTrainerTowerResults();
     ResetContestLinkResults();
     SetCurrentDifficultyLevel(DIFFICULTY_NORMAL);
     ResetItemFlags();

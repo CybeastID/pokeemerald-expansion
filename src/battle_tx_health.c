@@ -1,4 +1,5 @@
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_controllers.h"
 #include "battle_script_commands.h"
@@ -11,7 +12,7 @@ static struct TxRollbackHealth *GetHealth(u32 battler)
     if (gBattleStruct == NULL || battler >= gBattlersCount
      || gBattleStruct->txRollback.combatProfile != TX_PROFILE_CASTORIA_SUMMON
      || gBattleStruct->txRollback.ownerDefeated
-     || !TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler]))
+     || !TxRollbackOwnsPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler]))
         return NULL;
     return &gBattleStruct->txRollback.health;
 }
@@ -88,7 +89,7 @@ void TxRollbackNormalizeRequest(u32 battler, u32 request, u32 monMask, void *dat
     {
         struct TxRollbackHealth *health = GetHealth(target);
         if (health == NULL || health->originalMaxHp == 0
-         || GetBattlerSide(target) != GetBattlerSide(battler)
+         || GetBattlerTrainer(target) != GetBattlerTrainer(battler)
          || (monMask == 0 ? target != battler : !(monMask & (1u << gBattlerPartyIndexes[target]))))
             continue;
         u16 value;

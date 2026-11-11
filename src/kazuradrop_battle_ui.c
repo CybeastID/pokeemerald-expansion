@@ -1,5 +1,6 @@
 // Bug Space threshold panel and Kazuradrop dialogue window.
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_interface.h"
 #include "battle_gimmick.h"

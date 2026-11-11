@@ -27,7 +27,7 @@ static void ProfileUnitFixture(u32 profile)
         gBattleMons[b].hp = gBattleMons[b].maxHP = 400;
     }
     gBattleStruct->txRollback.combatProfile = profile;
-    gBattleStruct->txRollback.ownerSide = B_SIDE_OPPONENT;
+    gBattleStruct->txRollback.ownerTrainer = B_TRAINER_OPPONENT_A;
     gBattleStruct->txRollback.partyIndex = 0;
     if (profile == TX_PROFILE_CASTORIA_SUMMON)
         gBattleStruct->txRollback.stage = TX_ROLLBACK_ACTIVE;
@@ -40,7 +40,7 @@ TEST("TX profiles separate combat ownership from summon formation and revival po
     EXPECT_EQ(TxRollbackHasWishes(1), TRUE);
     EXPECT_EQ(TxRollbackHasWishes(3), FALSE);
     EXPECT_EQ(TxRollbackGetOwnerBattler(), 1);
-    EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, 0), TRUE);
+    EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 0), TRUE);
     EXPECT_EQ(TxRollbackGetSlotPolicy(2), TX_SLOT_NORMAL);
     EXPECT_EQ(TxRollbackGetSlotPolicy(3), TX_SLOT_NORMAL);
     EXPECT_EQ(GetBreakBarCount(1), 0);
@@ -51,12 +51,12 @@ TEST("TX profiles separate combat ownership from summon formation and revival po
     gBattleStruct->txRollback.partyIndex = 5;
     EXPECT_EQ(TxRollbackHasWishes(3), TRUE);
     EXPECT_EQ(TxRollbackHasWishes(1), FALSE);
-    EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, 5), FALSE);
+    EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 5), FALSE);
     EXPECT_EQ(TxRollbackGetSlotPolicy(2), TX_SLOT_DISABLED);
     EXPECT_EQ(TxRollbackGetSlotPolicy(3), TX_SLOT_RESERVED);
     gBattleStruct->txRollback.stage = TX_ROLLBACK_DEFEATED;
     gBattleStruct->txRollback.ownerDefeated = TRUE;
-    EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, 5), FALSE);
+    EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 5), FALSE);
     EXPECT_EQ(TxRollbackGetSlotPolicy(3), TX_SLOT_RETIRED);
     EXPECT_EQ(TxRollbackHasWishes(3), FALSE);
     FREE_AND_SET_NULL(gBattleStruct);
@@ -280,7 +280,7 @@ AI_SINGLE_BATTLE_TEST("Koanko TX entry registers only solo combat capabilities w
         EXPECT_EQ(IsDoubleBattle(), FALSE);
         EXPECT_EQ(GetBreakBarCount(1), 0);
         EXPECT_EQ(HasNoOrderChange(1), TRUE);
-        EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, 1), TRUE);
+        EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 1), TRUE);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, FALSE);
     }
 }
@@ -349,7 +349,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Reduction persists through four successive opponen
         EXPECT_EQ(gBattleStruct->txRollback.reciprocity, FALSE);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 5);
         EXPECT_EQ(TxRollbackHasWishes(1), FALSE);
-        EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, 1), TRUE);
+        EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 1), TRUE);
     }
 }
 

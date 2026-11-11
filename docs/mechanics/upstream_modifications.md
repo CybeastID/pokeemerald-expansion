@@ -1,8 +1,108 @@
 # Upstream modification ledger
 
+## Migration resolution checkpoint — 2026-11-11
+
+**Implementation-only; no migrated runtime behavior is verified.**
+The [durable handoff](../extra%20docs/KoankoDev/planning/15_upstream_migration_checkpoint.md)
+records exact failures and resume commands. All textual conflicts are resolved;
+seven core battle objects compile. Custom modules and script assembly fail.
+This section supersedes the older initial-integration dispatch status below.
+
+- `battle_move_resolution.c:ShouldSkipBattlerForDamage/TryMoveDamageUpdate/
+  MoveEndFaintBlock`: Break Bar gates in target damage/faint processing queue a
+  lost layer before true-faint effects, suppress remaining damage, and retain
+  the existing after-action phase resolver. Guts snaps use target controllers.
+  These replace retired command-level algorithms. Test multihit/spread,
+  simultaneous KO, rewards, Destiny Bond, capture and phase continuations.
+- `battle_script_commands.c:Cmd_healthbarupdate/Cmd_datahpupdate`: floor passive
+  damage, suppress pending-layer writes and preserve mirrored recovery.
+  `BattleStruct.instantDeathHpUpdate` marks explicit scripted deaths; ordinary
+  setters clear it and the HP commit consumes it. `trashCrushOhko` resets per
+  action. Test exceptions and canonical/controller HP synchronization.
+- `battle_faerie_move_resolution.inc` retains custom policy alongside narrow
+  target canceler/damage hooks. Trash & Crush rolls after survival adjustment;
+  `battle_util.c:GetAdjustedDamage` retains Bug Space's crushing damage before
+  survival adjustment. Move-failure and Emergency Exit retain No Order Change.
+  Complete pivot/phazing and boss exception regression coverage is pending.
+- `battle_set_effect.c:sSetEffectHandlers`: Melt Virus and Timestop use target
+  dispatch and common checks. `include/battle_script_native.h` shares packed
+  native-argument parsing across custom modules without restoring old opcodes.
+- `battle_ai_main.c`: signed selection and virtual Arcanum actions return target
+  ChosenAction; ordinary and hypothetical slot-0 scoring share target passes.
+  `battle_ai_util.c` uses AiCalcValues and restores simulation scratch. Tactical
+  module migration and runtime validation remain incomplete.
+- `battle_switch_in.c` adds Name Theft/pre-hazard Break Charm stages and retains
+  unconditional Lunar Dance layer grants. TX identity and masked Reduction/TX
+  controller normalization use trainer ownership. Test partner/multi, Wish
+  identity, canonical HP and continuation behavior before accepting these ports.
+
+Merge maintenance: target generation, effect dispatch, resolution and graphics
+lifetime replace old integration sites. The faint/damage changes are substantive
+semantic integrations despite narrow hooks. Preserve custom policy separately,
+but re-audit ordering during upstream updates; fewer changed lines are not proof
+of lower compatibility risk. State lifetime and outstanding risks are documented
+in the checkpoint. No tests were weakened or failures suppressed.
+
 Central record for reviewed custom engine integration points. This initial entry covers
 Stage 03 Smeargle integration; it is not an exhaustive inventory of older custom hooks.
 Implementation status is separate from runtime validation.
+
+## Upstream 1.17.2 migration — initial integration (2026-11-11)
+
+**In progress; runtime behavior unverified.** Baseline `mypatch` commit
+`2bfc834d8c` is preserved. An uncommitted merge of exact target
+`79dd436920845ebc145577649de624f65298c209` is open only in the isolated
+`upgrade-branch` worktree. Current status, recovery evidence, conversion
+decisions and exact baseline statistics are in
+[Chapter 14, Section 11](../extra%20docs/KoankoDev/planning/14_upstream_upgrade_target_recommendation.md#11-authorized-migration-execution-record--2026-11-11).
+
+- `battle_setup.c:CreateNPCTrainerPartyFromTrainer/CreateNPCTrainerParty`:
+  narrow calls retain selected source-entry identities while the new target
+  generator owns party creation. `trainer_break_bars.c` records static config
+  pointers before BattleStruct exists, consumes them into trainer/local-slot
+  PartyState at `battle_main.c:CB2_InitBattle`, and clears them after consumption
+  or full teardown. Runtime generation can assign existing PartyState directly.
+  The previous custom generator in `battle_main.c` is retired. Test trainer
+  overrides, pooled selection, both opponent owners, Koanko replacement and
+  consecutive encounters; target preallocation order and generation callbacks
+  are semantic compatibility concerns even if future merges are textual clean.
+- `battle_util2.c:AllocateBattleGfxResources/FreeBattleGfxResources`: graphics
+  initialization/free owns status-icon IDs, Kazuradrop panel/sigil graphics and
+  Break Bar palettes/tasks. `FreeBattleResources` retains script/pending-profile
+  cleanup. Menu closure follows target graphics-only teardown and leaves custom
+  combat state allocated. Test repeated Bag/party/summary reconstruction, saved
+  layers, palette/task cleanup and genuine battle exit. These are narrow hooks;
+  sprite reset/free ordering remains a maintenance concern.
+- `include/battle.h:PartyState/BattleStruct/IsBreakBarPending/IsBattlerAlive`:
+  retain custom state using the target trainer-owned array/accessor and pending
+  layer survival predicate. TX combat-profile, delayed recipient and controller
+  owner conversions are still pending. Multi/partner, simultaneous faint,
+  summoning and no-false-reward coverage is required before accepting this port.
+- Custom enum hooks now live in target-owned
+  `constants/battle_set_effect.h`, `constants/battle_move_resolution.h` and
+  `constants/battle_util.h`. Their implementation dispatch is unfinished; the
+  old effect/move execution algorithms are not reinstated as compatibility code.
+- `battle_ai_switch.c:CanBattlerConsiderSwitch`: carries the existing No Order
+  Change rejection from deleted `battle_ai_switch_items.c`. No additional AI
+  policy is introduced. The deleted empty Alice placeholder had no behavior.
+  Test No Order Change and ordinary voluntary/pivot/phazing switch paths.
+- `test/test_runner_battle.c` and `include/test/battle.h`: keep the guarded,
+  separately allocated 4096-byte stack while adopting target trainer bindings,
+  party sizes, controller reset and inventory initialization. Summoned TX maps
+  to opponent A in test declarations; cleanup assertions remain. This avoids
+  reintroducing a stack inside the bounded map buffer. Actual memory/link and
+  runtime overflow checks on the integrated target remain required.
+- Identifier/data headers retain custom entries after target ranges; trainer
+  pictures use `gTrainerPicInfo` and regional dex uses target macros. ARM enum
+  compilation and boundary checks passed. This is data/interface validation,
+  not proof of gameplay, canonical HP correctness or complete numeric auditing.
+
+Merge-maintenance impact: target party ownership, generation, effect dispatch
+and graphics lifetime replace older integration locations. Small adapters keep
+policy in existing custom modules and avoid carrying obsolete generators or AI
+files. The move-resolution and script ports remain the largest semantic risks.
+The frozen baseline ROM/full suite passed all battle cases (three accepted text
+failures remain); **the integrated target has not built or passed runtime tests**.
 
 ## Pre-migration regression fixtures (2026-11-10)
 

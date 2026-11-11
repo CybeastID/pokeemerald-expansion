@@ -1,4 +1,5 @@
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
@@ -19,7 +20,6 @@
 #include "trainer_see.h"
 #include "constants/abilities.h"
 #include "constants/battle_ai.h"
-#include "constants/battle_setup.h"
 #include "constants/items.h"
 #include "constants/moves.h"
 #include "constants/trainers.h"
@@ -162,7 +162,6 @@ void ConjureKoankoTeam(void)
 
     u32 battler = B_POSITION_OPPONENT_LEFT;
     memset(&gBattleStruct->battlerState[battler], 0, sizeof(gBattleStruct->battlerState[battler]));
-    memset(&gDisableStructs[battler], 0, sizeof(gDisableStructs[battler]));
     memset(&gSpecialStatuses[battler], 0, sizeof(gSpecialStatuses[battler]));
     memset(&gProtectStructs[battler], 0, sizeof(gProtectStructs[battler]));
     memset(&gBattleStruct->illusion[battler], 0, sizeof(gBattleStruct->illusion[battler]));

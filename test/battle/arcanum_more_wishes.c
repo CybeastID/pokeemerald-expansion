@@ -408,8 +408,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes retires its defeated slot while 
         EXPECT_EQ(IsBattlerAlive(1), TRUE);
         EXPECT_EQ(gBattleOutcome, B_OUTCOME_PLAYER_TELEPORTED);
         EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_HP), GetMonData(&gEnemyParty[1], MON_DATA_MAX_HP));
-        EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, PARTY_SIZE - 1), FALSE);
-        EXPECT_EQ(TxRollbackCanRevive(B_SIDE_OPPONENT, 1), TRUE);
+        EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, PARTY_SIZE - 1), FALSE);
+        EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 1), TRUE);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 1);
         gBattleStruct->castoria.wishUsed = FALSE;
         EXPECT_EQ(CastoriaCanWishFor(1, CASTORIA_WISH_MORE_WISHES), FALSE);
@@ -708,7 +708,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish More Wishes encounter properties do not belong 
         EXPECT_NE(SPECIES_TX_ROLLBACK, SPECIES_JIRACHI);
         EXPECT_EQ(GetBreakBarCount(0), 0);
         EXPECT_EQ(HasNoOrderChange(0), FALSE);
-        EXPECT_EQ(TxRollbackCanRevive(B_SIDE_PLAYER, 0), TRUE);
+        EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_PLAYER, 0), TRUE);
         EXPECT_EQ(gSpeciesInfo[SPECIES_TX_ROLLBACK].baseHP, 125);
         EXPECT_EQ(gSpeciesInfo[SPECIES_TX_ROLLBACK].abilities[0], ABILITY_WISHFUL_THINKING);
     }

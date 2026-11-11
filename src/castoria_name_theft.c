@@ -18,6 +18,7 @@
 //
 
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_main.h"
 #include "battle_script_commands.h"
@@ -46,7 +47,7 @@
 #include "battle_dynamax.h"
 #include "battle_gimmick.h"
 #include "battle_util.h"
-#include "generational_changes.h"
+#include "config_changes.h"
 #include "daycare.h"
 #include "item.h"
 
@@ -469,18 +470,18 @@ bool32 IsArcanumSlotUsable(u32 battler, u32 slot)
     if (effect == EFFECT_PLACEHOLDER)
         return FALSE;
 
-    if (gDisableStructs[battler].encoreTimer
-     && gDisableStructs[battler].encoredMove != move)
+    if (gBattleMons[battler].volatiles.encoreTimer
+     && gBattleMons[battler].volatiles.encoredMove != move)
         return FALSE;
 
-    if (gDisableStructs[battler].disabledMove == move)
+    if (gBattleMons[battler].volatiles.disabledMove == move)
         return FALSE;
 
     if (gBattleMons[battler].volatiles.torment
      && gLastMoves[battler] == move)
         return FALSE;
 
-    if (gDisableStructs[battler].tauntTimer
+    if (gBattleMons[battler].volatiles.tauntTimer
      && IsBattleMoveStatus(move))
         return FALSE;
 
@@ -507,7 +508,7 @@ bool32 IsArcanumSlotUsable(u32 battler, u32 slot)
      || IsBelchPreventingMove(battler, move))
         return FALSE;
 
-    if (gDisableStructs[battler].throatChopTimer
+    if (gBattleMons[battler].volatiles.throatChopTimer
      && IsSoundMove(move))
         return FALSE;
 
@@ -1455,10 +1456,10 @@ void BS_PolymorphTarget(void)
         gBattleMons[target].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, NULL);;
         gBattleMons[target].pp[i] = GetMonData(mon, MON_DATA_PP1 + i, NULL);
     }
-    gDisableStructs[target].disabledMove = MOVE_NONE;
-    gDisableStructs[target].disableTimer = 0;
-    gDisableStructs[target].mimickedMoves = 0;
-    gDisableStructs[target].usedMoves = 0;
+    gBattleMons[target].volatiles.disabledMove = MOVE_NONE;
+    gBattleMons[target].volatiles.disableTimer = 0;
+    gBattleMons[target].volatiles.mimickedMoves = 0;
+    gBattleMons[target].volatiles.usedMoves = 0;
     gBattleStruct->choicedMove[target] = MOVE_NONE;
     BtlController_EmitResetActionMoveSelection(target, B_COMM_TO_CONTROLLER, RESET_MOVE_SELECTION);
     MarkBattlerForControllerExec(target);

@@ -1,5 +1,11 @@
 # Break Bar reference
 
+Migration status (1.17.2): new direct-damage/faint and passive-HP hooks are
+implemented and core objects compile; runtime behavior is unverified. The full
+migration remains unbuildable. See the
+[checkpoint](../extra%20docs/KoankoDev/planning/15_upstream_migration_checkpoint.md)
+before relying on execution-path details below, which also describe the baseline.
+
 For trainer defaults, event-script overrides and Koanko's conjured team, see
 [Trainer Break Bars and Koanko](trainer_break_bars.md).
 
