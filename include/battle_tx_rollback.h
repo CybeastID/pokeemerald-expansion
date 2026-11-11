@@ -22,6 +22,13 @@ enum TxRollbackSlotPolicy
     TX_SLOT_RETIRED,
 };
 
+enum TxRollbackCombatProfile
+{
+    TX_PROFILE_NONE,
+    TX_PROFILE_CASTORIA_SUMMON,
+    TX_PROFILE_KOANKO_SOLO,
+};
+
 enum TxRollbackWish
 {
     TX_WISH_NONE,
@@ -30,6 +37,18 @@ enum TxRollbackWish
     TX_WISH_CALAMITY,
     TX_WISH_RESTORATION,
     TX_WISH_RECIPROCITY,
+    TX_WISH_REDUCTION,
+};
+
+// Battle-only maxHP view. Party HP is synchronized as a proportion of the
+// original maximum; reloading a controller must not repeatedly round/heal it.
+struct TxRollbackHealth
+{
+    u32 hpFraction;
+    u16 originalMaxHp;
+    u16 appliedMaxHp;
+    u16 lastHp;
+    u8 percent;
 };
 
 struct TxRollbackProfile
@@ -41,6 +60,10 @@ struct TxRollbackProfile
 struct TxRollbackBattleData
 {
     const struct TxRollbackProfile *profile;
+    struct TxRollbackHealth health;
+    u8 combatProfile;
+    u8 ownerSide;
+    bool8 ownerDefeated;
     u8 stage;
     u8 caster;
     u8 partyIndex;
@@ -63,6 +86,9 @@ enum TxRollbackSlotPolicy TxRollbackGetSlotPolicy(u32 battler);
 bool32 TxRollbackCanPopulateSlot(u32 battler);
 bool32 TxRollbackCanRevive(u32 side, u32 partyIndex);
 bool32 TxRollbackOwnsPartyMon(u32 side, u32 partyIndex);
+bool32 TxRollbackIsSummonedPartyMon(u32 side, u32 partyIndex);
+u32 TxRollbackGetOwnerBattler(void);
+void TxRollbackRegisterKoanko(u32 battler);
 void TxRollbackOnFaint(u32 battler);
 bool32 TxRollbackTryAmbush(void);
 void BS_TxRollbackCreate(void);
@@ -74,6 +100,8 @@ void BS_TxRollbackFinishAmbush(void);
 bool32 TxRollbackHasWishes(u32 battler);
 bool32 TxRollbackCanWishFor(u32 battler, u32 wish, u32 target);
 bool32 TxRollbackHasUsableWish(u32 battler);
+u32 TxRollbackGetWishCount(u32 battler);
+u32 TxRollbackGetWishAtIndex(u32 battler, u32 index);
 void BS_TxRollbackTryWish(void);
 void BS_WishfulThinkingTry(void);
 void BS_TxRollbackEndurance(void);
@@ -84,5 +112,12 @@ void BS_TxRollbackPrepareDoomDesire(void);
 void TxRollbackMirrorHealing(u32 battler, u32 oldHp, const u8 *returnInstr);
 void BS_TxRollbackBeginReciprocity(void);
 void BS_TxRollbackEndReciprocity(void);
+
+void TxRollbackInitializeHealth(u32 battler);
+bool32 TxRollbackHasHealthOverlay(u32 battler);
+void TxRollbackOnStatsCopied(u32 battler);
+void TxRollbackNormalizeRequest(u32 battler, u32 request, u32 monMask, void *data);
+void TxRollbackFinishBattle(void);
+void BS_TxRollbackDeteriorate(void);
 
 #endif

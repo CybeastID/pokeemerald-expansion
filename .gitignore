@@ -103,3 +103,7 @@ graphics/pokemon/jirachi/tx_rollback/Sprite-00012.aseprite
 graphics/special/CasterUI/MageArmor16.png
 .cursor/rules/git-no-pager.mdc
 graphics/battle_interface/no_order_change_source.png
+docs/extra docs/KoankoDev/PROGRESS_koanko_2026-11-09.md
+docs/extra docs/KoankoDev/PROGRESS_wishful_review_fixes_2026-11-09.md
+docs/extra docs/KoankoDev/PROGRESS_wishful_thinking_2026-11-09.md
+docs/extra docs/KoankoDev/*.patch

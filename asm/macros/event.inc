@@ -2127,6 +2127,12 @@
 	.4byte \ruleset
 	.endm
 
+	@ config is a static BreakBarConfig for the first setwildbattle opponent.
+	.macro setwildbreakbars config:req
+	callnative Script_SetWildBreakBars, requests_effects=1
+	.4byte \config
+	.endm
+
 	.macro setdynamicaifunc func:req
 	callnative ScriptSetDynamicAiFunc, requests_effects=1
 	.4byte \func

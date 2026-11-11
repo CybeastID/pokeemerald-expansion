@@ -80,6 +80,7 @@
 #include "castoria_name_theft.h"
 #include "test/test_runner_battle.h"
 #include "trainer_break_bars.h"
+#include "battle_break_bar.h"
 
 extern const struct BgTemplate gBattleBgTemplates[];
 extern const struct WindowTemplate *const gBattleWindowTemplates[];
@@ -435,6 +436,7 @@ void CB2_InitBattle(void)
     if (!gTestRunnerEnabled)
         MoveSaveBlocks_ResetHeap();
     AllocateBattleResources();
+    InitializeWildBreakBar(0, Script_TakeWildBreakBarOverride());
     AllocateBattleSpritesData();
     AllocateMonSpritesGfx();
     RecordedBattle_ClearFrontierPassFlag();
@@ -578,6 +580,7 @@ static void CB2_InitBattleInternal(void)
     }
 
     Script_ClearTrainerBreakBarOverrides();
+    Script_ClearWildBreakBarOverride();
     gMain.inBattle = TRUE;
     gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;
 
@@ -5818,7 +5821,7 @@ static void HandleEndTurn_FinishBattle(void)
                 for (u32 partySlot = 0; partySlot < PARTY_SIZE; partySlot++)
                 {
                     if (gBattleStruct->partyState[side][partySlot].sentOut
-                     && !TxRollbackOwnsPartyMon(side, partySlot))
+                     && !TxRollbackIsSummonedPartyMon(side, partySlot))
                         HandleSetPokedexFlagFromMon(&party[partySlot], FLAG_SET_SEEN);
                 }
             }
@@ -5846,6 +5849,7 @@ static void HandleEndTurn_FinishBattle(void)
             TryRestoreHeldItems();
 
         ReductionFinishBattle();
+        TxRollbackFinishBattle();
         // Undo Dynamax HP multiplier before recalculating stats.
         for (battler = 0; battler < gBattlersCount; ++battler)
         {

@@ -4,6 +4,7 @@
 #include "battle_break_bar.h"
 #include "battle_interface.h"
 #include "battle_scripts.h"
+#include "graphics.h"
 #include "palette.h"
 #include "sprite.h"
 #include "task.h"
@@ -93,6 +94,65 @@ static bool32 BreakBarTestHasFillPixel(u32 battler, u32 color)
             return TRUE;
     }
     return FALSE;
+}
+
+// Run the same native frame step used by the scripted dynamic-layer animation.
+static void BreakBarTestAnimateSavedLayer(void)
+{
+    const struct __attribute__((packed))
+    {
+        u8 opcode;
+        void (*func)(void);
+        u8 battler;
+    } cmd = {0, BS_AnimateSavedBreakBar, BS_OPPONENT1};
+    const u8 *savedInstr = gBattlescriptCurrInstr;
+    gBattlescriptCurrInstr = (const u8 *)&cmd;
+    BS_AnimateSavedBreakBar();
+    gBattlescriptCurrInstr = savedInstr;
+}
+
+SINGLE_BATTLE_TEST("Break Bar dynamic fill preserves the covered bar color")
+{
+    u32 hp;
+    bool32 registeredBase;
+    PARAMETRIZE { hp = 100; registeredBase = FALSE; } // Green ordinary HP.
+    PARAMETRIZE { hp = 40; registeredBase = FALSE; }  // Yellow ordinary HP.
+    PARAMETRIZE { hp = 10; registeredBase = FALSE; }  // Red ordinary HP.
+    PARAMETRIZE { hp = 100; registeredBase = TRUE; }  // Registered red base.
+
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET) { Moves(MOVE_CELEBRATE); }
+        OPPONENT(SPECIES_WOBBUFFET) { HP(hp); MaxHP(100); Moves(MOVE_CELEBRATE); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_CELEBRATE); MOVE(opponent, MOVE_CELEBRATE); }
+    } THEN {
+        u32 battler = B_POSITION_OPPONENT_LEFT;
+        struct PartyState *state = GetBattlerPartyState(battler);
+        if (registeredBase)
+        {
+            EXPECT_EQ(ActivateBreakBar(battler, &sStacks[0]), TRUE);
+            state->breakBarsRemaining = 0;
+            ReshowBreakBars();
+        }
+        EXPECT_EQ(GrantSavedBreakBar(battler), TRUE);
+        EXPECT_EQ(state->breakBarSavedBaseWasRegistered, registeredBase);
+
+        BreakBarTestAnimateSavedLayer(); // Zero purple pixels: covered bar still visible.
+        u32 slot = BreakBarTestPaletteSlot(battler);
+        u32 coveredIndex = registeredBase || hp <= 20 ? 14 : hp <= 50 ? 12 : 10;
+        EXPECT_EQ(gPlttBufferUnfaded[OBJ_PLTT_ID(slot) + 14], gBattleInterface_BallDisplayPal[coveredIndex]);
+        EXPECT_EQ(gPlttBufferUnfaded[OBJ_PLTT_ID(slot) + 15], gBattleInterface_BallDisplayPal[coveredIndex + 1]);
+        EXPECT_EQ(BreakBarTestHasFillPixel(battler, 14), TRUE);
+
+        BreakBarTestAnimateSavedLayer(); // Purple starts covering the saved color.
+        EXPECT_EQ(BreakBarTestHasFillPixel(battler, 10), TRUE);
+        EXPECT_EQ(gPlttBufferUnfaded[OBJ_PLTT_ID(slot) + 14], gBattleInterface_BallDisplayPal[coveredIndex]);
+        while (state->breakBarFillPixels < B_HEALTHBAR_PIXELS)
+            BreakBarTestAnimateSavedLayer();
+        BreakBarTestAnimateSavedLayer(); // Finish and restore the normal red entries.
+        EXPECT_EQ(gPlttBufferUnfaded[OBJ_PLTT_ID(slot) + 14], gBattleInterface_BallDisplayPal[14]);
+        EXPECT_EQ(gPlttBufferUnfaded[OBJ_PLTT_ID(slot) + 15], gBattleInterface_BallDisplayPal[15]);
+    }
 }
 
 AI_SINGLE_BATTLE_TEST("Break Bar four and five extra layers deplete before the red base can faint")

@@ -7,6 +7,7 @@
 #include "battle_script_commands.h"
 #include "battle_scripts.h"
 #include "battle_setup.h"
+#include "battle_tx_rollback.h"
 #include "data.h"
 #include "debug.h"
 #include "main.h"
@@ -212,5 +213,8 @@ void KoankoOnSwitchIn(u32 battler)
     if (gBattleStruct != NULL
      && gBattleStruct->koankoPhase == KOANKO_CONJURED_TEAM
      && GetBattlerSide(battler) == B_SIDE_OPPONENT)
+    {
         gBattleStruct->battlerState[battler].noOrderChange = TRUE;
+        TxRollbackRegisterKoanko(battler);
+    }
 }

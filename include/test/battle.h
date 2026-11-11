@@ -560,9 +560,6 @@
 #include "constants/species.h"
 #include "test/test.h"
 
-// NOTE: If the stack is too small the test runner will probably crash
-// or loop.
-#define BATTLE_TEST_STACK_SIZE 1024
 #define MAX_TURNS 16
 #define MAX_QUEUED_EVENTS 30
 #define MAX_EXPECTED_ACTIONS 10
@@ -737,8 +734,6 @@ struct BattleTrialData
 
 struct BattleTestData
 {
-    u8 stack[BATTLE_TEST_STACK_SIZE];
-
     bool8 hasSummonedOpponent;
     bool8 hasAfterCleanup;
     struct Pokemon summonedOpponentMon;

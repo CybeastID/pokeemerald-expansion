@@ -1,6 +1,12 @@
 # Stage 04 — TX encounter profiles, deteriorating maxHP and Koanko Reduction
 
-Status: **fully planned**, implementation pending. Snapshot: `mypatch`, 2026-11-09.
+Status: **implemented, awaiting user-run validation** (2026-11-10). Working-tree
+base: `mypatch`, `582c5f5015`. Stage 05 remains gated on passing Stage 04 tests
+and a normal ROM build. Implementation and execution-flow record:
+[Stage 04 handoff](../STAGE04_IMPLEMENTATION_AND_CODEFLOW.md).
+
+Sections 2–8 below retain the pre-implementation design/baseline for comparison;
+current source and the linked implementation record describe the implemented state.
 
 ## 1. Objective and scope
 
@@ -41,7 +47,7 @@ For deterioration, derive both 60% and 30% from original maxHP, not compounded p
 
 ## 6. Test strategy
 
-Implementation commands, separately: `wsl make check TESTS='TX Wishes'`, `TESTS='Arcanum Wish More Wishes'`, `TESTS='Arcanum Wish Reduction'`, `TESTS='Wishful Thinking'`, `TESTS='Break Bar'`. New solo cases use `Koanko TX` and `Koanko Reduction` prefixes.
+Native WSL commands, separately: `make check TESTS='TX Wishes'`, `TESTS='Arcanum Wish More Wishes'`, `TESTS='Arcanum Wish Reduction'`, `TESTS='Wishful Thinking'`, `TESTS='Break Bar'`. New solo cases use `Koanko TX` and `Koanko Reduction` prefixes; `TESTS='test/battle/tx_profiles.c'` selects the entire new fixture file. Exact milestone commands and actual validation status are in the linked handoff. Codex has not executed them.
 
 Add side-by-side profile eligibility, opposite-slot Reciprocity, no solo summon/bar/ambush/revival leakage; new outcome success/failure/duplicate trigger; loss 1/2/3 after grace, persistence beyond TX through all later bosses, switch reset versus global acceleration and inactive/recast handling. Test 100/60/30 actual maxHP at exact refill timing, rounding/minimum, refresh/menu/controller reload, full visible new bars, Wishful growth preserved, saved layers bypass deterioration, delayed Wish to retired slot unused, Doom Desire after TX faint and unchanged canonical party maxHP.
 

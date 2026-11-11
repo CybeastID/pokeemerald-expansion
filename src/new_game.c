@@ -51,12 +51,18 @@
 #include "constants/vars.h"
 #include "difficulty.h"
 #include "follower_npc.h"
+#include "script_pokemon_util.h"
+#include "constants/species.h"
+
+// Hoenn starter species; keep VAR_STARTER_MON consistent for later rival teams.
+#define NEW_GAME_STARTER_SPECIES SPECIES_TREECKO
+#define NEW_GAME_STARTER_LEVEL 5
 
 extern const u8 EventScript_ResetAllMapFlags[];
+extern const u8 EventScript_InitSimplifiedNewGame[];
 
 static void ClearFrontierRecord(void);
-static void WarpToTruck(void);
-static void WarpToNewGamePostClockMeetRival(void);
+static void InitSimplifiedNewGame(void);
 static void ResetMiniGamesRecords(void);
 static void ResetItemFlags(void);
 static void ResetDexNav(void);
@@ -133,29 +139,18 @@ static void ClearFrontierRecord(void)
     gSaveBlock2Ptr->frontier.opponentNames[1][0] = EOS;
 }
 
-static void WarpToTruck(void)
+static void InitSimplifiedNewGame(void)
 {
-    SetWarpDestination(MAP_GROUP(MAP_INSIDE_OF_TRUCK), MAP_NUM(MAP_INSIDE_OF_TRUCK), WARP_ID_NONE, -1, -1);
+    // Replace the AliceRoom startup override using the existing new-save path.
+    // Load the destination before creating the starter so its met location is valid.
+    SetWarpDestination(MAP_GROUP(MAP_LITTLEROOT_TOWN), MAP_NUM(MAP_LITTLEROOT_TOWN), WARP_ID_NONE, 10, 10);
     WarpIntoMap();
-}
-
-static void WarpToNewGamePostClockMeetRival(void)
-{
-    // New-game spawn override:
-    // - Skip all Littleroot/rival intro branching logic entirely
-    // - Grant early flags (Pokémon obtained + Running Shoes)
-    // - Warp player directly into the new map at the requested coordinates
-    // Note: We force-facing after WarpIntoMap() because SetWarpDestination(WARP_ID_NONE,..)
-    // only controls warpId/x/y (facing is derived during map init).
-    FlagSet(FLAG_SYS_POKEMON_GET);
-    FlagSet(FLAG_SYS_B_DASH);
-
-    // data/maps/map_groups.json encodes:
-    //   group_order last entry is "gMapGroup_LudenSpace" => index 34
-    //   gMapGroup_LudenSpace contains a single map: "AliceRoom" => mapNum index 0
-    SetWarpDestination((s8)35, (s8)0, 1, 0, 0);
-    WarpIntoMap();
-    PlayerFaceDirection(DIR_NORTH);
+    RunScriptImmediately(EventScript_InitSimplifiedNewGame);
+    VarSet(VAR_STARTER_MON, NEW_GAME_STARTER_SPECIES == SPECIES_TORCHIC ? 1
+                         : NEW_GAME_STARTER_SPECIES == SPECIES_MUDKIP ? 2 : 0);
+    ScriptGiveMon(NEW_GAME_STARTER_SPECIES, NEW_GAME_STARTER_LEVEL, ITEM_NONE);
+    AddBagItem(ITEM_POKE_BALL, 5);
+    AddBagItem(ITEM_POTION, 3);
 }
 
 void Sav2_ClearSetDefault(void)
@@ -220,7 +215,6 @@ void NewGameInitData(void)
     InitDewfordTrend();
     ResetFanClub();
     ResetLotteryCorner();
-    WarpToNewGamePostClockMeetRival();
     RunScriptImmediately(EventScript_ResetAllMapFlags);
     // Chuck all these items in the bag:
 /* AddBagItem(ITEM_MEGA_RING, 1);
@@ -245,6 +239,8 @@ AddBagItem(ITEM_HYPER_POTION, 3); */
     ResetItemFlags();
     ResetDexNav();
     ClearFollowerNPCData();
+    // Apply after all vanilla resets; never run this on Continue/load.
+    InitSimplifiedNewGame();
 }
 
 static void ResetMiniGamesRecords(void)

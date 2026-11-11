@@ -67,6 +67,22 @@ u32 GetBreakBarCount(u32 battler)
     return owner->breakBarsRemaining;
 }
 
+void InitializeWildBreakBar(u32 partySlot, const struct BreakBarConfig *config)
+{
+    if (gBattleStruct == NULL || partySlot >= PARTY_SIZE || config == NULL
+     || config->extraBars == 0 || config->extraBars > BREAK_BAR_MAX_EXTRA_BARS)
+        return;
+    struct PartyState *state = &gBattleStruct->partyState[B_SIDE_OPPONENT][partySlot];
+    state->breakBarConfig = config;
+    state->breakBarsRemaining = config->extraBars;
+}
+
+bool32 IsBreakBarCaptureBlocked(u32 battler)
+{
+    struct PartyState *owner = GetBreakBarOwner(battler);
+    return owner != NULL && (GetBreakBarCount(battler) != 0 || owner->breakBarPending);
+}
+
 bool32 IsBreakBarBase(u32 battler)
 {
     struct PartyState *owner = GetBreakBarOwner(battler);
@@ -107,6 +123,8 @@ bool32 GrantSavedBreakBar(u32 battler)
      || owner->breakBarsRemaining >= BREAK_BAR_MAX_EXTRA_BARS)
         return FALSE;
     u32 layer = owner->breakBarsRemaining;
+    if (layer == 0)
+        owner->breakBarSavedBaseWasRegistered = owner->breakBarConfig != NULL;
     owner->breakBarSavedHp[layer] = ReductionCanonicalHp(battler);
     owner->breakBarSavedMaxHp[layer] = ReductionCanonicalMaxHp(battler);
     owner->breakBarFillPixels = 0;
@@ -519,9 +537,27 @@ void BS_AnimateSavedBreakBar(void)
 
     u32 slot = IndexOfSpritePaletteTag(sBreakBarPaletteTags[battler]);
 
-    if (slot != 0xFF && covered != 0)
-        LoadPalette(sBreakBarFillColors[covered],
-            OBJ_PLTT_ID(slot) + 14, 2 * sizeof(u16));
+    if (slot != 0xFF)
+    {
+        const u16 *coveredColors;
+        if (covered != 0)
+            coveredColors = sBreakBarFillColors[covered];
+        else if (owner->breakBarSavedBaseWasRegistered || savedMaxHp == 0)
+            coveredColors = &sBreakBarBasePalette[14];
+        else
+        {
+            // The overlay draws the covered HP with the red fill tile (palette
+            // entries 14/15). Give those entries the covered ordinary bar's
+            // actual color until the new layer finishes filling.
+            u32 pixels = min(savedHp * B_HEALTHBAR_PIXELS / savedMaxHp, B_HEALTHBAR_PIXELS);
+            if (savedHp != 0 && pixels == 0)
+                pixels = 1;
+            u32 colorIndex = pixels > B_HEALTHBAR_PIXELS * 50 / 100 ? 10
+                           : pixels > B_HEALTHBAR_PIXELS * 20 / 100 ? 12 : 14;
+            coveredColors = &gBattleInterface_BallDisplayPal[colorIndex];
+        }
+        LoadPalette(coveredColors, OBJ_PLTT_ID(slot) + 14, 2 * sizeof(u16));
+    }
 
     bool32 drew = DrawHealthbarOverlay(
         battler,
@@ -533,7 +569,7 @@ void BS_AnimateSavedBreakBar(void)
     if (drew && IsOnPlayerSide(battler))
     {
         u32 displayedHp =
-            savedHp * owner->breakBarFillPixels / B_HEALTHBAR_PIXELS;
+            savedMaxHp * owner->breakBarFillPixels / B_HEALTHBAR_PIXELS;
 
         if (savedHp != 0
          && owner->breakBarFillPixels != 0
@@ -582,8 +618,8 @@ void BS_RestoreSavedBreakBar(void)
     ReductionEndMutation(battler);
     BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE,
         1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
-   // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE,
-  //  1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
+    // BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE,
+    //    1u << gBattlerPartyIndexes[battler], sizeof(gBattleMons[battler].hp), &gBattleMons[battler].hp);
     MarkBattlerForControllerExec(battler);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
@@ -607,7 +643,19 @@ void BS_RevealSavedBreakBar(void)
         return;
     u32 battler = GetBattlerForBattleScript(cmd->battler);
     if (GetHealthbarSprite(battler) != MAX_SPRITES)
-        UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], GetBattlerMon(battler), HEALTHBOX_HEALTH_BAR);
+    {
+    UpdateHealthboxAttribute(
+        gHealthboxSpriteIds[battler],
+        GetBattlerMon(battler),
+        HEALTHBOX_HEALTH_BAR);
+
+    if (IsOnPlayerSide(battler))
+        UpdateHpTextInHealthbox(
+            gHealthboxSpriteIds[battler],
+            HP_BOTH,
+            gBattleMons[battler].hp,
+            gBattleMons[battler].maxHP);
+    }
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 

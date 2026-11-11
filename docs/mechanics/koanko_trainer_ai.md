@@ -164,7 +164,9 @@ The first Protect gains +6 with pending Wish and incoming damage, or +2 while
 delayed damage is pending. Repeated Protect loses 8; an otherwise idle Protect
 loses 4. Failed/blocked ordinary actions are not rescued by these bonuses.
 
-Stage04/05 still own the solo virtual Wish profile, Reduction, Meteo and cooldown.
+Stage04 implements the solo virtual Wish profile and Reduction, awaiting user-run
+validation. Stage05 still owns production virtual-action ranking, Meteo and
+cooldown. See [the Stage04 codeflow handoff](../extra%20docs/KoankoDev/STAGE04_IMPLEMENTATION_AND_CODEFLOW.md).
 The block does not grant summon-owned Wishes or invent missing outcomes. The
 current all-holder Wishful Thinking trigger footprint remains unchanged; this
 block only values benefits to the casting TX itself.

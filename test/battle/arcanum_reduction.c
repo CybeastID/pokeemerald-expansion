@@ -267,7 +267,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction protects Polymorph originals in both 
         SetMonData(mon, MON_DATA_EXP, &exp);
         StringCopy(mon->box.nickname, COMPOUND_STRING("Original"));
         // Native Polymorph has a substantial stack frame. Keep fixture copies
-        // outside the runner's 1 KiB invocation stack.
+        // outside the runner's invocation stack.
         static struct Pokemon original;
         original = *mon;
         if (!polymorphFirst)

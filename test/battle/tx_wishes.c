@@ -34,6 +34,13 @@ static void SetTxHp(u32 hp)
     gBattleMons[tx].hp = hp;
     SetMonData(GetBattlerMon(tx), MON_DATA_MAX_HP, &gBattleMons[tx].maxHP);
     SetMonData(GetBattlerMon(tx), MON_DATA_HP, &gBattleMons[tx].hp);
+    // This fixture intentionally supplies a synthetic canonical maxHP.
+    // Seed the registered overlay baseline with the same value.
+    struct TxRollbackHealth *health = &gBattleStruct->txRollback.health;
+    health->originalMaxHp = health->appliedMaxHp = 400;
+    health->percent = 100;
+    health->hpFraction = ((u64)hp << 24) / 400;
+    health->lastHp = hp;
 }
 
 static void BS_SeedTxWish(void)
@@ -111,8 +118,8 @@ static s32 TxWishScore(u32 attacker, u32 target, u32 move, s32 score)
     if (!BattleAI_IsScoringArcanum())
     {
         if (sSeed == SEED_BLOCKED && TxRollbackHasWishes(attacker))
-            return move == MOVE_PSYCHIC ? 100 : 0;
-        return move == MOVE_CELEBRATE ? 100 : 0;
+            return move == MOVE_POWER_GEM ? 100 : 0;
+        return move == (TxRollbackHasWishes(attacker) ? MOVE_WIDE_GUARD : MOVE_CELEBRATE) ? 100 : 0;
     }
     if (move == MOVE_ARCANUM_WISH && CastoriaCanWishFor(attacker, CASTORIA_WISH_MORE_WISHES))
     {
@@ -167,7 +174,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reversal directly reverses all positive stages"
             EXPECT_EQ(player->statStages[stat], stat == STAT_DEF ? DEFAULT_STAT_STAGE - 2 : DEFAULT_STAT_STAGE - stat % 6 - 1);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
         EXPECT_EQ(TxRollbackCanWishFor(3, TX_WISH_REVERSAL, 3), FALSE);
-        EXPECT_EQ(gBattleMons[3].pp[3], GetMovePP(MOVE_CELEBRATE));
+        EXPECT_EQ(gBattleMons[3].pp[3], GetMovePP(MOVE_POWER_GEM));
     }
 }
 
@@ -186,7 +193,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes ordinary moves win ties without committing a Wi
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
         SUMMONED_OPPONENT();
-        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_CELEBRATE); }
+        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_WIDE_GUARD); }
     } THEN {
         EXPECT_EQ(gBattleStruct->txRollback.reciprocity, FALSE);
         EXPECT_EQ(gBattleStruct->txRollback.wishOutcome, TX_WISH_NONE);
@@ -437,21 +444,25 @@ AI_SINGLE_BATTLE_TEST("TX Wishes original breaks schedule Wish and Reduction wit
         TURN { MOVE(player, MOVE_SHEER_COLD, target: &gBattleMons[3]); }
         TURN { MOVE(player, MOVE_SHEER_COLD, target: &gBattleMons[3]); }
     } SCENE {
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_WIDE_GUARD, &gBattleMons[3]);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SHEER_COLD, player);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_WISH, &gBattleMons[3]);
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_CELEBRATE, &gBattleMons[3]);
+        ANIMATION(ANIM_TYPE_MOVE, MOVE_WIDE_GUARD, &gBattleMons[3]);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SHEER_COLD, player);
         if (!existingReduction)
             MESSAGE("A wish for Reduction fell upon your team!");
         ANIMATION(ANIM_TYPE_MOVE, MOVE_DOOM_DESIRE, &gBattleMons[3]);
-        ANIMATION(ANIM_TYPE_MOVE, MOVE_CELEBRATE, &gBattleMons[3]);
     } THEN {
         EXPECT_EQ(GetBreakBarCount(3), 0);
         EXPECT_EQ(ReductionIsActive(), TRUE);
         EXPECT_EQ(gBattleStruct->reduction.nextLoss, existingReduction ? 29 : 10);
         EXPECT_EQ(gWishFutureKnock.futureSightMove[0], MOVE_DOOM_DESIRE);
         EXPECT_EQ(gWishFutureKnock.futureSightCounter[0], 2);
-        EXPECT_EQ(gBattleMons[3].pp[3], GetMovePP(MOVE_CELEBRATE) - 2);
+        EXPECT_EQ(gBattleMons[3].pp[1], GetMovePP(MOVE_WIDE_GUARD) - 2);
+        EXPECT_EQ(gBattleMons[3].maxHP, 120);
+        EXPECT_EQ(gBattleMons[3].hp, 120);
+        EXPECT_EQ(gBattleStruct->txRollback.health.percent, 30);
+        EXPECT_EQ(GetMonData(GetBattlerMon(3), MON_DATA_MAX_HP), 400);
     }
 }
 
@@ -484,6 +495,10 @@ AI_SINGLE_BATTLE_TEST("TX Wishes first-break Wish triggers Wishful Thinking once
         struct PartyState *state = GetBattlerPartyState(3);
         u32 total = 0;
         EXPECT_EQ(gBattleMons[3].ability, ABILITY_WISHFUL_THINKING);
+        EXPECT_EQ(gBattleMons[3].maxHP, 240);
+        EXPECT_EQ(gBattleMons[3].hp, 240);
+        EXPECT_EQ(gBattleStruct->txRollback.health.percent, 60);
+        EXPECT_EQ(GetMonData(GetBattlerMon(3), MON_DATA_MAX_HP), 400);
         for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
             total += state->wishfulGrowth[stat];
         EXPECT_EQ(total, 1);
@@ -622,6 +637,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Restoration saved layers do not replay original
     } THEN {
         EXPECT_EQ(GetBreakBarCount(3), 2);
         EXPECT_EQ(GetBattlerPartyState(3)->breakBarSavedHp[1], 123);
+        EXPECT_EQ(gBattleStruct->txRollback.health.percent, 100);
     }
 }
 

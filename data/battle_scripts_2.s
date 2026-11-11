@@ -240,6 +240,12 @@ BattleScript_TrainerBallBlock::
 	waitmessage B_WAIT_TIME_LONG
 	finishaction
 
+BattleScript_BreakBarBallBlock::
+	waitmessage B_WAIT_TIME_LONG
+	printstring STRINGID_BREAKBARBLOCKEDBALL
+	waitmessage B_WAIT_TIME_LONG
+	finishaction
+
 BattleScript_RunByUsingItem::
 	playse SE_FLEE
 	setbyte gBattleOutcome, B_OUTCOME_RAN

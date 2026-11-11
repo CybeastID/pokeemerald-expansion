@@ -18,7 +18,7 @@ AI planning supplement: 2026-11-10. Stage11 adds encounter-wide tactical validat
 1. [Encounter lifecycle and progression](01_encounter_lifecycle.md) — **fully planned**; depends on existing Koanko/No Order Change systems.
 2. [Wishful Thinking validation](02_wishful_thinking_validation.md) — **fully planned**; validate existing implementation and shared stat ownership.
 3. [Smeargle Any Move](03_smeargle_any_move.md) — **fully planned**; depends on 01.
-4. [TX profiles and Reduction](04_tx_profiles_and_reduction.md) — **fully planned**; depends on 01–02.
+4. [TX profiles and Reduction](04_tx_profiles_and_reduction.md) — **implemented, awaiting user-run validation** (2026-11-10); depends on 01–02. [Implementation/codeflow handoff](../STAGE04_IMPLEMENTATION_AND_CODEFLOW.md).
 5. [Meteo and tactical AI](05_meteo_and_tactical_ai.md) — **fully planned**; depends on 02–04.
 6. [Break Bar form transitions](06_break_bar_form_transitions.md) — **fully planned**; depends on 01–02.
 7. [Independent Zacian ally](07_independent_zacian_ally.md) — **fully planned**; depends on 01 and 06; integrates 04–05.

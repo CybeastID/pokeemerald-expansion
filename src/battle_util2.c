@@ -56,6 +56,7 @@ void AllocateBattleResources(void)
 void FreeBattleResources(void)
 {
     Script_ClearTrainerBreakBarOverrides();
+    Script_ClearWildBreakBarOverride();
     if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
         FreeTrainerHillBattleStruct();
 

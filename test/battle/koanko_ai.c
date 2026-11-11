@@ -217,7 +217,7 @@ AI_SINGLE_BATTLE_TEST("Koanko AI TX ordinary Wish cannot credit unreachable inju
     } WHEN { TURN { MOVE(player, MOVE_CELEBRATE); } }
     THEN {
         PrepareConjured(1);
-        EXPECT(!TxRollbackHasWishes(1)); // Stage04 solo profile is not invented here.
+        EXPECT(TxRollbackHasWishes(1)); // Entry registers the solo combat profile.
         for (u32 i = 0; i < PARTY_SIZE; i++)
             if (i != 1)
                 SetMonData(&gEnemyParty[i], MON_DATA_HP, &(u16){1});
@@ -869,7 +869,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics TX coordinates delayed damage Wish and one
         s32 doom = TacticsScore(MOVE_DOOM_DESIRE);
         gWishFutureKnock.futureSightCounter[0] = 2;
         EXPECT_GT(doom, TacticsScore(MOVE_DOOM_DESIRE));
-        EXPECT(!TxRollbackHasWishes(1));
+        EXPECT(TxRollbackHasWishes(1));
     }
 }
 

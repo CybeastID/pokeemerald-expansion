@@ -135,6 +135,24 @@ SINGLE_BATTLE_TEST("(Gulp Missile) triggers even if the user is fainted by oppos
     }
 }
 
+SINGLE_BATTLE_TEST("(Gulp Missile) blocked paralysis on Misty Terrain still completes faint replacement")
+{
+    GIVEN {
+        PLAYER(SPECIES_CRAMORANT) { HP(1); MaxHP(250); Speed(100); Ability(ABILITY_GULP_MISSILE); }
+        PLAYER(SPECIES_WOBBUFFET) { Speed(100); }
+        OPPONENT(SPECIES_WOBBUFFET) { Speed(50); }
+    } WHEN {
+        TURN { MOVE(player, MOVE_SURF); MOVE(opponent, MOVE_MISTY_TERRAIN); }
+        TURN { MOVE(player, MOVE_CELEBRATE); MOVE(opponent, MOVE_SCRATCH); SEND_OUT(player, 1); }
+    } SCENE {
+        NOT ANIMATION(ANIM_TYPE_STATUS, B_ANIM_STATUS_PRZ, opponent);
+    } THEN {
+        EXPECT_EQ(opponent->status1 & STATUS1_PARALYSIS, 0);
+        EXPECT_EQ(gBattleResults.playerFaintCounter, 1);
+        EXPECT_EQ(gBattlerPartyIndexes[0], 1);
+    }
+}
+
 SINGLE_BATTLE_TEST("(Gulp Missile) Transformed Cramorant Gulping lowers defense but is prevented by stat reduction preventing abilities")
 {
     u32 species;

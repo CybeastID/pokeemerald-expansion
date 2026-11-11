@@ -21,7 +21,8 @@ bool32 ReductionIsActive(void)
 
 static struct ReductionOccupant *GetOccupant(u32 battler)
 {
-    if (!ReductionIsActive() || battler >= gBattlersCount || !IsOnPlayerSide(battler))
+    if (!ReductionIsActive() || battler >= gBattlersCount
+     || GetBattlerSide(battler) != gBattleStruct->reduction.affectedSide)
         return NULL;
     return &gBattleStruct->reduction.occupant[battler];
 }
@@ -224,10 +225,20 @@ void ReductionFinishBattle(void)
 
 void ReductionActivate(void)
 {
+    ReductionTryActivate(10, B_SIDE_PLAYER);
+}
+
+bool32 ReductionTryActivate(u32 initialLoss, u32 affectedSide)
+{
+    if (gBattleStruct == NULL || ReductionIsActive() || initialLoss == 0
+     || initialLoss > MAX_LEVEL || affectedSide >= NUM_BATTLE_SIDES)
+        return FALSE;
     memset(&gBattleStruct->reduction, 0, sizeof(gBattleStruct->reduction));
     gBattleStruct->reduction.active = TRUE;
     gBattleStruct->reduction.grace = TRUE;
-    gBattleStruct->reduction.nextLoss = 10;
+    gBattleStruct->reduction.nextLoss = initialLoss;
+    gBattleStruct->reduction.affectedSide = affectedSide;
+    return TRUE;
 }
 
 bool32 ReductionEndTurn(u32 battler)
@@ -235,7 +246,7 @@ bool32 ReductionEndTurn(u32 battler)
     struct ReductionData *data = &gBattleStruct->reduction;
     bool32 effect = FALSE;
     gBattleStruct->eventState.endTurnBattler++;
-    if (data->active && !data->grace && IsOnPlayerSide(battler) && IsBattlerAlive(battler))
+    if (data->active && !data->grace && GetBattlerSide(battler) == data->affectedSide && IsBattlerAlive(battler))
     {
         struct ReductionOccupant *state = GetOccupant(battler);
         u32 oldLevel = gBattleMons[battler].level;

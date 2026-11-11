@@ -36,7 +36,9 @@ struct BreakBarConfig
 // Once all extra bars are broken, callers may explicitly activate a new stack.
 // BREAK_BAR_DEFER_INITIAL_DRAW lets the caller provide its own entry animation.
 bool32 ActivateBreakBar(u32 battler, const struct BreakBarConfig *config);
+void InitializeWildBreakBar(u32 partySlot, const struct BreakBarConfig *config);
 u32 GetBreakBarCount(u32 battler);
+bool32 IsBreakBarCaptureBlocked(u32 battler);
 bool32 IsBreakBarBase(u32 battler);
 bool32 CanInterceptBreakBar(u32 battler);
 bool32 TryBreakBar(u32 battler, const u8 *returnInstr);

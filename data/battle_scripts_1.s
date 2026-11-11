@@ -9307,6 +9307,18 @@ BattleScript_TxRollbackEndurance::
 BattleScript_TxRollbackEnduranceEnd:
     return
 
+BattleScript_TxRollbackRefill60::
+    callnative BS_TxRollbackDeteriorate
+    .byte 60
+    waitstate
+    goto BattleScript_BreakBarRefill
+
+BattleScript_TxRollbackRefill30::
+    callnative BS_TxRollbackDeteriorate
+    .byte 30
+    waitstate
+    goto BattleScript_BreakBarRefill
+
 BattleScript_TxRollbackBreakWish::
     callnative BS_TxRollbackBeginPhase
     .2byte MOVE_WISH
@@ -9394,6 +9406,14 @@ BattleScript_TxWishReciprocity::
     call BattleScript_WishfulThinking
     goto BattleScript_MoveEnd
 
+BattleScript_TxWishReduction::
+    attackanimation
+    waitanimation
+    printstring STRINGID_CASTORIA_WISH_REDUCTION
+    waitmessage B_WAIT_TIME_LONG
+    call BattleScript_WishfulThinking
+    goto BattleScript_MoveEnd
+
 BattleScript_WishfulThinking::
     savetarget
     setbyte gBattlerTarget, 0
@@ -9429,6 +9449,7 @@ BattleScript_TxReciprocityHeal::
     datahpupdate BS_SCRIPTING, PASSIVE_HP_UPDATE
     printstring STRINGID_TX_RECIPROCITY_HEAL
     waitmessage B_WAIT_TIME_LONG
+BattleScript_TxReciprocityHealEnd::
     callnative BS_TxRollbackEndReciprocity
     return
 

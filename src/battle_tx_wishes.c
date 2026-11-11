@@ -15,7 +15,9 @@ extern const u8 BattleScript_TxWishReclamation[];
 extern const u8 BattleScript_TxWishCalamity[];
 extern const u8 BattleScript_TxWishRestoration[];
 extern const u8 BattleScript_TxWishReciprocity[];
+extern const u8 BattleScript_TxWishReduction[];
 extern const u8 BattleScript_TxReciprocityHeal[];
+extern const u8 BattleScript_TxReciprocityHealEnd[];
 
 // Phase moves and mirrored recovery are subroutines, not additional actions.
 struct TxScriptContext
@@ -73,14 +75,53 @@ static void RestoreContext(const struct TxScriptContext *ctx)
 bool32 TxRollbackHasWishes(u32 battler)
 {
     return gBattleStruct != NULL && battler < gBattlersCount
-        && gBattleStruct->txRollback.stage >= TX_ROLLBACK_AMBUSH_PENDING
-        && gBattleStruct->txRollback.stage != TX_ROLLBACK_DEFEATED
+        && !gBattleStruct->txRollback.ownerDefeated
+        && (gBattleStruct->txRollback.combatProfile == TX_PROFILE_KOANKO_SOLO
+         || (gBattleStruct->txRollback.combatProfile == TX_PROFILE_CASTORIA_SUMMON
+          && gBattleStruct->txRollback.stage >= TX_ROLLBACK_AMBUSH_PENDING
+          && gBattleStruct->txRollback.stage != TX_ROLLBACK_DEFEATED))
         && TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler]);
+}
+
+static const u8 sSummonedWishes[] =
+{
+    TX_WISH_REVERSAL, TX_WISH_RECLAMATION, TX_WISH_CALAMITY,
+    TX_WISH_RESTORATION, TX_WISH_RECIPROCITY,
+};
+
+static const u8 sSoloWishes[] =
+{
+    TX_WISH_REVERSAL, TX_WISH_RECLAMATION, TX_WISH_CALAMITY,
+    TX_WISH_REDUCTION, TX_WISH_RECIPROCITY,
+};
+
+STATIC_ASSERT(ARRAY_COUNT(sSummonedWishes) == ARRAY_COUNT(sSoloWishes), TxWishProfileCounts);
+
+u32 TxRollbackGetWishCount(u32 battler)
+{
+    return TxRollbackHasWishes(battler) ? ARRAY_COUNT(sSummonedWishes) : 0;
+}
+
+u32 TxRollbackGetWishAtIndex(u32 battler, u32 index)
+{
+    if (index >= TxRollbackGetWishCount(battler))
+        return TX_WISH_NONE;
+    return gBattleStruct->txRollback.combatProfile == TX_PROFILE_KOANKO_SOLO
+        ? sSoloWishes[index] : sSummonedWishes[index];
+}
+
+static bool32 ProfileAllowsWish(u32 battler, u32 wish)
+{
+    for (u32 i = 0; i < TxRollbackGetWishCount(battler); i++)
+        if (TxRollbackGetWishAtIndex(battler, i) == wish)
+            return TRUE;
+    return FALSE;
 }
 
 static bool32 IsOriginalAlly(u32 battler)
 {
-    if (battler >= gBattlersCount || IsOnPlayerSide(battler) || !IsBattlerAlive(battler))
+    if (gBattleStruct->txRollback.combatProfile != TX_PROFILE_CASTORIA_SUMMON
+     || battler >= gBattlersCount || IsOnPlayerSide(battler) || !IsBattlerAlive(battler))
         return FALSE;
     return gBattlerPartyIndexes[battler] == gBattleStruct->txRollback.casterPartyIndex
         || TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler]);
@@ -158,7 +199,7 @@ static u32 GetBenefits(u32 tx, struct TxBenefitEntry *entries)
 
 bool32 TxRollbackCanWishFor(u32 battler, u32 wish, u32 target)
 {
-    if (!TxRollbackHasWishes(battler) || !IsBattlerAlive(battler) || IsBreakBarPending(battler))
+    if (!ProfileAllowsWish(battler, wish) || !IsBattlerAlive(battler) || IsBreakBarPending(battler))
         return FALSE;
     switch (wish)
     {
@@ -187,6 +228,8 @@ bool32 TxRollbackCanWishFor(u32 battler, u32 wish, u32 target)
             && GetBreakBarCount(target) < BREAK_BAR_MAX_EXTRA_BARS;
     case TX_WISH_RECIPROCITY:
         return !gBattleStruct->txRollback.reciprocity;
+    case TX_WISH_REDUCTION:
+        return !ReductionIsActive();
     default:
         return FALSE;
     }
@@ -194,9 +237,9 @@ bool32 TxRollbackCanWishFor(u32 battler, u32 wish, u32 target)
 
 bool32 TxRollbackHasUsableWish(u32 battler)
 {
-    for (u32 wish = TX_WISH_REVERSAL; wish <= TX_WISH_RECIPROCITY; wish++)
+    for (u32 i = 0; i < TxRollbackGetWishCount(battler); i++)
         for (u32 target = 0; target < gBattlersCount; target++)
-            if (TxRollbackCanWishFor(battler, wish, target))
+            if (TxRollbackCanWishFor(battler, TxRollbackGetWishAtIndex(battler, i), target))
                 return TRUE;
     return FALSE;
 }
@@ -246,10 +289,12 @@ void BS_TxRollbackTryWish(void)
     struct TxRollbackBattleData *data = &gBattleStruct->txRollback;
     u32 tx = gBattlerAttacker;
     u32 wish = data->wishOutcome;
+    u32 targetPartyIndex = data->wishTargetPartyIndex;
     u32 target = MAX_BATTLERS_COUNT;
     data->wishOutcome = TX_WISH_NONE;
+    data->wishTargetPartyIndex = PARTY_SIZE;
     for (u32 b = 0; b < gBattlersCount; b++)
-        if (!IsOnPlayerSide(b) && gBattlerPartyIndexes[b] == data->wishTargetPartyIndex)
+        if (GetBattlerSide(b) == data->ownerSide && gBattlerPartyIndexes[b] == targetPartyIndex)
             target = b;
     if (!IsArcanumAction(tx) || gChosenMove != MOVE_ARCANUM_WISH
      || gCurrentMove != MOVE_ARCANUM_WISH || !TxRollbackCanWishFor(tx, wish, target))
@@ -304,6 +349,14 @@ void BS_TxRollbackTryWish(void)
     case TX_WISH_RECIPROCITY:
         data->reciprocity = TRUE;
         gBattlescriptCurrInstr = BattleScript_TxWishReciprocity;
+        break;
+    case TX_WISH_REDUCTION:
+        if (!ReductionTryActivate(1, B_SIDE_PLAYER))
+        {
+            gBattlescriptCurrInstr = cmd->failInstr;
+            return;
+        }
+        gBattlescriptCurrInstr = BattleScript_TxWishReduction;
         break;
     }
 }
@@ -385,7 +438,7 @@ void TxRollbackMirrorHealing(u32 battler, u32 oldHp, const u8 *returnInstr)
     if (!gBattleStruct->txRollback.reciprocity || !IsOnPlayerSide(battler)
      || !IsBattlerAlive(battler) || oldHp == 0 || gBattleMons[battler].hp <= oldHp)
         return;
-    u32 tx = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
+    u32 tx = TxRollbackGetOwnerBattler();
     if (!TxRollbackHasWishes(tx) || !IsBattlerAlive(tx) || IsBreakBarPending(tx)
      || gBattleMons[tx].hp == gBattleMons[tx].maxHP)
         return;
@@ -399,7 +452,14 @@ void TxRollbackMirrorHealing(u32 battler, u32 oldHp, const u8 *returnInstr)
 void BS_TxRollbackBeginReciprocity(void)
 {
     NATIVE_ARGS();
-    gBattleScripting.battler = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
+    gBattleScripting.battler = TxRollbackGetOwnerBattler();
+    if (gBattleScripting.battler >= gBattlersCount
+     || !TxRollbackHasWishes(gBattleScripting.battler)
+     || !IsBattlerAlive(gBattleScripting.battler) || IsBreakBarPending(gBattleScripting.battler))
+    {
+        gBattlescriptCurrInstr = BattleScript_TxReciprocityHealEnd;
+        return;
+    }
     SetHealAmount(gBattleScripting.battler, sRecoveryAmount);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }

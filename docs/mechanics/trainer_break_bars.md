@@ -308,9 +308,10 @@ may create a new stack after all extras have been broken.
 ## Wild encounters
 
 The Break Bar engine works on wild battlers too, including the same phase
-scripts. However, the current rules table and `settrainerbreakbars` command only
-configure trainers. There is no automatic wild-species/map rules table or
-overworld `setwildbreakbars` command. `setwildbattle` does not attach a profile.
+scripts. Scripted encounters can assign a profile with `setwildbreakbars` before
+`setwildbattle` and `dowildbattle`; see [Break Bar reference](break_bars.md#scripted-wild-encounters-and-capture).
+There is no automatic wild-species/map rules table. `setwildbattle` alone does
+not attach a profile.
 
 An existing C ability/encounter hook can activate a static profile once the wild
 battler's battle data is loaded and it is alive:
@@ -326,11 +327,9 @@ activatebreakbar BS_OPPONENT1, gWildBossBars, BattleScript_NoWildBars
 ```
 
 Here `gWildBossBars` is a `BreakBarConfig` you define and export, and
-`BattleScript_NoWildBars` is the caller's failure label. This is a battle-script
-command: it cannot be placed directly before `wildbattle` in an overworld event
-script. A wild encounter without an existing ability or battle-script hook
-needs an activation hook added before it can use the profile. A general
-pre-battle wild setup command would be an additional feature.
+`BattleScript_NoWildBars` is the caller's failure label. This remains useful for
+activation during an encounter; the overworld setter registers a profile before
+the initial healthbox is shown.
 
 ## Koanko
 
@@ -361,14 +360,15 @@ fixtures. Valkyrie and further teams are not implemented.
 
 ## Regression checks
 
-Run these commands from the repository root with the project's WSL toolchain:
+Run these commands from the repository root in WSL:
 
 ```sh
-wsl make -j8 check TESTS=test/battle/trainer_break_bars.c
-wsl make -j8 check TESTS=Break
-wsl make -j8 check TESTS=Koanko
-wsl make -j8 check TESTS=Kazuradrop
-wsl make -j8
+make -j8 check TESTS=test/battle/trainer_break_bars.c
+make -j8 check TESTS=test/battle/wild_break_bars.c
+make -j8 check TESTS=Break
+make -j8 check TESTS=Koanko
+make -j8 check TESTS=Kazuradrop
+make -j8
 ```
 
 The trainer tests exercise inline configs and phase pointers, automatic counts,

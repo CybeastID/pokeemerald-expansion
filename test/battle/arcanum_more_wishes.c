@@ -29,6 +29,7 @@ static bool8 sReviveAlly;
 static u8 sWishTurn;
 static u16 sEntryAbility;
 static u16 sPostSummonSpell;
+static u16 sTxOrdinaryMove;
 static u8 sAmbushEffect;
 static bool8 sSeedConditions;
 static bool8 sObstructCreation;
@@ -168,7 +169,7 @@ static s32 MoreWishesScore(u32 attacker, u32 target, u32 move, s32 score)
     if (sReviveAlly && gBattleStruct->txRollback.stage == TX_ROLLBACK_DEFEATED
      && gBattleMons[attacker].species == SPECIES_CASTORIA && move == MOVE_REVIVAL_BLESSING_2)
         return 200;
-    return move == MOVE_CELEBRATE ? 100 : 0;
+    return move == (TxRollbackHasWishes(attacker) ? sTxOrdinaryMove : MOVE_CELEBRATE) ? 100 : 0;
 }
 
 static void MoreWishesFixture(void)
@@ -181,6 +182,7 @@ static void MoreWishesFixture(void)
     sWishTurn = 0;
     sEntryAbility = ABILITY_NONE;
     sPostSummonSpell = MOVE_NONE;
+    sTxOrdinaryMove = MOVE_WIDE_GUARD;
     sAmbushEffect = 0;
     sSeedConditions = FALSE;
     sObstructCreation = FALSE;
@@ -231,6 +233,10 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes converts live Singles and preser
         EXPECT_EQ(gPlayerPartyCount, 2);
         EXPECT_EQ(gEnemyPartyCount, 6);
         EXPECT_EQ(gBattleMons[3].species, SPECIES_TX_ROLLBACK);
+        EXPECT_EQ(gBattleMons[3].moves[0], MOVE_FOLLOW_ME);
+        EXPECT_EQ(gBattleMons[3].moves[1], MOVE_WIDE_GUARD);
+        EXPECT_EQ(gBattleMons[3].moves[2], MOVE_LIFE_DEW);
+        EXPECT_EQ(gBattleMons[3].moves[3], MOVE_POWER_GEM);
         EXPECT_EQ(gBattlerPartyIndexes[3], PARTY_SIZE - 1);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
         EXPECT_EQ(gBattleStruct->txRollback.stage, TX_ROLLBACK_ACTIVE);
@@ -272,12 +278,12 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes joins ordinary selection next tu
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
         SUMMONED_OPPONENT();
-        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_CELEBRATE); }
-        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_CELEBRATE); }
+        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_WIDE_GUARD); }
+        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_WIDE_GUARD); }
     } THEN {
         EXPECT_EQ(sAmbushCalls, 1);
-        EXPECT_EQ(gBattleMons[3].pp[3], GetMovePP(MOVE_CELEBRATE) - 2);
-        EXPECT_EQ(gBattleMons[3].pp[0], GetMovePP(MOVE_PSYCHIC));
+        EXPECT_EQ(gBattleMons[3].pp[1], GetMovePP(MOVE_WIDE_GUARD) - 2);
+        EXPECT_EQ(gBattleMons[3].pp[0], GetMovePP(MOVE_FOLLOW_ME));
         EXPECT_EQ(gBattleStruct->txRollback.stage, TX_ROLLBACK_ACTIVE);
         EXPECT_EQ(IsBattlerAlive(2), FALSE);
         EXPECT_EQ(GetMonData(&gPlayerParty[1], MON_DATA_HP), GetMonData(&gPlayerParty[1], MON_DATA_MAX_HP));
@@ -453,7 +459,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes keeps TX Rollback fighting when 
         TURN { MOVE(player, MOVE_CELEBRATE); }
         SUMMONED_OPPONENT();
         TURN { MOVE(player, MOVE_SHEER_COLD, target: opponent); }
-        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_CELEBRATE); }
+        TURN { MOVE(player, MOVE_CELEBRATE); EXPECT_MOVE(&gBattleMons[3], MOVE_WIDE_GUARD); }
     } THEN {
         EXPECT_EQ(IsBattlerAlive(1), FALSE);
         EXPECT_EQ(IsBattlerAlive(3), TRUE);
@@ -616,6 +622,10 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes handles simultaneous enemy KOs w
     GIVEN {
         AI_FLAGS(AI_FLAG_DYNAMIC_FUNC);
         MoreWishesFixture();
+        // Wide Guard would block Misty Explosion and leave both foes alive,
+        // requiring an unrecorded player replacement rather than ending battle.
+        // Follow Me is a legal summoned move and allows the simultaneous KOs.
+        sTxOrdinaryMove = MOVE_FOLLOW_ME;
         PLAYER(SPECIES_ARTICUNO) { Level(100); SpAttack(9999); Speed(10); Moves(MOVE_CELEBRATE, MOVE_SHEER_COLD, MOVE_MISTY_EXPLOSION); }
         PLAYER(SPECIES_WOBBUFFET) { Speed(5); }
         OPPONENT(SPECIES_CASTORIA) { Level(50); Speed(20); Moves(MOVE_CELEBRATE); }
@@ -628,7 +638,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes handles simultaneous enemy KOs w
         SUMMONED_OPPONENT();
         TURN { MOVE(player, MOVE_SHEER_COLD, target: &gBattleMons[3]); }
         TURN { MOVE(player, MOVE_SHEER_COLD, target: &gBattleMons[3]); }
-        TURN { MOVE(player, MOVE_MISTY_EXPLOSION); }
+        TURN { MOVE(player, MOVE_MISTY_EXPLOSION); EXPECT_MOVE(&gBattleMons[3], MOVE_FOLLOW_ME); }
     } THEN {
         EXPECT_EQ(gBattleOutcome, B_OUTCOME_WON);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 2);

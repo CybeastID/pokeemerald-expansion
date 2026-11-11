@@ -3,6 +3,7 @@
 
 struct ScriptContext;
 struct TrainerBreakBarRules;
+struct BreakBarConfig;
 
 #define TRAINER_BREAK_BAR_OVERRIDE_COUNT 2
 
@@ -23,6 +24,8 @@ struct ScriptContext
     u32 data[4];
     const struct TrainerBreakBarRules *trainerBreakBarRules[TRAINER_BREAK_BAR_OVERRIDE_COUNT];
     u16 trainerBreakBarIds[TRAINER_BREAK_BAR_OVERRIDE_COUNT];
+    const struct BreakBarConfig *wildBreakBarConfig;
+    bool8 wildBreakBarArmed;
 };
 
 #define ScriptReadByte(ctx) (*(ctx->scriptPtr++))
@@ -30,6 +33,10 @@ struct ScriptContext
 void Script_SetTrainerBreakBars(struct ScriptContext *ctx);
 const struct TrainerBreakBarRules *Script_TakeTrainerBreakBarOverride(u16 trainerId);
 void Script_ClearTrainerBreakBarOverrides(void);
+void Script_SetWildBreakBars(struct ScriptContext *ctx);
+void Script_ArmWildBreakBars(struct ScriptContext *ctx);
+const struct BreakBarConfig *Script_TakeWildBreakBarOverride(void);
+void Script_ClearWildBreakBarOverride(void);
 
 void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd);
 u8 SetupBytecodeScript(struct ScriptContext *ctx, const u8 *ptr);

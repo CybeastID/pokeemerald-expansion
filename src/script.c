@@ -12,6 +12,7 @@
 
 #include "dexnav.h"
 #include "trainer_break_bars.h"
+#include "battle_break_bar.h"
 #include "constants/trainers.h"
 
 #define RAM_SCRIPT_MAGIC 51
@@ -46,6 +47,8 @@ void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTable
     s32 i;
 
     memset(ctx->trainerBreakBarRules, 0, sizeof(ctx->trainerBreakBarRules));
+    ctx->wildBreakBarConfig = NULL;
+    ctx->wildBreakBarArmed = FALSE;
     ctx->mode = SCRIPT_MODE_STOPPED;
     ctx->scriptPtr = NULL;
     ctx->stackDepth = 0;
@@ -78,6 +81,8 @@ void SetupNativeScript(struct ScriptContext *ctx, bool8 (*ptr)(void))
 void StopScript(struct ScriptContext *ctx)
 {
     memset(ctx->trainerBreakBarRules, 0, sizeof(ctx->trainerBreakBarRules));
+    ctx->wildBreakBarConfig = NULL;
+    ctx->wildBreakBarArmed = FALSE;
     ctx->mode = SCRIPT_MODE_STOPPED;
     ctx->scriptPtr = NULL;
 }
@@ -683,4 +688,36 @@ const struct TrainerBreakBarRules *Script_TakeTrainerBreakBarOverride(u16 traine
 void Script_ClearTrainerBreakBarOverrides(void)
 {
     memset(sGlobalScriptContext.trainerBreakBarRules, 0, sizeof(sGlobalScriptContext.trainerBreakBarRules));
+}
+
+void Script_SetWildBreakBars(struct ScriptContext *ctx)
+{
+    const struct BreakBarConfig *config = (const struct BreakBarConfig *)ScriptReadWord(ctx);
+    Script_RequestEffects(SCREFF_V1);
+    gSpecialVar_Result = FALSE;
+    if (config == NULL || config->extraBars == 0 || config->extraBars > BREAK_BAR_MAX_EXTRA_BARS)
+        return;
+    ctx->wildBreakBarConfig = config;
+    ctx->wildBreakBarArmed = FALSE;
+    gSpecialVar_Result = TRUE;
+}
+
+void Script_ArmWildBreakBars(struct ScriptContext *ctx)
+{
+    ctx->wildBreakBarArmed = ctx->wildBreakBarConfig != NULL;
+}
+
+const struct BreakBarConfig *Script_TakeWildBreakBarOverride(void)
+{
+    const struct BreakBarConfig *config = NULL;
+    if (sGlobalScriptContext.wildBreakBarArmed)
+        config = sGlobalScriptContext.wildBreakBarConfig;
+    Script_ClearWildBreakBarOverride();
+    return config;
+}
+
+void Script_ClearWildBreakBarOverride(void)
+{
+    sGlobalScriptContext.wildBreakBarConfig = NULL;
+    sGlobalScriptContext.wildBreakBarArmed = FALSE;
 }

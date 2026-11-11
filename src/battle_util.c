@@ -57,6 +57,7 @@
 #include "castoria_name_theft.h"
 #include "battle_koanko_smeargle.h"
 #include "battle_break_bar.h"
+#include "battle_script_commands.h"
 #include "trainer_break_bars.h"
 
 /*
@@ -848,7 +849,8 @@ void HandleAction_SafariZoneBallThrow(void)
     gBattlerAttacker = gBattlerByTurnOrder[gCurrentTurnActionNumber];
     gBattle_BG0_X = 0;
     gBattle_BG0_Y = 0;
-    gNumSafariBalls--;
+    if (!IsBreakBarCaptureBlocked(GetCatchingBattler()))
+        gNumSafariBalls--;
     gLastUsedItem = ITEM_SAFARI_BALL;
     gBattlescriptCurrInstr = BattleScript_SafariBallThrow;
     gCurrentActionFuncId = B_ACTION_EXEC_SCRIPT;
@@ -860,7 +862,7 @@ void HandleAction_ThrowBall(void)
     gBattle_BG0_X = 0;
     gBattle_BG0_Y = 0;
     gLastUsedItem = gBallToDisplay;
-    if (!GetItemImportance(gLastUsedItem))
+    if (!GetItemImportance(gLastUsedItem) && !IsBreakBarCaptureBlocked(GetCatchingBattler()))
     	RemoveBagItem(gLastUsedItem, 1);
     gBattlescriptCurrInstr = BattleScript_BallThrow;
     gCurrentActionFuncId = B_ACTION_EXEC_SCRIPT;
@@ -10376,6 +10378,7 @@ void CopyMonLevelAndBaseStatsToBattleMon(u32 battler, struct Pokemon *mon)
     gBattleMons[battler].spAttack = GetMonData(mon, MON_DATA_SPATK);
     gBattleMons[battler].spDefense = GetMonData(mon, MON_DATA_SPDEF);
     WishfulThinkingReapplyGrowth(battler);
+    TxRollbackOnStatsCopied(battler);
     ReductionOnStatsCopied(battler);
 }
 

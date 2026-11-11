@@ -663,6 +663,7 @@ struct PartyState
     u16 breakBarSavedHp[BREAK_BAR_MAX_EXTRA_BARS];
     u16 breakBarSavedMaxHp[BREAK_BAR_MAX_EXTRA_BARS];
     u8 breakBarFillPixels;
+    u8 breakBarSavedBaseWasRegistered; // Color of the base covered by a dynamic layer.
     // Wishful Thinking: number of x1.10 raw-stat growths per stat (index = enum Stat; HP slot unused).
     // Battle-only: never written to party data, never touches statStages.
     // NOT literally unbounded: the count saturates at 255 and gBattleMons raw stats are u16, so a

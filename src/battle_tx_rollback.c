@@ -7,6 +7,7 @@
 #include "battle_controllers.h"
 #include "battle_gfx_sfx_util.h"
 #include "battle_interface.h"
+#include "battle_koanko.h"
 #include "battle_main.h"
 #include "battle_script_commands.h"
 #include "battle_setup.h"
@@ -25,6 +26,8 @@ extern const u8 BattleScript_TxRollbackPrototypeAmbush[];
 extern const u8 BattleScript_TxRollbackEndurance[];
 extern const u8 BattleScript_TxRollbackBreakWish[];
 extern const u8 BattleScript_TxRollbackBreakDoomDesire[];
+extern const u8 BattleScript_TxRollbackRefill60[];
+extern const u8 BattleScript_TxRollbackRefill30[];
 
 static const struct TxRollbackProfile sPrototypeProfile =
 {
@@ -34,6 +37,8 @@ static const struct TxRollbackProfile sPrototypeProfile =
 static const struct BreakBarConfig sTxBreakBars =
 {
     .extraBars = 2,
+    .phases[1].onBreakScript = BattleScript_TxRollbackRefill60,
+    .phases[0].onBreakScript = BattleScript_TxRollbackRefill30,
     .phases[1].afterBreakScript = BattleScript_TxRollbackBreakWish,
     .phases[0].afterBreakScript = BattleScript_TxRollbackBreakDoomDesire,
 };
@@ -60,7 +65,9 @@ static void ResumeAmbushAfterEffects(void)
 
 static bool32 FormationActive(void)
 {
-    return gBattleStruct != NULL && gBattleStruct->txRollback.stage >= TX_ROLLBACK_ENTERING;
+    return gBattleStruct != NULL
+        && gBattleStruct->txRollback.combatProfile == TX_PROFILE_CASTORIA_SUMMON
+        && gBattleStruct->txRollback.stage >= TX_ROLLBACK_ENTERING;
 }
 
 enum TxRollbackSlotPolicy TxRollbackGetSlotPolicy(u32 battler)
@@ -82,13 +89,61 @@ bool32 TxRollbackCanPopulateSlot(u32 battler)
 
 bool32 TxRollbackOwnsPartyMon(u32 side, u32 partyIndex)
 {
-    return FormationActive() && side == B_SIDE_OPPONENT
+    return gBattleStruct != NULL && gBattleStruct->txRollback.combatProfile != TX_PROFILE_NONE
+        && side == gBattleStruct->txRollback.ownerSide
         && partyIndex == gBattleStruct->txRollback.partyIndex;
+}
+
+bool32 TxRollbackIsSummonedPartyMon(u32 side, u32 partyIndex)
+{
+    return gBattleStruct != NULL
+        && gBattleStruct->txRollback.combatProfile == TX_PROFILE_CASTORIA_SUMMON
+        && TxRollbackOwnsPartyMon(side, partyIndex);
+}
+
+u32 TxRollbackGetOwnerBattler(void)
+{
+    if (gBattleStruct == NULL || gBattleStruct->txRollback.ownerDefeated)
+        return MAX_BATTLERS_COUNT;
+    for (u32 battler = 0; battler < gBattlersCount; battler++)
+        if (TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler])
+         && !(gAbsentBattlerFlags & (1u << battler)))
+            return battler;
+    return MAX_BATTLERS_COUNT;
+}
+
+void TxRollbackRegisterKoanko(u32 battler)
+{
+    if (gBattleStruct == NULL || battler >= gBattlersCount
+     || !(gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+     || TRAINER_BATTLE_PARAM.opponentA != TRAINER_KOANKO
+     || gBattleStruct->koankoPhase != KOANKO_CONJURED_TEAM
+     || GetBattlerSide(battler) != B_SIDE_OPPONENT
+     || gBattlerPartyIndexes[battler] != 1
+     || gBattleMons[battler].species != SPECIES_TX_ROLLBACK)
+        return;
+    struct TxRollbackBattleData *data = &gBattleStruct->txRollback;
+    // Re-entry/refresh must not reset committed effects or a defeated owner.
+    if (data->combatProfile != TX_PROFILE_NONE)
+    {
+        // Solo ownership has no summon revival ban. A genuine revived re-entry
+        // starts fresh local effects; the global Reduction remains untouched.
+        if (data->combatProfile == TX_PROFILE_KOANKO_SOLO && data->ownerDefeated
+         && TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler])
+         && IsBattlerAlive(battler))
+            data->ownerDefeated = FALSE;
+        return;
+    }
+    data->combatProfile = TX_PROFILE_KOANKO_SOLO;
+    data->ownerSide = GetBattlerSide(battler);
+    data->partyIndex = gBattlerPartyIndexes[battler];
+    data->wishTargetPartyIndex = PARTY_SIZE;
+    data->wishCandidateTarget = MAX_BATTLERS_COUNT;
 }
 
 bool32 TxRollbackCanRevive(u32 side, u32 partyIndex)
 {
-    return !TxRollbackOwnsPartyMon(side, partyIndex);
+    return !TxRollbackIsSummonedPartyMon(side, partyIndex);
 }
 
 static bool32 CanPrepareCreation(u32 caster)
@@ -115,6 +170,7 @@ static bool32 CanPrepareCreation(u32 caster)
 bool32 TxRollbackCanCreate(u32 caster)
 {
     return gBattleStruct != NULL
+        && gBattleStruct->txRollback.combatProfile == TX_PROFILE_NONE
         && gBattleStruct->txRollback.stage == TX_ROLLBACK_NONE
         && CanPrepareCreation(caster);
 }
@@ -129,6 +185,9 @@ bool32 TxRollbackRequestCreation(u32 caster)
     data->caster = caster;
     data->casterPartyIndex = gBattlerPartyIndexes[caster];
     data->partyIndex = TX_PARTY_INDEX;
+    data->combatProfile = TX_PROFILE_CASTORIA_SUMMON;
+    data->ownerSide = B_SIDE_OPPONENT;
+    data->ownerDefeated = FALSE;
     data->savedTarget = gBattlerTarget;
     data->savedEffectBattler = gEffectBattler;
     data->savedScriptingBattler = gBattleScripting.battler;
@@ -147,15 +206,16 @@ void BS_TxRollbackCreate(void)
      || !CanPrepareCreation(data->caster))
     {
         data->stage = TX_ROLLBACK_NONE;
+        data->combatProfile = TX_PROFILE_NONE;
         gBattlescriptCurrInstr = cmd->failInstr;
         return;
     }
 
-    // Fixed Hardy personality and non-shiny OT; encounter kit is provisional.
+    // Fixed Hardy personality, 31 IVs, no EVs/item and a non-shiny OT.
     CreateMon(&gEnemyParty[TX_PARTY_INDEX], SPECIES_TX_ROLLBACK,
         gBattleMons[data->caster].level, 31, TRUE, 0, OT_ID_PRESET, 0x12345678);
     SetMonData(&gEnemyParty[TX_PARTY_INDEX], MON_DATA_NICKNAME, COMPOUND_STRING("TX Rollback"));
-    static const u16 moves[MAX_MON_MOVES] = {MOVE_PSYCHIC, MOVE_SWIFT, MOVE_PROTECT, MOVE_CELEBRATE};
+    static const u16 moves[MAX_MON_MOVES] = {MOVE_FOLLOW_ME, MOVE_WIDE_GUARD, MOVE_LIFE_DEW, MOVE_POWER_GEM};
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
         SetMonMoveSlot(&gEnemyParty[TX_PARTY_INDEX], moves[i], i);
     gEnemyPartyCount = CalculatePartyCount(gEnemyParty);
@@ -201,6 +261,7 @@ void BS_TxRollbackInitialize(void)
     NATIVE_ARGS();
     u32 battler = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
     // switchindataupdate has completed SwitchInClearSetData before this call.
+    TxRollbackInitializeHealth(battler);
     ActivateBreakBar(battler, &sTxBreakBars);
     gBattleStruct->battlerState[battler].noOrderChange = TRUE;
     gDisableStructs[battler].hazardsDone = TRUE;
@@ -269,8 +330,14 @@ void TxRollbackOnFaint(u32 battler)
     if (TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler])
      && !IsBreakBarPending(battler) && gBattleMons[battler].hp == 0)
     {
-        gBattleStruct->txRollback.stage = TX_ROLLBACK_DEFEATED;
-        gBattleStruct->txRollback.reciprocity = FALSE;
+        struct TxRollbackBattleData *data = &gBattleStruct->txRollback;
+        if (data->combatProfile == TX_PROFILE_CASTORIA_SUMMON)
+            data->stage = TX_ROLLBACK_DEFEATED;
+        data->ownerDefeated = TRUE;
+        data->reciprocity = FALSE;
+        data->wishCandidate = data->wishOutcome = TX_WISH_NONE;
+        data->wishCandidateTarget = MAX_BATTLERS_COUNT;
+        data->wishTargetPartyIndex = PARTY_SIZE;
     }
 }
 

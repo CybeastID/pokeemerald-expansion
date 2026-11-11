@@ -927,6 +927,7 @@ const u8 *const gBattleStringsTable[STRINGID_COUNT] =
     [STRINGID_NO_ORDER_CHANGE] = COMPOUND_STRING("No Order Change prevents\n{B_EFF_NAME_WITH_PREFIX} from switching!"),
     [STRINGID_BREAK_CHARM_ACTIVATES] = COMPOUND_STRING("{B_SCR_NAME_WITH_PREFIX}'s {B_LAST_ITEM}\nformed an extra HP bar!"),
     [STRINGID_LUNAR_DANCE_BREAK_BAR] = COMPOUND_STRING("{B_ATK_NAME_WITH_PREFIX} gained\nan extra HP bar!"),
+    [STRINGID_BREAKBARBLOCKEDBALL] = COMPOUND_STRING("{B_DEF_NAME_WITH_PREFIX}'s protective layers\nprevent capture!"),
     [STRINGID_CASTORIA_COMMANDS_MOVE] = COMPOUND_STRING("“By my Command Seal...! \nUse {B_BUFF1}!”"),
     [STRINGID_CASTORIA_DYNAMAX_EXPIRE] = COMPOUND_STRING("“Oh I'm sorry...you thought this was Dynamax? No, I'm just big!”"),
     [STRINGID_PKMNPOLYMORPHED] = COMPOUND_STRING("The enemy Caster transformed the opposing {B_BUFF2} into {B_BUFF1}!"),

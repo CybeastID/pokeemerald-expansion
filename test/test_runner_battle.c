@@ -55,6 +55,19 @@ static inline bool32 RngSeedNotDefault(const rng_value_t *seed)
 struct BattleTestRunnerState *const gBattleTestRunnerState = (void *)sBackupMapData;
 STATIC_ASSERT(sizeof(struct BattleTestRunnerState) <= sizeof(sBackupMapData), sBackupMapDataSpace);
 
+// Test bodies can reach Smol decompression through healthbox helpers. Its
+// symbol-delta decoder alone copies 1740 bytes of code onto the current stack.
+// Keep this larger stack outside the map buffer holding STATE and results.
+#define BATTLE_TEST_STACK_SIZE 4096
+struct BattleTestStack
+{
+    u32 guard[2];
+    u8 stack[BATTLE_TEST_STACK_SIZE];
+};
+static EWRAM_DATA struct BattleTestStack ALIGNED(8) sBattleTestStack = {0};
+STATIC_ASSERT(offsetof(struct BattleTestStack, stack) % 8 == 0, battleTestStackAlignment);
+STATIC_ASSERT(BATTLE_TEST_STACK_SIZE % 8 == 0, battleTestStackSizeAlignment);
+
 static void CB2_BattleTest_NextParameter(void);
 static void CB2_BattleTest_NextTrial(void);
 static void PushBattlerAction(u32 sourceLine, s32 battlerId, u32 actionType, u32 byte);
@@ -178,7 +191,7 @@ NAKED static void InvokeOneVsTwoTestFunctionWithStack(void *results, u32 i, stru
         .pool");
 }
 
-// Calls test->function, but pointing its stack at DATA.stack so that
+// Calls test->function, but pointing its stack at sBattleTestStack.stack so that
 // local variables are live after the function returns (and so can be
 // referenced by HP_BAR, or the next call, etc).
 // NOTE: This places the stack in EWRAM which has longer waitstates than
@@ -186,31 +199,37 @@ NAKED static void InvokeOneVsTwoTestFunctionWithStack(void *results, u32 i, stru
 // and b) mga-rom-test isn't meaningfully limited by the GBA frame rate.
 static void InvokeTestFunction(const struct BattleTest *test)
 {
+    const u32 stackGuard = 0x7A5C39E1;
+    sBattleTestStack.guard[0] = stackGuard;
+    sBattleTestStack.guard[1] = stackGuard;
     STATE->parametersCount = 0;
     switch (test->type)
     {
     case BATTLE_TEST_SINGLES:
     case BATTLE_TEST_WILD:
     case BATTLE_TEST_AI_SINGLES:
-        InvokeSingleTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], test->function.singles, &DATA.stack[BATTLE_TEST_STACK_SIZE]);
+        InvokeSingleTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], test->function.singles, &sBattleTestStack.stack[BATTLE_TEST_STACK_SIZE]);
         break;
     case BATTLE_TEST_DOUBLES:
     case BATTLE_TEST_AI_DOUBLES:
-        InvokeDoubleTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.doubles, &DATA.stack[BATTLE_TEST_STACK_SIZE]);
+        InvokeDoubleTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.doubles, &sBattleTestStack.stack[BATTLE_TEST_STACK_SIZE]);
         break;
     case BATTLE_TEST_MULTI:
     case BATTLE_TEST_AI_MULTI:
-        InvokeMultiTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.multi, &DATA.stack[BATTLE_TEST_STACK_SIZE]);
+        InvokeMultiTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.multi, &sBattleTestStack.stack[BATTLE_TEST_STACK_SIZE]);
         break;
     case BATTLE_TEST_TWO_VS_ONE:
     case BATTLE_TEST_AI_TWO_VS_ONE:
-        InvokeTwoVsOneTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.two_vs_one, &DATA.stack[BATTLE_TEST_STACK_SIZE]);
+        InvokeTwoVsOneTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.two_vs_one, &sBattleTestStack.stack[BATTLE_TEST_STACK_SIZE]);
         break;
     case BATTLE_TEST_ONE_VS_TWO:
     case BATTLE_TEST_AI_ONE_VS_TWO:
-        InvokeOneVsTwoTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.one_vs_two, &DATA.stack[BATTLE_TEST_STACK_SIZE]);
+        InvokeOneVsTwoTestFunctionWithStack(STATE->results, STATE->runParameter, &gBattleMons[B_POSITION_PLAYER_LEFT], &gBattleMons[B_POSITION_OPPONENT_LEFT], &gBattleMons[B_POSITION_PLAYER_RIGHT], &gBattleMons[B_POSITION_OPPONENT_RIGHT], test->function.one_vs_two, &sBattleTestStack.stack[BATTLE_TEST_STACK_SIZE]);
         break;
     }
+    if (sBattleTestStack.guard[0] != stackGuard || sBattleTestStack.guard[1] != stackGuard)
+        Test_ExitWithResult(TEST_RESULT_ERROR, SourceLine(0), ":L%s:%d: Battle test invocation stack guard overwritten (%d bytes)",
+            gTestRunnerState.test->filename, SourceLine(0), BATTLE_TEST_STACK_SIZE);
 }
 
 static const struct BattleTest *GetBattleTest(void)
@@ -238,6 +257,7 @@ static u32 BattleTest_EstimateCost(void *data)
     u32 cost;
     const struct BattleTest *test = data;
     memset(STATE, 0, sizeof(*STATE));
+    memset(&sBattleTestStack, 0, sizeof(sBattleTestStack));
     STATE->runRandomly = TRUE;
     InvokeTestFunction(test);
     cost = 1;
@@ -254,6 +274,7 @@ static void BattleTest_SetUp(void *data)
 {
     const struct BattleTest *test = data;
     memset(STATE, 0, sizeof(*STATE));
+    memset(&sBattleTestStack, 0, sizeof(sBattleTestStack));
     TestInitConfigData();
     InvokeTestFunction(test);
     STATE->parameters = STATE->parametersCount;
@@ -377,6 +398,7 @@ static void BattleTest_Run(void *data)
     const struct BattleTest *test = data;
 
     memset(&DATA, 0, sizeof(DATA));
+    memset(&sBattleTestStack, 0, sizeof(sBattleTestStack));
 
     DATA.recordedBattle.rngSeed = defaultSeed;
     DATA.recordedBattle.textSpeed = OPTIONS_TEXT_SPEED_FAST;
@@ -2459,7 +2481,9 @@ void DeclareSummonedOpponent(u32 sourceLine)
     DATA.hasSummonedOpponent = TRUE;
     DATA.currentMonIndexes[B_POSITION_OPPONENT_RIGHT] = PARTY_SIZE - 1;
     CreateMon(&DATA.summonedOpponentMon, SPECIES_TX_ROLLBACK, 50, 31, TRUE, 0, OT_ID_PRESET, 0x12345678);
-    const u16 moves[MAX_MON_MOVES] = {MOVE_PSYCHIC, MOVE_SWIFT, MOVE_PROTECT, MOVE_CELEBRATE};
+    // Match the summoned profile installed by BS_TxRollbackCreate. EXPECT_MOVE
+    // resolves against this declaration before the runtime summon exists.
+    const u16 moves[MAX_MON_MOVES] = {MOVE_FOLLOW_ME, MOVE_WIDE_GUARD, MOVE_LIFE_DEW, MOVE_POWER_GEM};
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
         SetMonMoveSlot(&DATA.summonedOpponentMon, moves[i], i);
 }

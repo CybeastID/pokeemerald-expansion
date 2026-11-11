@@ -81,3 +81,84 @@ activates before entry hazards. Lunar Dance keeps full HP/status/PP restoration,
 then adds a saved layer even to a healthy recipient; at the cap restoration still
 works. Its user empties the current bar: a protected user resolves that break and
 switches, while an unprotected user faints normally. Guts-on-Break remains separate.
+
+For a dynamically added layer over ordinary HP, the overlay temporarily maps
+its covered-fill palette entries to the saved HP bar's current green, yellow or
+red color. A saved battle-only flag remembers whether the covered base was
+already registered, so a registered red base stays red. Over an existing extra
+layer, it uses that layer's Break Bar color.
+Only the covered layer's presentation changes while the new purple bar fills;
+the animation and final Break Bar palette are unchanged.
+
+## Scripted wild encounters and capture
+
+`setwildbreakbars config` selects a static `BreakBarConfig` for the first wild
+Pokemon created by the next `setwildbattle`/`dowildbattle` pair. The event command
+accepts a C symbol with static lifetime and one to five extra bars. It sets
+`VAR_RESULT` to TRUE on success or FALSE for a NULL/invalid profile. For example,
+define a named profile in `src/data/trainer_break_bars.h`, which is included by
+`src/trainer_break_bars.c`:
+
+```c
+extern const u8 BattleScript_LegendaryFirstBreak[];
+
+const struct BreakBarConfig gWildLegendaryBreakBars =
+{
+    .extraBars = 2,
+    .phases[BREAK_BAR_BLUE - 1].afterBreakScript = BattleScript_LegendaryFirstBreak,
+};
+```
+
+The phase script must be an exported battle-script label that returns, for
+example `BattleScript_LegendaryFirstBreak::` with `return` in
+`data/battle_scripts_1.s`. The corresponding overworld event script can then use:
+
+```asm
+setwildbreakbars gWildLegendaryBreakBars
+setwildbattle SPECIES_RAYQUAZA, 100
+dowildbattle
+```
+
+The setter lives in the initiating `ScriptContext`. `dowildbattle` arms it, and
+`CB2_InitBattle` consumes it once, after battle state allocation and before the
+first healthbox draw. The first opponent party slot receives the profile through
+the shared party-state Break Bar system; a second wild Pokemon in a double battle
+does not. The profile never enters persistent Pokemon data, including on capture.
+Script stop/reset, battle setup completion and battle cleanup clear unused state.
+Waiting for the scripted battle preserves it. A canceled script or a battle that
+never reaches initialization cannot leave a profile for a later script.
+`settrainerbreakbars` remains independent. No automatic species/map assignment
+exists.
+
+Any wild battler with a remaining extra layer, including a dynamically granted
+layer or a pending break transition, rejects capture before catch odds or any
+guaranteed-capture rule is evaluated. Ordinary, Master and special Ball effects
+using the shared `handleballthrow` command follow this rule. The player sees a
+protective-layers message. Standard Bag balls and Safari Balls rejected for this
+reason are not spent. Once the final ordinary HP layer is reached, ordinary
+capture rules apply without a probability change. Capture paths that bypass
+`handleballthrow` are outside this shared restriction.
+
+## Wild Break Bar test fixture
+
+Run the focused fixture from the repository root in WSL:
+
+```sh
+make -j4 check TESTS=test/battle/wild_break_bars.c
+```
+
+`test/battle/wild_break_bars.c` defines the test-only `sWildBars` profile with
+two extra layers. `SetWildOverride` supplies the pointer argument that the
+`setwildbreakbars` event macro would supply; the test calls
+`Script_ArmWildBreakBars` to stand in for `dowildbattle` before battle
+initialization consumes the profile. The unit cases check one-shot consumption,
+invalid and canceled profiles, and capture eligibility at two, one, zero and
+pending layers. The wild battle case tries a Poke Ball and a Master Ball while
+protected, breaks both layers with Seismic Toss, then catches on the final HP
+layer. Add a `PARAMETRIZE` case or adjust `sWildBars` to exercise another Ball
+or phase profile. The test-only static symbol is not available to event scripts;
+use an exported C profile as shown above for a game encounter.
+
+The user reported this focused fixture passing after its opponent-position
+setup was corrected. ROM build and emulator inspection of the green/yellow/red
+and extra-layer insertion transitions have not been reported.

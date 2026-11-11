@@ -818,6 +818,7 @@ void BtlController_EmitSetMonData(u32 battler, u32 bufferId, u8 requestId, u8 mo
     for (i = 0; i < bytes; i++)
         gBattleResources->transferBuffer[3 + i] = *(u8 *)(data++);
     ReductionNormalizeRequest(battler, requestId, monToCheck, &gBattleResources->transferBuffer[3]);
+    TxRollbackNormalizeRequest(battler, requestId, monToCheck, &gBattleResources->transferBuffer[3]);
     PrepareBufferDataTransfer(battler, bufferId, gBattleResources->transferBuffer, 3 + bytes);
 }
 
@@ -2610,7 +2611,7 @@ void BtlController_HandleHealthBarUpdate(u32 battler)
     hpVal = gBattleResources->bufferA[battler][2] | (gBattleResources->bufferA[battler][3] << 8);
     maxHP = GetMonData(mon, MON_DATA_MAX_HP);
     curHP = GetMonData(mon, MON_DATA_HP);
-    if (ReductionIsScaled(battler))
+    if (ReductionIsScaled(battler) || TxRollbackHasHealthOverlay(battler))
     {
         maxHP = gBattleMons[battler].maxHP;
         curHP = gBattleMons[battler].hp;
