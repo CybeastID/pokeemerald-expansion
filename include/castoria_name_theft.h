@@ -96,7 +96,7 @@ struct PolymorphBackup
     u8 nickname[POKEMON_NAME_LENGTH + 1];
     u32 exp;
 };
-const struct PolymorphBackup *Test_GetPolymorphBackup(u32 side, u32 partyIndex);
+const struct PolymorphBackup *Test_GetPolymorphBackup(u32 trainer, u32 partyIndex);
 u32 PolymorphPickBestSample(const u32 *scores, u32 count);
 struct PolymorphSelectionDebug
 {

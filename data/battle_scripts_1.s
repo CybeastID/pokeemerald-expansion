@@ -1156,6 +1156,11 @@ BattleScript_EffectHealingWish::
 	tryfaintmon BS_ATTACKER
 	jumpifnotmove MOVE_LUNAR_DANCE, BattleScript_StoreHealingWish
 	callnative BS_ResolveBreakBars
+	jumpifhasnohp BS_ATTACKER, BattleScript_StoreHealingWish
+	storehealingwish BS_ATTACKER
+	printstring STRINGID_PKMNWENTBACK
+	waitmessage B_WAIT_TIME_SHORT
+	goto BattleScript_EffectHealingWishGen4
 BattleScript_StoreHealingWish:
 	storehealingwish BS_ATTACKER
 	jumpifgenconfiglowerthan CONFIG_B_HEALING_WISH_SWITCH, GEN_5, BattleScript_EffectHealingWishGen4
@@ -2781,13 +2786,15 @@ BattleScript_FaintBattler::
 
 BattleScript_BugSpacePassiveFaintBattler::
 	tryillusionoff BS_FAINTED
-	tryactivategulpmissile
+	undodynamax BS_FAINTED
+	callnative BS_TryBugSpaceFaintGulpMissile
 	playfaintcry BS_FAINTED
 	pause B_WAIT_TIME_LONG
 	dofaintanimation BS_FAINTED
+	tryconfusionafterskydrop BS_FAINTED
 	cleareffectsonfaint BS_FAINTED
 	trytoclearprimalweather
-	tryrevertweatherform
+	call BattleScript_TryRevertWeatherform
 	flushtextbox
 	waitanimation
 	tryactivatereceiver BS_FAINTED
@@ -6756,6 +6763,7 @@ BattleScript_CastoriaWishMoreWishes::
     switchinanim BS_SCRIPTING, FALSE, FALSE
     waitstate
     switchineffects BS_SCRIPTING
+    switchinevents
     callnative BS_TxRollbackFinishEntry
     goto BattleScript_MoveEnd
 
@@ -6816,7 +6824,7 @@ BattleScript_TxRollbackPhaseDoomDesire:
     .4byte BattleScript_TxRollbackPhaseEnd
     printstring STRINGID_USEDMOVE
     waitmessage B_WAIT_TIME_LONG
-    setfutureattack
+    callnative BS_TxRollbackSetDoomDesire
     playmoveanimation MOVE_DOOM_DESIRE
     waitanimation
     printfromtable gFutureMoveUsedStringIds
@@ -6957,6 +6965,7 @@ BattleScript_CastoriaWishDebilitation::
     waitmessage B_WAIT_TIME_LONG
     printstring STRINGID_NO_ORDER_CHANGE
     waitmessage B_WAIT_TIME_LONG
+    tryconfusionafterskydrop BS_EFFECT_BATTLER
     callnative BS_CastoriaCancelDebilitationMoves
     goto BattleScript_MoveEnd
 

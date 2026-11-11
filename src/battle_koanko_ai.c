@@ -491,7 +491,7 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         else if (move == MOVE_DOOM_DESIRE)
             delta += gBattleStruct->futureSight[battlerDef].counter ? -10 : useful && expected != 0 ? 4 : 0;
         else if (move == MOVE_PROTECT)
-            delta += gBattleMons[battlerAtk].volatiles.protectUses ? -8
+            delta += gBattleMons[battlerAtk].volatiles.consecutiveMoveUses ? -8
                 : gBattleStruct->wish[battlerAtk].counter && IncomingDamage(battlerAtk) != 0 ? 6
                 : gBattleStruct->futureSight[battlerDef].counter ? 2 : -4;
         break;

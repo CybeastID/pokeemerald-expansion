@@ -1040,10 +1040,8 @@ enum ItemEffect ItemBattleEffects(enum BattlerId itemBattler, enum BattlerId bat
         if (!GetBattlerPartyState(itemBattler)->breakBarItemUsed && GrantSavedBreakBar(itemBattler))
         {
             GetBattlerPartyState(itemBattler)->breakBarItemUsed = TRUE;
-            if (timing == IsOnSwitchInFirstTurnActivation)
-                BattleScriptExecute(BattleScript_BreakCharmEnd2);
-            else
-                BattleScriptCall(BattleScript_BreakCharmRet);
+            // Opening and later entries share the target switch-in interpreter.
+            BattleScriptCall(BattleScript_BreakCharmRet);
             RecordItemEffectBattle(itemBattler, holdEffect);
             effect = ITEM_EFFECT_OTHER;
         }

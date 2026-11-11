@@ -82,7 +82,12 @@ u8 CreateNPCTrainerPartyWithBreakBars(struct Pokemon *party, const struct Traine
     CreateNPCTrainerPartyFromTrainer(party, trainer);
     sGenerationRules = savedRules;
     gBattleTypeFlags = savedBattleTypeFlags;
-    return CalculatePartyCount(party);
+    // This adapter also supports temporary generation buffers. The target
+    // CalculatePartyCount takes a trainer identity, never a party pointer.
+    u32 count = 0;
+    while (count < PARTY_SIZE && GetMonData(&party[count], MON_DATA_SPECIES) != SPECIES_NONE)
+        count++;
+    return count;
 }
 
 static const struct TrainerBreakBarRules *SelectTrainerBreakBarRules(const struct TrainerBreakBarRules *const rules[DIFFICULTY_COUNT], enum DifficultyLevel difficulty)

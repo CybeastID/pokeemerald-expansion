@@ -1,4 +1,5 @@
 #include "global.h"
+#include "castoria_name_theft.h"
 #include "test/battle.h"
 #include "battle_ai_main.h"
 #include "battle_break_bar.h"
@@ -114,7 +115,7 @@ TEST("TX profiles retain the original ten-plus Reduction compatibility initializ
 TEST("TX profiles maxHP view survives repeated clean reloads without healing or duplicate growth")
 {
     ProfileUnitFixture(TX_PROFILE_CASTORIA_SUMMON);
-    CreateMon(&gEnemyParty[0], SPECIES_TX_ROLLBACK, 100, 31, TRUE, 0, OT_ID_PRESET, 0);
+    CreateMonWithIVs(&gEnemyParty[0], SPECIES_TX_ROLLBACK, 100, 0, OTID_STRUCT_PRESET(0), 31);
     u16 maximum = 401, hp = 123;
     SetMonData(&gEnemyParty[0], MON_DATA_MAX_HP, &maximum);
     SetMonData(&gEnemyParty[0], MON_DATA_HP, &hp);
@@ -124,7 +125,7 @@ TEST("TX profiles maxHP view survives repeated clean reloads without healing or 
     WishfulThinkingGrowStat(1, STAT_SPATK);
     u16 grown = gBattleMons[1].spAttack;
     gBattleStruct->txRollback.health.percent = 60;
-    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0]);
+    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0], TRUE);
     EXPECT_EQ(gBattleMons[1].maxHP, 240);
     EXPECT_EQ(gBattleMons[1].hp, 74);
     for (u32 i = 0; i < 32; i++)
@@ -136,13 +137,13 @@ TEST("TX profiles maxHP view survives repeated clean reloads without healing or 
         value = gBattleMons[1].maxHP;
         TxRollbackNormalizeRequest(1, REQUEST_MAX_HP_BATTLE, 0, &value);
         EXPECT_EQ(value, 401);
-        CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0]);
+        CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0], TRUE);
         EXPECT_EQ(gBattleMons[1].hp, 74);
         EXPECT_EQ(gBattleMons[1].maxHP, 240);
         EXPECT_EQ(gBattleMons[1].spAttack, grown);
     }
     gBattleStruct->txRollback.health.percent = 30;
-    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0]);
+    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0], TRUE);
     EXPECT_EQ(gBattleMons[1].maxHP, 120); // 30% of 401, not 30% of 240.
     EXPECT_EQ(gBattleMons[1].hp, 37);
     EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_MAX_HP), 401);
@@ -157,11 +158,11 @@ TEST("TX profiles maxHP view survives repeated clean reloads without healing or 
 TEST("TX profiles saved layers cover the current maxHP view without changing its phase")
 {
     ProfileUnitFixture(TX_PROFILE_CASTORIA_SUMMON);
-    CreateMon(&gEnemyParty[0], SPECIES_TX_ROLLBACK, 100, 31, TRUE, 0, OT_ID_PRESET, 0);
+    CreateMonWithIVs(&gEnemyParty[0], SPECIES_TX_ROLLBACK, 100, 0, OTID_STRUCT_PRESET(0), 31);
     PokemonToBattleMon(&gEnemyParty[0], &gBattleMons[1]);
     TxRollbackInitializeHealth(1);
     gBattleStruct->txRollback.health.percent = 60;
-    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0]);
+    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0], TRUE);
     gBattleMons[1].hp = 17;
     u16 maximum = gBattleMons[1].maxHP;
     EXPECT_EQ(GrantSavedBreakBar(1), TRUE);
@@ -175,14 +176,14 @@ TEST("TX profiles saved layers cover the current maxHP view without changing its
 TEST("TX profiles maxHP floors at one and normalizes masked full controller records")
 {
     ProfileUnitFixture(TX_PROFILE_CASTORIA_SUMMON);
-    CreateMon(&gEnemyParty[0], SPECIES_TX_ROLLBACK, 100, 31, TRUE, 0, OT_ID_PRESET, 0);
+    CreateMonWithIVs(&gEnemyParty[0], SPECIES_TX_ROLLBACK, 100, 0, OTID_STRUCT_PRESET(0), 31);
     u16 maximum = 2, hp = 1;
     SetMonData(&gEnemyParty[0], MON_DATA_MAX_HP, &maximum);
     SetMonData(&gEnemyParty[0], MON_DATA_HP, &hp);
     PokemonToBattleMon(&gEnemyParty[0], &gBattleMons[1]);
     TxRollbackInitializeHealth(1);
     gBattleStruct->txRollback.health.percent = 30;
-    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0]);
+    CopyMonLevelAndBaseStatsToBattleMon(1, &gEnemyParty[0], TRUE);
     EXPECT_EQ(gBattleMons[1].maxHP, 1);
     EXPECT_EQ(gBattleMons[1].hp, 1);
 
@@ -276,6 +277,8 @@ AI_SINGLE_BATTLE_TEST("Koanko TX entry registers only solo combat capabilities w
         EXPECT_EQ(gBattleStruct->txRollback.combatProfile, TX_PROFILE_KOANKO_SOLO);
         EXPECT_EQ(gBattleStruct->txRollback.stage, TX_ROLLBACK_NONE);
         EXPECT_EQ(gBattleStruct->txRollback.partyIndex, 1);
+        EXPECT_EQ(TxRollbackHasWishes(1), TRUE);
+        EXPECT_EQ(IsArcanumSlotUsable(1, MAX_MON_MOVES), TRUE);
         EXPECT_EQ(gBattlersCount, 2);
         EXPECT_EQ(IsDoubleBattle(), FALSE);
         EXPECT_EQ(GetBreakBarCount(1), 0);

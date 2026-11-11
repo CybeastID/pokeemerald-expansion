@@ -250,7 +250,7 @@ void BS_TxRollbackCreate(void)
     }
     gAbsentBattlerFlags |= 1u << B_POSITION_PLAYER_RIGHT;
     gAbsentBattlerFlags &= ~(1u << B_POSITION_OPPONENT_RIGHT);
-    gBattleScripting.battler = B_POSITION_OPPONENT_RIGHT;
+    gBattleScripting.battler = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
     BtlController_EmitGetMonData(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT), B_COMM_TO_CONTROLLER,
         REQUEST_ALL_BATTLE, 1u << TX_PARTY_INDEX);
     MarkBattlerForControllerExec(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
@@ -265,7 +265,6 @@ void BS_TxRollbackInitialize(void)
     TxRollbackInitializeHealth(battler);
     ActivateBreakBar(battler, &sTxBreakBars);
     gBattleStruct->battlerState[battler].noOrderChange = TRUE;
-    gBattleStruct->battlerState[battler].switchIn = FALSE;
     BattleLoadTxRollbackHealthboxGfx();
     gHealthboxSpriteIds[battler] = CreateBattlerHealthboxSprites(battler);
     InitBattlerHealthboxCoords(battler);

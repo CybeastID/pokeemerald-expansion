@@ -196,7 +196,7 @@ void BS_ApplyCastoriaNameResult(void)
     NATIVE_ARGS();
     u32 battler = gBattlerAttacker;  // Castoria
     u32 result = gBattleStruct->castoria.nameResult;
-    u32 target = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(battler)));
+    u32 target = GetOppositeBattler(battler);
 
     switch (result)
     {
@@ -263,7 +263,7 @@ void BS_CastoriaPrepareWorstMove(void)
     {
         if (IsBattlerAlive(target)
             && IsOnPlayerSide(target)
-            && GetBattlerPosition(target) == BATTLE_OPPOSITE(GetBattlerPosition(battler)))
+            && target == GetOppositeBattler(battler))
         {
             break;
         }
@@ -337,7 +337,7 @@ bool32 CastoriaDecideUseCommand(u32 battler)
         return FALSE;
 
     // Find the player's active mon opposite Castoria
-    u32 target = GetBattlerAtPosition(BATTLE_OPPOSITE(GetBattlerPosition(battler)));
+    u32 target = GetOppositeBattler(battler);
     if (!IsBattlerAlive(target))
         return FALSE;
 
@@ -695,7 +695,7 @@ void BS_CastoriaTryWish(void)
               || IsBattlerUltraBursted(target)
               || IsBattlerInTeraForm(target))
         {
-            TryBattleFormChange(target, FORM_CHANGE_END_BATTLE);
+            TryBattleFormChange(target, FORM_CHANGE_END_BATTLE, GetBattlerAbility(target));
         }
         // The form-change fallback restores party species; synchronize the
         // battler too. A copied form (Transform) is not an active gimmick.
@@ -721,17 +721,20 @@ void BS_CastoriaTryWish(void)
 void BS_CastoriaCancelDebilitationMoves(void)
 {
     NATIVE_ARGS();
-    u32 caster = gBattlerAttacker;
-    const u8 *cancelScript = CancelMultiTurnMoves(gEffectBattler, SKY_DROP_CANCEL_MULTI_TURN_MOVES);
+    if (gBattleControllerExecFlags)
+        return;
 
-    gBattlescriptCurrInstr = cmd->nextInstr;
-    if (cancelScript != NULL)
+    // The target tryconfusionafterskydrop command releases the passenger and
+    // resolves fatigue confusion before this native cancels the holder's move.
+    bool32 wasHolder = gBattleMons[gEffectBattler].volatiles.semiInvulnerable == STATE_SKY_DROP_ATTACKER;
+    CancelMultiTurnMoves(gEffectBattler);
+    if (wasHolder)
     {
-        // Sky Drop may release and confuse a rampaging passenger. Its ordinary
-        // status-command return address is not valid for a native Wish command.
-        SaveBattlerAttacker(caster);
-        BattleScriptCall(BattleScript_CastoriaDebilitationRelease);
+        gBattleMons[gEffectBattler].volatiles.skyDropTarget = 0;
+        BtlController_EmitSpriteInvisibility(gEffectBattler, B_COMM_TO_CONTROLLER, FALSE);
+        MarkBattlerForControllerExec(gEffectBattler);
     }
+    gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
 bool32 TryCastoriaNameTheft(u32 battler, bool32 viaCall)
@@ -878,7 +881,7 @@ static bool32 ShouldRejectPolymorphSpecies(u32 species)
                      || gSpeciesInfo[species].isUltraBurst
                      || gSpeciesInfo[species].isGigantamax
                      || gSpeciesInfo[species].isTeraForm
-                     || gSpeciesInfo[species].isLegendary
+                     || (gSpeciesInfo[species].isSubLegendary || gSpeciesInfo[species].isRestrictedLegendary)
                      || gSpeciesInfo[species].isMythical
                      || gSpeciesInfo[species].isParadox
                      || gSpeciesInfo[species].isUltraBeast;
@@ -962,7 +965,7 @@ void ConstructPolymorphMoveset(struct Pokemon *mon, u16 species, u32 moveBudget)
 
     for (move = 1; move < MOVES_COUNT; move++)
     {
-        if (CanLearnTeachableMove(species, move) || SpeciesCanLearnEggMove(species, move))
+        if (CanLearnTeachableMove(species, move) || SpeciesHasEggMove(species, move))
         {
             alreadyInPool = FALSE;
             for (j = 0; j < poolCount; j++)
@@ -1047,6 +1050,19 @@ u32 EvaluateMoveThreat(u16 move, u16 species)
     }
     else
     {
+        // These exact baseline setup moves formerly had dedicated effect IDs.
+        // Do not promote every move using the target's generic stat effect.
+        switch (move)
+        {
+        case MOVE_SWORDS_DANCE:
+        case MOVE_NASTY_PLOT:
+        case MOVE_DRAGON_DANCE:
+        case MOVE_QUIVER_DANCE:
+        case MOVE_SHELL_SMASH:
+            return 50;
+        default:
+            break;
+        }
         // Status Move Tiers
         switch (gMovesInfo[move].effect)
         {
@@ -1056,12 +1072,6 @@ u32 EvaluateMoveThreat(u16 move, u16 species)
             case EFFECT_MOONLIGHT:
             case EFFECT_ROOST:
                 score = 45; break;
-            case EFFECT_ATTACK_UP_2:
-            case EFFECT_SPECIAL_ATTACK_UP_2:
-            case EFFECT_DRAGON_DANCE:
-            case EFFECT_QUIVER_DANCE:
-            case EFFECT_SHELL_SMASH:
-                score = 50; break;
             case EFFECT_NON_VOLATILE_STATUS:
             case EFFECT_YAWN:
                 score = 40; break;
@@ -1313,7 +1323,7 @@ void GiveMonPolymorphMoveset(struct Pokemon *mon, u16 species)
     // 2. GATHER TEACHABLE MOVES & EGG MOVES
     for (move = 1; move < MOVES_COUNT; move++)
     {
-        if (CanLearnTeachableMove(species, move) || SpeciesCanLearnEggMove(species, move))
+        if (CanLearnTeachableMove(species, move) || SpeciesHasEggMove(species, move))
         {
             alreadyInPool = FALSE;
             for (j = 0; j < poolCount; j++)
@@ -1365,12 +1375,12 @@ struct PolymorphBackup {
 };
 #endif
 
-static EWRAM_DATA struct PolymorphBackup sPolymorphBackup[2][PARTY_SIZE] = {0};
+static EWRAM_DATA struct PolymorphBackup sPolymorphBackup[MAX_BATTLE_TRAINERS][PARTY_SIZE] = {0};
 
 #if TESTING
-const struct PolymorphBackup *Test_GetPolymorphBackup(u32 side, u32 partyIndex)
+const struct PolymorphBackup *Test_GetPolymorphBackup(u32 trainer, u32 partyIndex)
 {
-    return &sPolymorphBackup[side][partyIndex];
+    return &sPolymorphBackup[trainer][partyIndex];
 }
 #endif
 
@@ -1379,7 +1389,7 @@ void BS_PolymorphTarget(void)
     NATIVE_ARGS();
     u32 target = gBattlerTarget;
     u32 monId = gBattlerPartyIndexes[target];
-    u32 side = GetBattlerSide(target);
+    enum BattleTrainer trainer = GetBattlerTrainer(target);
     u32 partyIndex = gBattlerPartyIndexes[target];
     struct Pokemon *party = GetBattlerParty(target);
     struct Pokemon *mon = &party[monId];
@@ -1420,14 +1430,14 @@ void BS_PolymorphTarget(void)
     // Only the first cast records the true originals; later casts must not overwrite them.
     if (!alreadyPolymorphed)
     {
-        sPolymorphBackup[side][partyIndex].exp = oldExp; // Save the raw EXP
+        sPolymorphBackup[trainer][partyIndex].exp = oldExp; // Save the raw EXP
         if (GetBattlerPartyState(target)->changedSpecies == SPECIES_NONE)
             GetBattlerPartyState(target)->changedSpecies = oldSpecies;
-        GetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[side][partyIndex].nickname);
+        GetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[trainer][partyIndex].nickname);
         for (i = 0; i < MAX_MON_MOVES; i++)
         {
-            sPolymorphBackup[side][partyIndex].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i);
-            sPolymorphBackup[side][partyIndex].pp[i] = GetMonData(mon, MON_DATA_PP1 + i);
+            sPolymorphBackup[trainer][partyIndex].moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i);
+            sPolymorphBackup[trainer][partyIndex].pp[i] = GetMonData(mon, MON_DATA_PP1 + i);
         }
     }
     GetBattlerPartyState(target)->polymorphed = TRUE;
@@ -1464,7 +1474,7 @@ void BS_PolymorphTarget(void)
     BtlController_EmitResetActionMoveSelection(target, B_COMM_TO_CONTROLLER, RESET_MOVE_SELECTION);
     MarkBattlerForControllerExec(target);
     
-    if (StringCompare(sPolymorphBackup[side][partyIndex].nickname,
+    if (StringCompare(sPolymorphBackup[trainer][partyIndex].nickname,
                       GetSpeciesName(GetBattlerPartyState(target)->changedSpecies)) == 0)
     {
         const u8 *newName = GetSpeciesName(newSpecies);
@@ -1481,11 +1491,11 @@ void BS_PolymorphTarget(void)
 
 bool32 TryRestorePolymorphedMon(u32 partyIndex)
 {
-    struct PartyState *state = &gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex];
-    struct Pokemon *mon = &gPlayerParty[partyIndex];
+    struct PartyState *state = &gBattleStruct->partyState[B_TRAINER_PLAYER][partyIndex];
+    struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][partyIndex];
     u32 original, formHp, formMaxHp, newHp;
-    // FIX: Set side explicitly since this function iterates over the player's party
-    u32 side = B_SIDE_PLAYER;
+    // Battle-exit restoration operates on the persistent player's party.
+    enum BattleTrainer trainer = B_TRAINER_PLAYER;
     if (!state->polymorphed)
         return FALSE;
 
@@ -1503,12 +1513,12 @@ bool32 TryRestorePolymorphedMon(u32 partyIndex)
     // Restore original moves/PP so TMs aren't permanently lost
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
     {
-        SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphBackup[side][partyIndex].moves[i]);
-        SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphBackup[side][partyIndex].pp[i]);
+        SetMonData(mon, MON_DATA_MOVE1 + i, &sPolymorphBackup[trainer][partyIndex].moves[i]);
+        SetMonData(mon, MON_DATA_PP1 + i, &sPolymorphBackup[trainer][partyIndex].pp[i]);
     }
     // RESTORE original nickname and XP values.
-    SetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[side][partyIndex].nickname);
-    u32 savedExp = sPolymorphBackup[side][partyIndex].exp;
+    SetMonData(mon, MON_DATA_NICKNAME, sPolymorphBackup[trainer][partyIndex].nickname);
+    u32 savedExp = sPolymorphBackup[trainer][partyIndex].exp;
     SetMonData(mon, MON_DATA_EXP, &savedExp);
     CalculateMonStats(mon);
     newHp = ScaleHpToNewMax(formHp, formMaxHp, GetMonData(mon, MON_DATA_MAX_HP));

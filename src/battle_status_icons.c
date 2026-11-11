@@ -231,7 +231,7 @@ void RefreshBattleStatusIcon(u32 battler, u32 icon)
      || GetSpriteTileStartByTag(info->sheet.tag) == 0xFFFF)
         return;
 
-    spriteId = CreateSprite(&info->template, 0, 0, 0);
+    spriteId = CreateSpriteUnchecked(&info->template, 0, 0, 0);
     if (spriteId == MAX_SPRITES)
         return;
     sIconSpriteIds[battler][icon] = spriteId;

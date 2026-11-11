@@ -278,6 +278,10 @@ static inline u16 GetPartnerIdFromTrainerId(u16 trainerId)
     return (trainerId - TRAINER_PARTNER(PARTNER_NONE));
 }
 
+#if TESTING
+const struct Trainer *Test_GetTrainerOverride(u16 trainerId);
+#endif
+
 static inline const struct Trainer *GetTrainerStructFromId(u16 trainerId)
 {
     if (gIsDebugBattle) return GetDebugAiTrainer();
@@ -290,6 +294,11 @@ static inline const struct Trainer *GetTrainerStructFromId(u16 trainerId)
     }
     else
     {
+#if TESTING
+        const struct Trainer *testTrainer = Test_GetTrainerOverride(trainerId);
+        if (testTrainer != NULL)
+            return testTrainer;
+#endif
         difficulty = GetTrainerDifficultyLevel(trainerId);
         return &gTrainers[difficulty][SanitizeTrainerId(trainerId)];
     }

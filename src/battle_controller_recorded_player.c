@@ -370,7 +370,8 @@ static void RecordedPlayerHandleChooseMove(enum BattlerId battler)
         if (target == RECORDED_TARGET_DEFAULT)
         {
             struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleResources->bufferA[battler][4]);
-            target = GetDefaultSelectionTarget(battler, GetBattlerMoveSelectionTargetType(battler, moveInfo->moves[moveIndex]));
+            enum Move move = moveIndex < MAX_MON_MOVES ? moveInfo->moves[moveIndex] : GetBattlerMoveAtSlot(battler, moveIndex);
+            target = GetDefaultSelectionTarget(battler, GetBattlerMoveSelectionTargetType(battler, move));
         }
         BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, moveIndex | (target << 8));
     }

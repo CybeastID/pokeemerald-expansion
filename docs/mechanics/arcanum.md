@@ -1,5 +1,14 @@
 # Arcanum reference
 
+1.17.2 migration status: the ROM builds and the complete `arcanum.c` file passes
+71/71; Debilitation passes 22/22 and Normality 9/9. Other Wish files and broader
+regressions remain under validation; this is not migration acceptance.
+Polymorph snapshots now follow trainer-owned
+party rows, so equal slots in independent partner/opponent parties do not
+overwrite each other's originals. Battle-exit restoration of persistent player
+Pokemon uses the player row. See the migration checkpoint and
+`test/battle/migration_owner_apis.c` (4/4 passed) for the validation boundary.
+
 Arcanum currently gives opponent Castoria four virtual move slots, outside the
 ordinary four-slot move and PP arrays. The pool is Fireball, Revivify, Wish, and
 Polymorph. Mage Armor is a separate scripted opener on the backed-out name route.

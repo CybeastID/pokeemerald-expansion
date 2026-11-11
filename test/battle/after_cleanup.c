@@ -55,7 +55,7 @@ static bool32 CleanupProgress(void *data) { return gBattleTestRunner.checkProgre
 static bool32 CleanupExit(void *data, enum TestResult result) { return gBattleTestRunner.handleExitWithResult(data, result); }
 static u32 CleanupUniform(enum RandomTag tag, u32 lo, u32 hi, bool32 (*reject)(u32), void *caller)
 { return gBattleTestRunner.randomUniform(tag, lo, hi, reject, caller); }
-static u32 CleanupWeighted(enum RandomTag tag, u32 sum, u32 n, const u8 *weights, void *caller)
+static u32 CleanupWeighted(enum RandomTag tag, u32 sum, u32 n, const u16 *weights, void *caller)
 { return gBattleTestRunner.randomWeightedArray(tag, sum, n, weights, caller); }
 static const void *CleanupElement(enum RandomTag tag, const void *array, size_t size, size_t count, void *caller)
 { return gBattleTestRunner.randomElementArray(tag, array, size, count, caller); }
@@ -94,7 +94,7 @@ static void CleanupBattle(void *results, const u32 i, struct BattlePokemon *play
         if (fixture->declared)
         {
             EXPECT(ActivateBreakBar(B_POSITION_PLAYER_LEFT, &sCleanupBar));
-            struct PartyState *owner = GetBattlerPartyState(B_POSITION_PLAYER_LEFT);
+            struct PartyState *owner = GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
             owner->breakBarSavedHp[0] = 25;
             owner->breakBarSavedMaxHp[0] = player->maxHP;
         }

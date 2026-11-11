@@ -1,4 +1,6 @@
 #include "global.h"
+#include "battle_script_native.h"
+#include "constants/battle_script_commands.h"
 #include "test/battle.h"
 #include "battle_ai_util.h"
 #include "battle_break_bar.h"
@@ -59,7 +61,7 @@ static void Task_ObstructRollbackCreation(u8 taskId)
 {
     if (gBattleStruct->txRollback.stage == TX_ROLLBACK_REQUESTED)
     {
-        CreateMon(&gEnemyParty[PARTY_SIZE - 1], SPECIES_PICHU, 50, 31, TRUE, 0, OT_ID_PRESET, 123);
+        CreateMonWithIVs(&gEnemyParty[PARTY_SIZE - 1], SPECIES_PICHU, 50, 0, OTID_STRUCT_PRESET(123), 31);
         DestroyTask(taskId);
     }
 }
@@ -71,12 +73,12 @@ static void Task_SeedRollbackConditions(u8 taskId)
         gBattleMons[3].status1 = STATUS1_SLEEP_TURN(3) | STATUS1_FREEZE | STATUS1_PARALYSIS;
         SetMonData(&gEnemyParty[PARTY_SIZE - 1], MON_DATA_STATUS, &gBattleMons[3].status1);
         gBattleMons[3].volatiles.flinched = TRUE;
-        gDisableStructs[3].tauntTimer = 3;
+        gBattleMons[3].volatiles.tauntTimer = 3;
         DestroyTask(taskId);
     }
 }
 
-static void WaitForTestReshow(u32 battler)
+static void WaitForTestReshow(enum BattlerId battler)
 {
     if (gMain.callback2 == BattleMainCB2)
     {
@@ -114,7 +116,7 @@ static void BS_TestMoreWishesAmbush(void)
         sReshowController = gBattlerControllerFuncs[0];
         gBattlerControllerFuncs[0] = WaitForTestReshow;
         MarkBattlerForControllerExec(0);
-        FreeAllWindowBuffers(); // The party-menu transition frees these before returning.
+        CloseMainBattleScreen(); // Match the target party-menu graphics teardown.
         ReshowBattleScreenAfterMenu();
     }
 }
@@ -130,7 +132,8 @@ static const struct __attribute__((packed))
     bool8 isSpikes;
     const u8 *faintInstr;
     u8 ret;
-} sAmbushScript = {0xff, BS_TestMoreWishesAmbush, 0x39, 3, 0x19, BS_TARGET, FALSE, NULL, 0x3c};
+} sAmbushScript = {B_SCR_OP_CALLNATIVE, BS_TestMoreWishesAmbush, B_SCR_OP_PAUSE, 3,
+                  B_SCR_OP_TRYFAINTMON, BS_TARGET, FALSE, NULL, B_SCR_OP_RETURN};
 
 static const struct TxRollbackProfile sProfile =
 {
@@ -420,7 +423,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes retires its defeated slot while 
             void (*func)(void);
             const u8 *failInstr;
             const u8 *restoreInstr;
-        } command = {0xff, NULL, fail, fail};
+        } command = {B_SCR_OP_CALLNATIVE, NULL, fail, fail};
         const u8 *savedScript = gBattlescriptCurrInstr;
         gBattlerAttacker = 1;
         for (u32 i = 0; i < 2; i++)

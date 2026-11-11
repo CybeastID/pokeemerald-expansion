@@ -1,8 +1,10 @@
 # Break Bar reference
 
 Migration status (1.17.2): new direct-damage/faint and passive-HP hooks are
-implemented and core objects compile; runtime behavior is unverified. The full
-migration remains unbuildable. See the
+implemented and the migrated ROM builds. The main Break Bar file passes 21/21,
+grants 13/13, exit-HP cleanup 4/4, trainer bars 11/11 and wild capture 4/4.
+Broader interactions are still under validation. These are partial results.
+See the
 [checkpoint](../extra%20docs/KoankoDev/planning/15_upstream_migration_checkpoint.md)
 before relying on execution-path details below, which also describe the baseline.
 
@@ -42,8 +44,12 @@ different HP values and perform the boss's phase effects instead.
 
 Attack damage can empty an extra bar. At zero HP the bar becomes pending rather
 than fainting. Later hits of the same move cannot damage the next layer. After the
-whole move, `MOVEEND_BREAK_BARS` consumes the pending layer before move-switch
-effects and before the next battler acts. It saves the original target and makes
+whole action, `HandleAction_ActionFinished` calls `TryResolveBreakBarsAfterMove`
+before advancing to the next battler. The target multihit continuation uses
+pending-aware `IsBattlerAlive` while damage hooks suppress later HP loss.
+Move-switch/phase ordering still requires focused migration validation; the
+older `MOVEEND_BREAK_BARS` stage is not present in this port.
+The resolver saves the original target and makes
 the bar owner `BS_TARGET`; phase scripts return through the target-restoring
 continuation. A slower owner takes its scheduled action after the transition.
 Delayed attacks and instant-death effects in end-turn scripts resolve before the

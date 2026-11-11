@@ -6,6 +6,7 @@
 #include "battle_script_commands.h"
 #include "battle_scripts.h"
 #include "battle_util.h"
+#include "battle_move_resolution.h"
 #include "battle_anim.h"
 #include "pokemon.h"
 #include "random.h"
@@ -25,7 +26,7 @@ struct TxScriptContext
 {
     struct BattleScripting scripting;
     u32 hitMarker;
-    u16 resultFlags[MAX_BATTLERS_COUNT];
+    u32 resultFlags[MAX_BATTLERS_COUNT];
     u8 communication[BATTLE_COMMUNICATION_ENTRIES_COUNT];
     u16 currentMove;
     u16 chosenMove;
@@ -474,5 +475,12 @@ void BS_TxRollbackEndReciprocity(void)
 {
     NATIVE_ARGS();
     RestoreContext(&sRecoveryContext);
+    gBattlescriptCurrInstr = cmd->nextInstr;
+}
+
+void BS_TxRollbackSetDoomDesire(void)
+{
+    NATIVE_ARGS();
+    SetFutureSightAttack(gBattlerAttacker, gBattlerTarget, gCurrentMove);
     gBattlescriptCurrInstr = cmd->nextInstr;
 }

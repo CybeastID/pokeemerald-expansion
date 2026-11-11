@@ -5421,7 +5421,10 @@ void DecideTerastal(enum BattlerId battler)
     {
         aiCalcNoTera.move = aiMoves[moveIndex];
         if (!IsMoveUnusable(moveIndex, aiCalcNoTera.move, gAiLogicData->moveLimitations[battler]) && !IsBattleMoveStatus(aiCalcNoTera.move))
+        {
             altCalcs.dealtWithoutTera[moveIndex] = AI_CalcDamage(&aiCalcNoTera, battler, opposingBattler);
+            effectivenessDealtWithoutTera[moveIndex] = aiCalcNoTera.typeEffectiveness;
+        }
         else
             altCalcs.dealtWithoutTera[moveIndex] = noDmg;
 
@@ -5455,7 +5458,11 @@ void DecideTerastal(enum BattlerId battler)
     {
         // Damage calcs for damage dealt assumed we would tera. Adjust that so that further AI decisions are more accurate.
         for (u32 moveIndex = 0; moveIndex < MAX_MON_MOVES; moveIndex++)
+        {
             gAiLogicData->simulatedDmg[battler][opposingBattler][moveIndex] = altCalcs.dealtWithoutTera[moveIndex];
+            if (!IsBattleMoveStatus(aiMoves[moveIndex]))
+                gAiLogicData->effectiveness[battler][opposingBattler][moveIndex] = effectivenessDealtWithoutTera[moveIndex];
+        }
     }
 
     SetAIUsingGimmick(battler, res);
@@ -5479,7 +5486,7 @@ enum AIConsiderGimmick ShouldTeraFromCalcs(enum BattlerId battler, enum BattlerI
         if (GetMonData(&party[monIndex], MON_DATA_HP) != 0
          && GetMonData(&party[monIndex], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE
          && GetMonData(&party[monIndex], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG
-         && GetMonData(&party[monIndex], MON_DATA_TERA_TYPE) > 0)
+         && GetMonData(&party[monIndex], MON_DATA_TERA_TYPE) != TYPE_MYSTERY)
             numPossibleTera++;
     }
 

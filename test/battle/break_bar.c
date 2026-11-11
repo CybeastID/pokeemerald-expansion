@@ -79,7 +79,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar Lunar Dance stacks onto an existing bar and res
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), min(layers + 1, BREAK_BAR_MAX_EXTRA_BARS));
         EXPECT_EQ(player->hp, 100);
         if (layers < BREAK_BAR_MAX_EXTRA_BARS)
-            EXPECT_EQ(GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarSavedHp[layers], 100);
+            EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarSavedHp[layers], 100);
     }
 }
 
@@ -184,7 +184,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar four and five extra layers deplete before the r
             EXPECT_EQ(sCountsAtTurn[B_POSITION_OPPONENT_LEFT][turn], extraBars - turn);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 1);
         EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarsRemaining, 0);
-        EXPECT(GetBattlerPartyState(B_POSITION_OPPONENT_LEFT)->breakBarConfig == NULL);
+        EXPECT(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT))->breakBarConfig == NULL);
         EXPECT_EQ(gBattleStruct->bugSpace.active, FALSE);
     }
 }
@@ -208,7 +208,8 @@ AI_SINGLE_BATTLE_TEST("Break Bar overkill consumes only one layer and does not t
         EXPECT_EQ(opponent->hp, 10);
         EXPECT_EQ(opponent->maxHP, 10);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 0);
-        EXPECT_EQ(gBattleStruct->givenExpMons, 0);
+        EXPECT_EQ(gBattleStruct->givenExpMons[0], 0);
+        EXPECT_EQ(gBattleStruct->givenExpMons[1], 0);
         EXPECT_EQ(gSideTimers[B_SIDE_OPPONENT].retaliateTimer, 0);
         EXPECT_EQ((u32)gBattleStruct->savedTargetCount, 0);
     }
@@ -226,7 +227,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar resolves once after the full multi-hit move bef
         TURN { MOVE(player, MOVE_DOUBLE_KICK); }
     } SCENE {
         HP_BAR(opponent, hp: 0);
-        MESSAGE("The Pokémon was hit 2 time(s)!");
+        MESSAGE("The Pokémon was hit 2 times!");
         HP_BAR(opponent, hp: 5);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_CELEBRATE, opponent);
     } THEN {
@@ -370,7 +371,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar does not end Neutralizing Gas on a temporary ze
         HP_BAR(opponent, hp: 10);
     } THEN {
         EXPECT_EQ(opponent->hp, 10);
-        EXPECT_EQ((u32)gDisableStructs[B_POSITION_OPPONENT_LEFT].neutralizingGas, TRUE);
+        EXPECT_EQ((u32)gBattleMons[B_POSITION_OPPONENT_LEFT].volatiles.neutralizingGas, TRUE);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 0);
     }
 }
@@ -565,7 +566,7 @@ SINGLE_BATTLE_TEST("Break Bar dispatches each layer's own scripts and preserves 
         {
             u32 stackSize = gBattleResources->battleScriptsStack->size;
             u32 targetCount = gBattleStruct->savedTargetCount;
-            gBattlerTarget = B_POSITION_PLAYER_LEFT;
+            gBattlerTarget = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
             opponent->hp = 0;
             EXPECT_EQ(TryBreakBar(battler, savedScript), TRUE);
             EXPECT_EQ(GetBreakBarCount(battler), phase);
@@ -599,8 +600,9 @@ SINGLE_BATTLE_TEST("Break Bar task exhaustion leaves existing tasks intact")
     } THEN {
         u8 created[NUM_TASKS];
         u32 count = 0;
-        while (GetTaskCount() < NUM_TASKS)
-            created[count++] = CreateTask(TaskDummy, 0);
+        for (u32 task = 0; task < NUM_TASKS; task++)
+            if (!gTasks[task].isActive)
+                created[count++] = CreateTask(TaskDummy, 0);
         TaskFunc original = gTasks[0].func;
         EXPECT_EQ(ActivateBreakBar(B_POSITION_OPPONENT_LEFT, &sStacks[0]), TRUE);
         EXPECT(gTasks[0].func == original);

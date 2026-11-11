@@ -3,6 +3,8 @@
 #include "battle.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
+#include "battle_ai_record.h"
+#include "battle_controllers.h"
 #include "battle_koanko.h"
 #include "battle_main.h"
 #include "battle_script_commands.h"
@@ -44,7 +46,7 @@ void Script_StartKoankoSmeargleDebugBattle(struct ScriptContext *ctx)
 {
     Script_RequestEffects(SCREFF_V1 | SCREFF_ANY);
     memset(&gTrainerBattleParameter, 0, sizeof(gTrainerBattleParameter));
-    TRAINER_BATTLE_PARAM.mode = TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT;
+    // Zeroed target flags select singles; null introTextA skips intro text.
     TRAINER_BATTLE_PARAM.opponentA = TRAINER_KOANKO;
     TRAINER_BATTLE_PARAM.defeatTextA = (u8 *)sDebugSmeargleDefeatText;
     gNoOfApproachingTrainers = 0;
@@ -75,7 +77,7 @@ bool32 KoankoTryCreateDebugSmeargleParty(struct Pokemon *party, u16 trainerNum, 
     if (!sDebugSmeargleBattlePending)
         return FALSE;
     sDebugSmeargleBattlePending = FALSE;
-    if (party != gEnemyParty || !firstTrainer || trainerNum != TRAINER_KOANKO
+    if (party != gParties[B_TRAINER_OPPONENT_A] || !firstTrainer || trainerNum != TRAINER_KOANKO
      || gBattleTypeFlags != BATTLE_TYPE_TRAINER || gBattleStruct == NULL)
         return FALSE;
 
@@ -84,6 +86,10 @@ bool32 KoankoTryCreateDebugSmeargleParty(struct Pokemon *party, u16 trainerNum, 
     trainer.partySize = 1; // Only the real conjured Smeargle, in its owned slot 0.
     trainer.poolSize = 0;
     trainer.overrideTrainer = TRAINER_NONE;
+    // Only authored Tera types are eligible in this team. Target smart-Tera
+    // generation otherwise assigns random types to every untyped reserve.
+    // Keep the encounter's SMART_TERA decision flag unchanged.
+    trainer.aiFlags &= ~AI_FLAG_SMART_TERA;
     CreateNPCTrainerPartyWithBreakBars(party, &trainer, TRUE, gBattleTypeFlags, &gKoankoConjuredBreakBars);
     BuffKoankoSmeargle(party);
     gBattleStruct->koankoPhase = KOANKO_CONJURED_TEAM;
@@ -103,14 +109,14 @@ bool32 TryStartKoankoConjuring(const u8 *returnInstr)
      || ((gBattleTypeFlags & (BATTLE_TYPE_RECORDED | BATTLE_TYPE_RECORDED_LINK)) && !gTestRunnerEnabled)
      || TRAINER_BATTLE_PARAM.opponentA != TRAINER_KOANKO
      || gBattleOutcome != 0 || gBattleControllerExecFlags != 0
-     || NoAliveMonsForPlayer() || !NoAliveMonsForBattlerSide(B_POSITION_OPPONENT_LEFT)
+     || NoAliveMonsForPlayer() || !NoAliveMonsForBattlerSide(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT))
      || gBattleResources->battleScriptsStack->size + 2 > ARRAY_COUNT(gBattleResources->battleScriptsStack->ptr))
         return FALSE;
 
     // Commit before yielding to controllers or dialogue: this can run only once.
     gBattleStruct->koankoPhase = KOANKO_CONJURING;
     gBattleStruct->trainerSlideMsg = sKoankoConjuringMessage;
-    gBattleScripting.battler = B_POSITION_OPPONENT_LEFT;
+    gBattleScripting.battler = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
     BattleScriptPush(returnInstr);
     gBattlescriptCurrInstr = BattleScript_KoankoConjureTeam;
     return TRUE;
@@ -123,14 +129,14 @@ void ConjureKoankoTeam(void)
 
     // Slot ownership ends here. Keep the player's state, field/side effects,
     // trainer inventory and trainer-wide gimmick consumption intact.
-    memset(gBattleStruct->partyState[B_SIDE_OPPONENT], 0, sizeof(gBattleStruct->partyState[B_SIDE_OPPONENT]));
-    memset(gBattleStruct->itemLost[B_SIDE_OPPONENT], 0, sizeof(gBattleStruct->itemLost[B_SIDE_OPPONENT]));
-    memset(gBattleStruct->gimmick.activeGimmick[B_SIDE_OPPONENT], 0, sizeof(gBattleStruct->gimmick.activeGimmick[B_SIDE_OPPONENT]));
-    memset(gAiPartyData->mons[B_SIDE_OPPONENT], 0, sizeof(gAiPartyData->mons[B_SIDE_OPPONENT]));
-    gWishFutureKnock.knockedOffMons[B_SIDE_OPPONENT] = 0;
-    gBattleStruct->givenExpMons = 0;
-    gBattleStruct->opponentMonCanTera = 0;
-    gBattleStruct->opponentMonCanDynamax = 0;
+    memset(gBattleStruct->partyState[B_TRAINER_OPPONENT_A], 0, sizeof(gBattleStruct->partyState[B_TRAINER_OPPONENT_A]));
+    memset(gBattleStruct->itemLost[B_TRAINER_OPPONENT_A], 0, sizeof(gBattleStruct->itemLost[B_TRAINER_OPPONENT_A]));
+    memset(gBattleStruct->gimmick.activeGimmick[B_TRAINER_OPPONENT_A], 0, sizeof(gBattleStruct->gimmick.activeGimmick[B_TRAINER_OPPONENT_A]));
+    memset(gAiPartyData->mons[B_TRAINER_OPPONENT_A], 0, sizeof(gAiPartyData->mons[B_TRAINER_OPPONENT_A]));
+    // Knock Off is now owned by PartyState, cleared above. Tera/Dynamax
+    // eligibility is encoded in the fresh Pokemon generated below, rather
+    // than in the removed side bit masks. Preserve trainer consumption.
+    gBattleStruct->givenExpMons[B_TRAINER_OPPONENT_A & BIT_FLANK] = 0;
     gBattleStruct->arenaLostOpponentMons = 0;
 
     // Confirmed design: the conjured team gets one fresh ordinary Tera opportunity. Clear ONLY the
@@ -151,14 +157,18 @@ void ConjureKoankoTeam(void)
     trainer.partySize = ARRAY_COUNT(sKoankoConjuredParty);
     trainer.poolSize = 0;
     trainer.overrideTrainer = TRAINER_NONE;
-    CreateNPCTrainerPartyWithBreakBars(gEnemyParty, &trainer, TRUE, BATTLE_TYPE_TRAINER, &gKoankoConjuredBreakBars);
-    BuffKoankoSmeargle(gEnemyParty);
+    // Preserve the authored eligibility mask: only Fire Calyrex can Tera.
+    // The encounter retains its SMART_TERA decision flag.
+    trainer.aiFlags &= ~AI_FLAG_SMART_TERA;
+    CreateNPCTrainerPartyWithBreakBars(gParties[B_TRAINER_OPPONENT_A], &trainer, TRUE, BATTLE_TYPE_TRAINER, &gKoankoConjuredBreakBars);
+    BuffKoankoSmeargle(gParties[B_TRAINER_OPPONENT_A]);
     for (u32 slot = 0; slot < PARTY_SIZE; slot++)
     {
-        TryFormChange(slot, B_SIDE_OPPONENT, FORM_CHANGE_BEGIN_BATTLE);
-        gBattleStruct->itemLost[B_SIDE_OPPONENT][slot].originalItem = GetMonData(&gEnemyParty[slot], MON_DATA_HELD_ITEM);
+        TryFormChange(&gParties[B_TRAINER_OPPONENT_A][slot], FORM_CHANGE_BEGIN_BATTLE, B_TRAINER_OPPONENT_A);
+        gBattleStruct->itemLost[B_TRAINER_OPPONENT_A][slot].originalItem = GetMonData(&gParties[B_TRAINER_OPPONENT_A][slot], MON_DATA_HELD_ITEM);
     }
-    gAiPartyData->count[B_SIDE_OPPONENT] = CalculateEnemyPartyCount();
+    gPartiesCount[B_TRAINER_OPPONENT_A] = CalculatePartyCount(B_TRAINER_OPPONENT_A);
+    gAiPartyData->count[B_TRAINER_OPPONENT_A] = gPartiesCount[B_TRAINER_OPPONENT_A];
 
     u32 battler = B_POSITION_OPPONENT_LEFT;
     memset(&gBattleStruct->battlerState[battler], 0, sizeof(gBattleStruct->battlerState[battler]));
@@ -178,7 +188,8 @@ void ConjureKoankoTeam(void)
     gBattleStruct->gimmick.usableGimmick[battler] = GIMMICK_NONE;
     gBattleStruct->monToSwitchIntoId[battler] = PARTY_SIZE;
     gBattleStruct->AI_monToSwitchIntoId[battler] = 0; // Smeargle leads the new team.
-    gBattleStruct->changedItems[battler] = ITEM_NONE;
+    // The target has no pending changedItems buffer; fresh switch-in loads
+    // the generated held item and the trainer-owned itemLost row above.
     gBattleStruct->choicedMove[battler] = MOVE_NONE;
     gBattleStruct->prevTurnSpecies[battler] = SPECIES_NONE;
     gBattleStruct->moveResultFlags[battler] = 0;

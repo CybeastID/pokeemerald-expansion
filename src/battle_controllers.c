@@ -9,6 +9,7 @@
 #include "battle_controllers.h"
 #include "battle_gfx_sfx_util.h"
 #include "battle_interface.h"
+#include "battle_koanko_smeargle.h"
 #include "kazuradrop_battle_ui.h"
 #include "battle_status_icons.h"
 #include "servant_sigil.h"
@@ -3428,7 +3429,8 @@ void SetFinalChosenTarget(enum BattlerId battler, bool32 checkPartner)
 
     enum BattlerId chosenTarget = gAiBattleData->chosenTarget[battler];
     u32 chosenMoveIndex = gAiBattleData->chosenMoveIndex[battler];
-    enum Move chosenMove = chosenMoveIndex < MAX_MON_MOVES
+    // Smeargle commits its sampled move after the choose-move buffer is built.
+    enum Move chosenMove = chosenMoveIndex < MAX_MON_MOVES && !KoankoSmeargleAnyMoveActive(battler)
         ? moveInfo->moves[chosenMoveIndex]
         : GetBattlerMoveAtSlot(battler, chosenMoveIndex);
     enum MoveTarget targetType = GetBattlerMoveSelectionTargetType(battler, chosenMove);

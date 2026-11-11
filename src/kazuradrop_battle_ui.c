@@ -336,7 +336,7 @@ void CreateBugSpacePanel(u32 battler)
     // Y: use healthbox y at creation time; callback keeps it updated
     s16 startY   = gSprites[gHealthboxSpriteIds[battler]].y + BUGSPACE_PANEL_Y_OFFSET;
 
-    u32 spriteId = CreateSprite(&sSpriteTemplate_KazuPanel, startX, startY, 0);
+    u32 spriteId = CreateSpriteUnchecked(&sSpriteTemplate_KazuPanel, startX, startY, 0);
     if (spriteId == MAX_SPRITES)
         return;
 
@@ -353,7 +353,7 @@ void CreateBugSpacePanel(u32 battler)
     if (GetSpriteTileStartByTag(TAG_KAZU_NUMBER) == 0xFFFF)
     LoadSpriteSheet(&sSpriteSheet_KazuNumber);
 
-u32 numSpriteId = CreateSprite(&sSpriteTemplate_KazuNumber, startX, startY, 0);
+u32 numSpriteId = CreateSpriteUnchecked(&sSpriteTemplate_KazuNumber, startX, startY, 0);
 if (numSpriteId != MAX_SPRITES)
 {
     gSprites[numSpriteId].tBattler = battler;
@@ -489,7 +489,7 @@ void BS_ShowKazuraDialogueBox(void)
         gBattleStruct->bugSpace.kazuraDialogState = 1;
         return;
     }
-    if (IsTextPrinterActive(sKazuraDialogWindowId))
+    if (IsTextPrinterActiveOnWindow(sKazuraDialogWindowId))
         return;
     if (!gTestRunnerEnabled && !JOY_NEW(A_BUTTON))
         return;

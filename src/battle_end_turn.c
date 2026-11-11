@@ -1445,7 +1445,7 @@ static bool32 HandleEndTurnFormChange(enum BattlerId battler)
 }
 
 // Bug Space BP threshold decay - happens once per turn for the field
-static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
+static bool32 HandleEndTurnBugSpaceDecay(enum BattlerId battler)
 {
     bool32 effect = FALSE;
 
@@ -1554,7 +1554,7 @@ static bool32 HandleEndTurnBugSpaceDecay(u32 battler)
 }
 
 // Bug Space passive OHKO - triggers when threshold reaches floor
-static bool32 HandleEndTurnBugSpacePassiveOHKO(u32 battler)
+static bool32 HandleEndTurnBugSpacePassiveOHKO(enum BattlerId battler)
 {
     bool32 effect = FALSE;
 
@@ -1585,7 +1585,7 @@ static bool32 HandleEndTurnBugSpacePassiveOHKO(u32 battler)
 }
 
 // Melt Virus: deal 1/8 (1/4 if Bug Space at MINIMIZE+ tier) max HP damage and heal the attacker
-static bool32 HandleEndTurnMeltVirus(u32 battler)
+static bool32 HandleEndTurnMeltVirus(enum BattlerId battler)
 {
     bool32 effect = FALSE;
     // u32 i;
@@ -1620,7 +1620,7 @@ static bool32 HandleEndTurnMeltVirus(u32 battler)
 }
 
 // Infinite Growth: raise raw stats (ATK, DEF, SPATK, SPDEF, SPD) by 10%, increase max HP by 5%, heal 1/16 max HP
-static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
+static bool32 HandleEndTurnInfiniteGrowth(enum BattlerId battler)
 {
     bool32 effect = FALSE;
 
@@ -1641,7 +1641,7 @@ static bool32 HandleEndTurnInfiniteGrowth(u32 battler)
         BtlController_EmitSetMonData(battler, B_COMM_TO_CONTROLLER, REQUEST_MAX_HP_BATTLE, 0, sizeof(gBattleMons[battler].maxHP), &gBattleMons[battler].maxHP);
         MarkBattlerForControllerExec(battler);
         // Heal 1/16 max HP
-        if (!gBattleMons[battler].volatiles.healBlock && !IsBattlerAtMaxHp(battler))
+        if (!gBattleMons[battler].volatiles.healBlockTimer && !IsBattlerAtMaxHp(battler))
         {
             SetHealAmount(battler, GetNonDynamaxMaxHP(battler) / 16);
             BattleScriptCall(BattleScript_InfiniteGrowthHeal);

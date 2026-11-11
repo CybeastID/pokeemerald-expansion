@@ -349,7 +349,8 @@ static void RecordedOpponentHandleChooseMove(enum BattlerId battler)
         if (target == RECORDED_TARGET_DEFAULT)
         {
             struct ChooseMoveStruct *moveInfo = (struct ChooseMoveStruct *)(&gBattleResources->bufferA[battler][4]);
-            target = GetDefaultSelectionTarget(battler, GetBattlerMoveSelectionTargetType(battler, moveInfo->moves[moveId]));
+            enum Move move = moveId < MAX_MON_MOVES ? moveInfo->moves[moveId] : GetBattlerMoveAtSlot(battler, moveId);
+            target = GetDefaultSelectionTarget(battler, GetBattlerMoveSelectionTargetType(battler, move));
         }
         BtlController_EmitTwoReturnValues(battler, B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, moveId | (target << 8));
     }

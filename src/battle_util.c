@@ -3719,14 +3719,18 @@ u32 AbilityBattleEffects(enum AbilityEffect caseID, enum BattlerId battler, enum
         default:
             break;
         }
-        if (effect == 0
-         && gBattleStruct->bugSpace.active
+        if (gBattleStruct->bugSpace.active
          && GetBattlerSide(battler) == B_SIDE_PLAYER
          && !FlagGet(FLAG_KAZU_LEGENDARY_PUNISH)
          && GetKazuraLegendTier(battler) != 0)
         {
             FlagSet(FLAG_KAZU_LEGENDARY_PUNISH);
-            BattleScriptCall(BattleScript_KazuraLegendPunishSwitchIn);
+            if (effect == 0)
+                BattleScriptCall(BattleScript_KazuraLegendPunishSwitchIn);
+            else
+                // The target dispatcher visits this ability stage once. Run
+                // punishment after the already-scheduled switch-in ability.
+                BattleScriptPush(BattleScript_KazuraLegendPunishSwitchIn);
             effect++;
         }
         break;
@@ -6676,7 +6680,7 @@ static inline u32 CalcMoveBasePowerAfterModifiers(struct DamageContext *ctx)
         break;
     case EFFECT_MAGNITUDE:
     case EFFECT_EARTHQUAKE:
-        if (ctx->terrain == B_TERRAIN_GRASSY && !IsSemiInvulnerable(battlerDef, CHECK_ALL))
+        if (IsGrassyTerrainAffected(battlerDef, ctx->abilities[battlerDef], ctx->holdEffects[battlerDef], ctx->terrain))
             modifier = uq4_12_multiply(modifier, UQ_4_12(0.5));
         break;
     case EFFECT_KNOCK_OFF:
@@ -8958,7 +8962,7 @@ bool32 TryRevertPartyMonFormChange(u32 partyIndex)
     
         // Forced species changes with no END_BATTLE entry in their form table
     // (Castoria's Polymorph): restore the saved original species directly.
-    if (!changedForm)
+    /* if (!changedForm)
     {
         u32 original = gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].changedSpecies;
 
@@ -8970,6 +8974,7 @@ bool32 TryRevertPartyMonFormChange(u32 partyIndex)
             changedForm = TRUE;
         }
     }
+    */
     // Clear original species field
     gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].changedSpecies = SPECIES_NONE;
 

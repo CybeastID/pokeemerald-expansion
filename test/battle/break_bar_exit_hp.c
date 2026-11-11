@@ -27,7 +27,7 @@ static s32 RegisterExitHpBar(u32 battlerAtk, u32 battlerDef, u32 move, s32 score
     if (!ActivateBreakBar(B_POSITION_PLAYER_LEFT, &sExitHpConfig))
         return score;
 
-    state = GetBattlerPartyState(B_POSITION_PLAYER_LEFT);
+    state = GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT));
     // Model a surviving saved layer, using the same storage/validity fields
     // populated by GrantSavedBreakBar(). The active layer stays untouched.
     state->breakBarSavedHp[0] = sSavedHp;

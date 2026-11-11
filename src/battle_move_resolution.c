@@ -18,6 +18,7 @@
 #include "constants/battle_move_resolution.h"
 #include "constants/songs.h"
 #include "battle_break_bar.h"
+#include "battle_koanko_smeargle.h"
 #include "battle_status_icons.h"
 #include "battle_interface.h"
 #include "event_data.h"
@@ -261,7 +262,8 @@ static enum CancelerResult CancelerObedience(struct BattleCalcValues *cv)
 
 static enum CancelerResult CancelerPowerPoints(struct BattleCalcValues *cv)
 {
-    if (gBattleMons[cv->battlerAtk].pp[gCurrMovePos] == 0
+    if (gCurrMovePos < MAX_MON_MOVES
+     && gBattleMons[cv->battlerAtk].pp[gCurrMovePos] == 0
      && cv->move != MOVE_STRUGGLE
      && !gSpecialStatuses[cv->battlerAtk].dancerUsedMove
      && !gBattleMons[cv->battlerAtk].volatiles.multipleTurns)
@@ -525,6 +527,7 @@ static enum CancelerResult CancelerChoiceLock(struct BattleCalcValues *cv)
     enum HoldEffect holdEffect = GetBattlerHoldEffect(cv->battlerAtk);
 
     if (gChosenMove != MOVE_STRUGGLE
+     && !KoankoSmeargleAnyMoveActive(cv->battlerAtk)
      && (*choicedMoveAtk == MOVE_NONE || *choicedMoveAtk == MOVE_UNAVAILABLE)
      && (IsHoldEffectChoice(holdEffect) || cv->abilities[cv->battlerAtk] == ABILITY_GORILLA_TACTICS))
         *choicedMoveAtk = gChosenMove;
@@ -658,9 +661,12 @@ static enum CancelerResult CancelerAttackstring(struct BattleCalcValues *cv)
     BattleScriptCall(BattleScript_Attackstring);
     if (!gSpecialStatuses[gBattlerAttacker].dancerUsedMove)
     {
-        gBattleMons[gBattlerAttacker].volatiles.usedMoves |= 1u << gCurrMovePos;
-        gBattleStruct->battlerState[gBattlerAttacker].lastMoveTarget = gBattlerTarget;
-        gLastPrintedMoves[gBattlerAttacker] = gChosenMove;
+        if (!IsArcanumAction(gBattlerAttacker))
+        {
+            gBattleMons[gBattlerAttacker].volatiles.usedMoves |= 1u << gCurrMovePos;
+            gBattleStruct->battlerState[gBattlerAttacker].lastMoveTarget = gBattlerTarget;
+            gLastPrintedMoves[gBattlerAttacker] = gChosenMove;
+        }
         RecordKnownMove(gBattlerAttacker, gChosenMove);
     }
     return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT;
@@ -1038,27 +1044,35 @@ static enum CancelerResult CancelerPPDeduction(struct BattleCalcValues *cv)
     }
 
     // For item Metronome, echoed voice
-    if (cv->move != gLastResultingMoves[cv->battlerAtk] || gBattleStruct->unableToUseMove)
+    if (!IsArcanumAction(cv->battlerAtk)
+     && (cv->move != gLastResultingMoves[cv->battlerAtk] || gBattleStruct->unableToUseMove))
         gBattleMons[cv->battlerAtk].volatiles.metronomeItemCounter = 0;
 
-    if (gBattleMons[cv->battlerAtk].pp[movePosition] > ppToDeduct)
-        gBattleMons[cv->battlerAtk].pp[movePosition] -= ppToDeduct;
-    else
-        gBattleMons[cv->battlerAtk].pp[movePosition] = 0;
-
-    gLastMoves[cv->battlerAtk] = gChosenMove;
-
-    if (MOVE_IS_PERMANENT(cv->battlerAtk, movePosition))
+    // Virtual Arcanum slots have no PP entry. Conjured Smeargle's real slot
+    // also retains its established PP exemption, including Pressure.
+    bool32 deductPp = movePosition < MAX_MON_MOVES && !KoankoSmeargleAnyMoveActive(cv->battlerAtk);
+    if (deductPp)
     {
-        BtlController_EmitSetMonData(
-            cv->battlerAtk,
-            B_COMM_TO_CONTROLLER,
-            REQUEST_PPMOVE1_BATTLE + movePosition,
-            0,
-            sizeof(gBattleMons[cv->battlerAtk].pp[movePosition]),
-            &gBattleMons[cv->battlerAtk].pp[movePosition]);
-        MarkBattlerForControllerExec(cv->battlerAtk);
+        if (gBattleMons[cv->battlerAtk].pp[movePosition] > ppToDeduct)
+            gBattleMons[cv->battlerAtk].pp[movePosition] -= ppToDeduct;
+        else
+            gBattleMons[cv->battlerAtk].pp[movePosition] = 0;
+
+        if (MOVE_IS_PERMANENT(cv->battlerAtk, movePosition))
+        {
+            BtlController_EmitSetMonData(
+                cv->battlerAtk,
+                B_COMM_TO_CONTROLLER,
+                REQUEST_PPMOVE1_BATTLE + movePosition,
+                0,
+                sizeof(gBattleMons[cv->battlerAtk].pp[movePosition]),
+                &gBattleMons[cv->battlerAtk].pp[movePosition]);
+            MarkBattlerForControllerExec(cv->battlerAtk);
+        }
     }
+
+    if (!IsArcanumAction(cv->battlerAtk))
+        gLastMoves[cv->battlerAtk] = gChosenMove;
 
     if (gBattleStruct->submoveAnnouncement != SUBMOVE_NO_EFFECT)
     {
@@ -1086,7 +1100,7 @@ static enum CancelerResult CancelerPPDeduction(struct BattleCalcValues *cv)
         }
     }
 
-    return CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT; // Apply power point change
+    return deductPp ? CANCELER_RESULT_RUN_SCRIPT_AND_INCREMENT : CANCELER_RESULT_SUCCESS;
 }
 
 // We don't have clear data on where this belongs to but I assume it should at least be checked before Protean
@@ -1670,20 +1684,25 @@ static bool32 CanPledgeComboAttackHappen(struct BattleCalcValues *cv)
     return FALSE;
 }
 
+// Shared scheduling primitive: ordinary moves reach this through the canceler;
+// scripted TX phases reach it after their own explicit eligibility check.
+void SetFutureSightAttack(enum BattlerId attacker, enum BattlerId target, enum Move move)
+{
+    struct FutureSight *future = &gBattleStruct->futureSight[target];
+    future->move = move;
+    future->battlerIndex = attacker;
+    future->partyIndex = gBattlerPartyIndexes[attacker];
+    future->counter = 3;
+    gBattleCommunication[MULTISTRING_CHOOSER] = move == MOVE_DOOM_DESIRE
+        ? B_MSG_DOOM_DESIRE : B_MSG_FUTURE_SIGHT;
+}
+
 static enum CancelerResult CancelerInterruptibleMoves(struct BattleCalcValues *cv)
 {
     switch (cv->moveEffect)
     {
     case EFFECT_FUTURE_SIGHT:
-        gBattleStruct->futureSight[cv->battlerDef].move = cv->move;
-        gBattleStruct->futureSight[cv->battlerDef].battlerIndex = cv->battlerAtk;
-        gBattleStruct->futureSight[cv->battlerDef].partyIndex = gBattlerPartyIndexes[cv->battlerAtk];
-        gBattleStruct->futureSight[cv->battlerDef].counter = 3;
-
-        if (gCurrentMove == MOVE_DOOM_DESIRE)
-            gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_DOOM_DESIRE;
-        else
-            gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_FUTURE_SIGHT;
+        SetFutureSightAttack(cv->battlerAtk, cv->battlerDef, cv->move);
 
         gBattleStruct->eventState.atkCanceler = CANCELER_END;
         break;
@@ -3770,6 +3789,7 @@ static enum MoveEndResult MoveEndFaintBlock(struct BattleCalcValues *cv)
              && !IsBattlerAlly(cv->battlerAtk, cv->battlerDef)
              && !IsZMove(cv->move)
              && cv->move != MOVE_STRUGGLE
+             && gBattleStruct->chosenMovePositions[cv->battlerAtk] < MAX_MON_MOVES
              && cv->moveEffect != EFFECT_FUTURE_SIGHT)
             {
                 u32 moveIndex = gBattleStruct->chosenMovePositions[cv->battlerAtk];
@@ -3840,14 +3860,15 @@ static enum MoveEndResult MoveEndUpdateLastMoves(struct BattleCalcValues *cv)
     {
         if (!gBattleStruct->unableToUseMove)
         {
-            if (!gSpecialStatuses[cv->battlerAtk].dancerUsedMove)
+            if (!gSpecialStatuses[cv->battlerAtk].dancerUsedMove
+             && !IsArcanumAction(cv->battlerAtk))
             {
                 gLastMoves[cv->battlerAtk] = gChosenMove;
                 gLastResultingMoves[cv->battlerAtk] = cv->move;
                 gLastUsedMoveType[cv->battlerAtk] = GetBattleMoveType(cv->move);
             }
         }
-        else
+        else if (!IsArcanumAction(cv->battlerAtk))
         {
             gLastResultingMoves[cv->battlerAtk] = MOVE_UNAVAILABLE;
             gLastUsedMoveType[cv->battlerAtk] = 0;
@@ -3859,6 +3880,7 @@ static enum MoveEndResult MoveEndUpdateLastMoves(struct BattleCalcValues *cv)
         if (!gBattleStruct->unableToUseMove
          && !IsBattlerUnaffectedByMove(cv->battlerDef)
          && gChosenMove != MOVE_UNAVAILABLE
+         && !IsArcanumAction(cv->battlerAtk)
          && !gSpecialStatuses[cv->battlerAtk].dancerUsedMove)
         {
             gLastUsedMove = cv->move;
@@ -3893,7 +3915,8 @@ static enum MoveEndResult MoveEndUpdateLastMoves(struct BattleCalcValues *cv)
 
 static enum MoveEndResult MoveEndMirrorMove(struct BattleCalcValues *cv)
 {
-    if (!gBattleStruct->unableToUseMove
+    if (!IsArcanumAction(cv->battlerAtk)
+     && !gBattleStruct->unableToUseMove
      && cv->battlerAtk != cv->battlerDef
      && IsBattlerAlive(cv->battlerAtk)
      && IsBattlerAlive(cv->battlerDef)
@@ -4095,8 +4118,8 @@ static enum MoveEndResult MoveEndMultihitMove(struct BattleCalcValues *cv)
 
             enum BattleMoveEffects chosenEffect = GetMoveEffect(gChosenMove);
 
-            if (gBattleMons[cv->battlerAtk].hp
-             && gBattleMons[cv->battlerDef].hp
+            if (IsBattlerAlive(cv->battlerAtk)
+             && IsBattlerAlive(cv->battlerDef)
              && (IsUsableWhileAsleepEffect(chosenEffect) || !(gBattleMons[cv->battlerAtk].status1 & STATUS1_SLEEP))
              && !(gBattleMons[cv->battlerAtk].status1 & STATUS1_FREEZE))
             {
@@ -4680,6 +4703,7 @@ static bool32 HasAnyBattlerQueuedSwitch(void)
 static bool32 TryRedCard(enum BattlerId battlerAtk, enum BattlerId redCardBattler, enum BattleMoveEffects moveEffect)
 {
     if (!IsBattlerAlive(redCardBattler)
+     || HasNoOrderChange(battlerAtk)
      || !IsBattlerAlive(battlerAtk)
      || gBattleStruct->redCardActivated
      || !IsBattlerTurnDamaged(redCardBattler, EXCLUDING_SUBSTITUTES)
@@ -4706,6 +4730,7 @@ static bool32 TryRedCard(enum BattlerId battlerAtk, enum BattlerId redCardBattle
 static bool32 TryEjectButton(enum BattlerId battlerAtk, u32 ejectButtonBattler, enum BattleMoveEffects moveEffect)
 {
     if (!IsBattlerTurnDamaged(ejectButtonBattler, EXCLUDING_SUBSTITUTES)
+     || HasNoOrderChange(ejectButtonBattler)
      || moveEffect == EFFECT_FUTURE_SIGHT
      || HasAnyBattlerQueuedSwitch()
      || IsBattlerInvolvedInSkyDrop(ejectButtonBattler)
@@ -5078,6 +5103,7 @@ static enum MoveEndResult MoveEndThirdMoveBlock(struct BattleCalcValues *cv)
 static inline bool32 TryEjectPack(enum BattlerId battlerAtk, enum BattlerId ejectPackBattler)
 {
     if (!gBattleMons[ejectPackBattler].volatiles.tryEjectPack
+     || HasNoOrderChange(ejectPackBattler)
      || HasAnyBattlerQueuedSwitch()
      || IsPursuitTargetSet()
      || IsBattlerInvolvedInSkyDrop(ejectPackBattler)
@@ -5951,10 +5977,13 @@ static void SetSameMoveTurnValues(enum BattleMoveEffects moveEffect)
         break;
     }
 
-    if (increment)
-        gBattleMons[gBattlerAttacker].volatiles.metronomeItemCounter++;
-    else
-        gBattleMons[gBattlerAttacker].volatiles.metronomeItemCounter = 0;
+    if (!IsArcanumAction(gBattlerAttacker))
+    {
+        if (increment)
+            gBattleMons[gBattlerAttacker].volatiles.metronomeItemCounter++;
+        else
+            gBattleMons[gBattlerAttacker].volatiles.metronomeItemCounter = 0;
+    }
 }
 
 static void TryClearChargeVolatile(enum Type moveType)

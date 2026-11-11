@@ -150,9 +150,9 @@ TEST("Trainer Break Bar sparse difficulty rows inherit Normal unless explicitly 
 
 static const struct TrainerMon sPool[] =
 {
-    {.species = SPECIES_WOBBUFFET, .lvl = 10},
-    {.species = SPECIES_PICHU, .lvl = 10},
-    {.species = SPECIES_GEODUDE, .lvl = 10},
+    {.species = SPECIES_WOBBUFFET, .lvl = 10, .gender = TRAINER_MON_RANDOM_GENDER},
+    {.species = SPECIES_PICHU, .lvl = 10, .gender = TRAINER_MON_RANDOM_GENDER},
+    {.species = SPECIES_GEODUDE, .lvl = 10, .gender = TRAINER_MON_RANDOM_GENDER},
 };
 static const struct TrainerBreakBarRule sPoolRules[] =
 {
@@ -162,25 +162,27 @@ static const struct TrainerBreakBarRule sPoolRules[] =
 };
 static const struct TrainerBreakBarRules sPoolRuleSet = TRAINER_BREAK_BAR_RULES(sPoolRules);
 
-TEST("Trainer Break Bar assignment follows selected pool entries into either trainer's party offset")
+TEST("Trainer Break Bar assignment follows selected pool entries into either trainer-owned party")
 {
     struct Trainer trainer = {.party = sPool, .partySize = 2, .poolSize = ARRAY_COUNT(sPool)};
     gBattleStruct = AllocZeroed(sizeof(*gBattleStruct));
-    for (u32 offset = 0; offset <= PARTY_SIZE / 2; offset += PARTY_SIZE / 2)
+    for (u32 owner = B_TRAINER_OPPONENT_A; owner <= B_TRAINER_OPPONENT_B; owner += BIT_FLANK)
     {
         for (u32 trial = 0; trial < 8; trial++)
         {
             memset(gBattleStruct->partyState, 0, sizeof(gBattleStruct->partyState));
-            CreateNPCTrainerPartyWithBreakBars(&gEnemyParty[offset], &trainer, offset == 0,
+            CreateNPCTrainerPartyWithBreakBars(gParties[owner], &trainer, owner == B_TRAINER_OPPONENT_A,
                 BATTLE_TYPE_TRAINER | BATTLE_TYPE_TWO_OPPONENTS, &sPoolRuleSet);
-            for (u32 slot = offset; slot < offset + trainer.partySize; slot++)
+            for (u32 slot = 0; slot < trainer.partySize; slot++)
             {
-                u32 species = GetMonData(&gEnemyParty[slot], MON_DATA_SPECIES);
+                u32 species = GetMonData(&gParties[owner][slot], MON_DATA_SPECIES);
                 u32 source = species == SPECIES_WOBBUFFET ? 0 : species == SPECIES_PICHU ? 1 : 2;
-                EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][slot].breakBarConfig, &gTrainerBreakBarProfiles[source]);
-                EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_OPPONENT][slot].breakBarsRemaining, source + 1);
+                EXPECT_EQ(gBattleStruct->partyState[owner][slot].breakBarConfig, &gTrainerBreakBarProfiles[source]);
+                EXPECT_EQ((u32)gBattleStruct->partyState[owner][slot].breakBarsRemaining, source + 1);
             }
-            EXPECT_EQ(gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarConfig, NULL);
+            for (u32 other = 0; other < MAX_BATTLE_TRAINERS; other++)
+                if (other != owner)
+                    EXPECT_EQ(gBattleStruct->partyState[other][0].breakBarConfig, NULL);
         }
     }
     Free(gBattleStruct);
@@ -306,7 +308,7 @@ TEST("Trainer Break Bar battle-script activation preserves active stacks and cus
     BS_ActivateBreakBar();
     EXPECT_EQ(gBattlescriptCurrInstr, (const u8 *)(&command + 1));
     EXPECT_EQ(GetBreakBarCount(B_POSITION_OPPONENT_LEFT), 2);
-    EXPECT_EQ(GetBattlerPartyState(B_POSITION_OPPONENT_LEFT)->breakBarConfig, &config);
+    EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT))->breakBarConfig, &config);
     EXPECT_EQ(gBattleMons[B_POSITION_OPPONENT_LEFT].hp, 15);
     gBattlescriptCurrInstr = (const u8 *)&command;
     BS_ActivateBreakBar();

@@ -1,11 +1,204 @@
 # Upstream modification ledger
 
+## Resumed migration: native and script APIs
+
+The migrated ROM builds through `resume-rom-09.log` (exit 0), including the
+controller/history, AI configuration, multihit and summon-entry repairs.
+Actual focused passes include TX profiles 12/12,
+TX wishes 23/23, AFTER_CLEANUP 6/6, migration ownership 4/4 and stock trainer
+control 21/21 and complete `arcanum.c` 71/71. Remaining Arcanum files pass
+10/10 Endurance, 22/22 Debilitation, 18/18 More Wishes, 9/9 Normality and 20/20
+Reduction. Break Bars pass 21/21, grants 13/13, exit HP 4/4, trainer bars 11/11
+and wild bars 4/4. Ordinary-engine and remaining boss files run serially.
+These are partial behavioral results,
+not full migration acceptance; exact logs and failures are in Chapter 15.
+
+- Documented post-release fixes: terrain correction/test from upstream
+  `be3b089fc121143b7ccf6503ea1385b8abe05b8c` restores terrain-aware AI scoring
+  and grounded-target damage checks in `battle_ai_main.c`/`battle_util.c`.
+  Pivot/phazing correction from `8b10030b4c42f2b481567bcf43eb46eb64679d93`
+  is adapted in `battle_script_commands.c:CountAliveMonsForBattlerSide/
+  Cmd_forcerandomswitch`. Counts include each trainer and pending layers;
+  reserve enumeration uses owner-local slots and shared-party active exclusion.
+  The No Order Change guard is retained. These repairs are necessary for target
+  ownership and existing AI semantics, not a general master update. Validate
+  partner/multi defeat, pivot, Roar/Red Card and pending-layer cases, plus
+  Grassy Terrain/Ring Target and AI terrain removal. This replaces obsolete
+  half-party branching rather than adding a competing ownership framework.
+- `battle_controllers.c:SetFinalChosenTarget` resolves the live committed move
+  for Koanko's sampled Smeargle, because its choose-move buffer precedes the
+  slot-0 replacement. Ordinary controller-buffer selection remains unchanged.
+  Virtual Arcanum slots still use the existing live lookup. Polymorph snapshot
+  rows in `castoria_name_theft.c` use target trainer IDs, matching PartyState;
+  their validity/lifetime remains governed by `polymorphed` and first-cast
+  original capture. Persistent-player exit restoration uses the player row.
+  New `test/battle/migration_owner_apis.c` covers independent owners, pending
+  layers, Roar reserves and stale Smeargle targets; all four pass in
+  `resume-owner-runtime-03.log`.
+- Target temporary flag aliases 5/6 coexist with custom Caster/Kazuradrop names
+  at the same existing IDs. This preserves target League lighting compilation
+  and the established map-local custom flag lifecycle; no new IDs were assigned.
+- `test/test_runner_battle.c` retains summoned-opponent recording before the
+  runtime battler exists, target trainer bindings and cleanup callbacks. Its
+  creation fixture now uses the target fixed-IV/OT API. Actual harness and four
+  focused fixture object builds passed; runtime/stack-guard checks remain pending.
+- Makefile includes the existing standalone custom assembly-song sources in
+  normal/test object lists, retaining `audio_rules.mk` assembly rules. This is
+  the baseline custom music registration lost during Makefile reconciliation.
+  Hurricane throw-out cleanup calls target `UnsetBackground`, equivalent to the
+  retired Psychic-background helper including both fade waits and arg-7 sentinel.
+  Verify the custom tracks and forced-out animation in the emulator.
+- `battle_tx_wishes.c:TxScriptContext` stores target u32 move-result flags for
+  all battlers. Both scripted phase and mirrored-recovery contexts use this
+  width; their entry/restore order is unchanged. The baseline u16 snapshot would
+  copy only half of the target array. A new four-slot/high-bit restoration
+  regression in `tx_wishes.c` guards this target-interface dependency.
+- `src/data.c` retains the production trainer table in TESTING builds too.
+  `include/data.h:GetTrainerStructFromId` consults a TESTING-only override for
+  target trainer-control fixtures; `test/test_runner_battle.c` owns that sparse
+  mock table. Unmocked trainer IDs use the same authored data as the ROM. This
+  preserves production Koanko kit/AI tests without duplicate boss definitions
+  or suppressing target trainer-name checks. Ordinary builds have no lookup
+  branch. Validate stock trainer-control and custom trainer difficulty/AI tests.
+- `battle_main.c:CB2_QuitRecordedBattle/HandleEndTurn_FinishBattle` preserve the
+  baseline test observation order: THEN inspects live combat state before
+  Reduction/TX/form/HP cleanup; the guarded AFTER_CLEANUP callback observes
+  restoration afterward, before resource freeing. The target recorded exit's
+  cleanup-first dispatch erased TX/Reduction state before THEN. Keep this
+  distinction when updating target test infrastructure. Validate the dedicated
+  `after_cleanup.c` fixtures, TX/Reduction and natural/recorded battle exits.
+- `battle_move_resolution.c:CancelerPowerPoints/CancelerPPDeduction` restores
+  baseline PP-array bounds for virtual slots and conjured Smeargle's real-slot
+  PP/Pressure exemption. Virtual actions preserve ordinary last-move/Metronome
+  state in this stage; submove continuation handling remains target-owned.
+  The PP correction compiled in ROM 08 and TX profiles passed 12/12 afterward.
+  The history guards below are under full Arcanum validation; see Chapter 15
+  for the precise source/test boundaries rather than treating this as acceptance.
+- `battle_ai_main.c:ChooseMoveOrAction_Doubles` records final scores under its
+  evaluated target `i`, replacing a stale global-target index retained by pinned
+  1.17.2. The local defect was exposed by TX's ordinary-versus-virtual tie test.
+  This fixes score observation without changing candidate scores or tie policy.
+  Preserve the strict existing tie assertion and verify doubles AI regressions.
+- Virtual-action history guards are ported in `CancelerAttackstring`,
+  `MoveEndUpdateLastMoves`, `MoveEndMirrorMove` and `SetSameMoveTurnValues`:
+  Arcanum does not overwrite ordinary used/printed/last move or Metronome state;
+  defender hit records and baseline known-move learning still run. The target
+  Grudge faint stage bounds its chosen slot before any PP access. Smeargle's
+  existing Choice-lock exemption is restored in `CancelerChoiceLock`.
+  These are narrow policy hooks in target algorithms, not restored old opcode
+  implementations. Validate existing Arcanum history/Grudge/regular-slot
+  regressions and Smeargle PP/Choice/forced-action tests before acceptance.
+- Recorded player/opponent default-target handlers bound real choose-buffer
+  slots and resolve virtual slots with `GetBattlerMoveAtSlot`. This preserves
+  ordinary cached selection while preventing virtual-slot out-of-bounds reads.
+- `include/config/ai.h` uses median defaults for attacking and attacking-partner
+  contexts, preserving the baseline shared AI estimate through target config
+  knobs; Risky/Conservative overrides are unchanged. New target-only contexts
+  retain target defaults. The direct AI fixture explicitly sets/restores its
+  controller role, matching target awareness without exposing hidden moves.
+  Merge maintenance is confined to two configuration values and narrow lookup
+  hooks; no competing damage simulation or ownership system was introduced.
+- `battle_hold_effects.c:ItemBattleEffects` and the Break Charm hold-effect row
+  use target `onSwitchIn` activation for opening and later entries. The common
+  switch-in interpreter calls the returning Charm script; the removed separate
+  first-turn dispatch is retired. Test grant timing before hazards, saved-layer
+  numerical animation and later re-entry without duplicate grants.
+- Target move-end `TryRedCard/TryEjectButton/TryEjectPack` retain baseline
+  No Order Change gates before item consumption or switch queueing. Red Card
+  checks the attacker it would move, not the holder. Debilitation passes 22/22
+  including these item/ability cases. `MoveEndMultihitMove` uses baseline
+  pending-aware liveness instead of raw HP for continuation; pending damage
+  remains suppressed and the phase resolver remains after the action. Validate
+  full multihit and spread/parental-bond ordering before acceptance.
+- The Healing Wish script distinguishes a Lunar Dance user restored by a lost
+  layer: resolve the phase, store the recipient wish, then use the existing
+  immediate-switch script. A genuine faint retains target deferred replacement.
+  This narrow branch preserves the established surviving-user contract without
+  forking the target queued-switch machinery. Grants retry 03 passes 13/13;
+  the main Break Bar file passes 21/21 with its exact two-hit scene assertion.
+- Custom sigil/status-icon/Kazuradrop panel callers use target
+  `CreateSpriteUnchecked`, matching their existing sentinel/exhaustion handling.
+  Target's checked `CreateSprite` instead aborts during a full doubles intro.
+  Normality passes 9/9 after this API port. Visual sigil retry/residency under
+  full sprite pressure still needs emulator validation; core allocation was
+  not changed and temporary diagnostics were removed.
+- The More Wishes script explicitly runs target `switchinevents` after
+  `switchineffects` and before finishing entry/ambush. The hazard stage in
+  `battle_switch_in.c:FirstEventBlockEvents` exempts the summoned member only
+  while `TX_ROLLBACK_ENTERING`; ordinary and Koanko-solo entries retain target
+  hazard rules. Abilities/items use the shared target interpreter, preserving
+  their order before the ambush. Initializing `switchIn` FALSE did not implement
+  this exemption because target entry-marking overwrote it. This is one narrow
+  policy gate plus a target-script API call, not duplicate entry processing.
+  Validate the More Wishes entry popup/no-HP-bar/White Herb regression and
+  ordinary entry/hazard tests. More Wishes retry 04 passes 18/18; the ordinary
+  entry/hazard matrix subsequently passed (see Chapter 15 for exact counts).
+- `battle_koanko.c:ConjureKoankoTeam` and its debug generator disable target
+  SMART_TERA random-type generation only in their temporary trainer descriptors.
+  The encounter keeps its decision flag; only explicitly authored Fire Calyrex
+  is eligible, preserving the old mask. Target's generator remains shared.
+  Actual encounter retry 03 passes 13/13; optional-Tera validation continues.
+- `battle_ai_util.c:ShouldTeraFromCalcs` counts Tera-capable reserves using
+  target's disabled `TYPE_MYSTERY` sentinel, replacing its incorrect `> 0`
+  check (which included disabled entries and excluded Normal). `DecideTerastal`
+  retains baseline capture/restoration of no-Tera effectiveness alongside damage
+  when deferring. These are narrow corrections in shared target calculations,
+  preserving the existing optional Fire Tera policy and cache parity. Existing
+  Koanko AI passes 37/37, stock smart-Tera 4/4 and Terastal 44/44;
+  this is not a new AI balance policy.
+- `battle_ai_main.c:DoAIScoreProcessing` records the separate
+  `AI_CompareDamagingMoves` delta as Smeargle diagnostic pass 64. Target moved
+  this adjustment outside the per-flag loop. Scoring/selection are unchanged;
+  all four exact score-accounting regressions pass in diagnostic retry 02.
+- `battle_util.c:AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN)` keeps Legendary
+  Clause after the player's ordinary entry ability by pushing its returning
+  script as that ability's continuation. With no ability script scheduled, it
+  calls punishment directly. The once-only flag is committed before yielding;
+  target's single visit to this stage replaced baseline retry behavior.
+  Kazuradrop retry 02 passes 9/9, including Intimidate ordering/boost tiers.
+- `battle_break_bar.c:RefreshBreakBarPalette` checks the target task slots
+  locally before allocating a fade, preserving exhaustion protection without
+  restoring a generic task API. Task/palette exhaustion and menu lifecycle
+  behavior remain runtime validation requirements.
+
+- `battle_move_resolution.c:CancelerInterruptibleMoves/SetFutureSightAttack`
+  factors the target Future Sight/Doom Desire record initialization into one
+  public scheduling primitive. `battle_tx_wishes.c:BS_TxRollbackSetDoomDesire`
+  calls it at the original scripted phase point after explicit eligibility
+  checking. This narrow extraction avoids restoring the removed command or
+  maintaining duplicate delayed-attack initialization. Test ordinary/delayed
+  attacks, owner/slot changes and nested TX phase context restoration. Future
+  upstream scheduling metadata changes must update the shared primitive.
+- `battle_script_commands.c:BS_TryBugSpaceFaintGulpMissile` bridges the custom
+  passive faint presentation to target on-hit form/ability dispatch, filtered
+  to Gulp Missile. Already-consumed forms cannot activate twice. The special
+  faint script also uses target Dynamax cleanup, Sky Drop release and the
+  weather-form loop. Verify faint/recoil/passive ordering and blocked-status
+  continuations; this is a narrow dispatch adapter, not the old effect algorithm.
+- Castoria Debilitation uses `tryconfusionafterskydrop` before its cancellation
+  native, preserving passenger release/fatigue confusion with target bytecode.
+  The native then clears the holder link and synchronizes visibility. No core
+  cancellation algorithm was restored. Exercise both holder and passenger
+  cases, control immunities, animation completion and script-stack restoration.
+- `battle_faerie_anim.c:AnimTask_PreloadFaerieParticles` uses target graphics/
+  palette bookkeeping from custom animation scripts. Each replaced load retains
+  `delay 1`, matching the old wait. There is no new animation opcode or modified
+  core loading algorithm. Visual timing, particle residency and teardown need
+  emulator verification; assembly does not establish them.
+- `battle_koanko.c` uses trainer-A PartyState, AI history, items and fresh
+  Pokemon gimmick eligibility. Its trainer resources remain encounter-owned;
+  only the documented conjured-team Tera opportunity resets. Target generation
+  remains authoritative. Regression tests must prove twelve-opponent progress,
+  final-only victory and retained player/trainer resources.
+
 ## Migration resolution checkpoint — 2026-11-11
 
-**Implementation-only; no migrated runtime behavior is verified.**
+**Historical initial checkpoint; superseded by the resumed results above.**
 The [durable handoff](../extra%20docs/KoankoDev/planning/15_upstream_migration_checkpoint.md)
 records exact failures and resume commands. All textual conflicts are resolved;
-seven core battle objects compile. Custom modules and script assembly fail.
+seven core battle objects compiled at that checkpoint. The formerly failing
+custom modules and script assembly now compile and the ROM links as recorded
+above. Only the focused runtime results listed above are verified.
 This section supersedes the older initial-integration dispatch status below.
 
 - `battle_move_resolution.c:ShouldSkipBattlerForDamage/TryMoveDamageUpdate/

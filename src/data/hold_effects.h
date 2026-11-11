@@ -588,6 +588,5 @@ const struct HoldEffectInfo gHoldEffectsInfo[HOLD_EFFECT_COUNT] =
     [HOLD_EFFECT_BREAK_CHARM] =
     {
         .onSwitchIn = TRUE,
-        .onSwitchInFirstTurn = TRUE,
     },
 };

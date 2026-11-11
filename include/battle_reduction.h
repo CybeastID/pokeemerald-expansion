@@ -32,7 +32,7 @@ bool32 ReductionIsActive(void);
 bool32 ReductionIsScaled(u32 battler);
 void ReductionActivate(void);
 bool32 ReductionTryActivate(u32 initialLoss, u32 affectedSide);
-bool32 ReductionEndTurn(u32 battler);
+bool32 ReductionEndTurn(enum BattlerId battler);
 void ReductionBeginMutation(u32 battler);
 // Nested canonical mutations must finish updating stats and HP before End.
 void ReductionEndMutation(u32 battler);

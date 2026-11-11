@@ -66,7 +66,8 @@ SINGLE_BATTLE_TEST("Polymorph never produces a Legendary, Mythical, Ultra Beast,
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_POLYMORPH, player);
     } THEN {
-        EXPECT_EQ((bool8)gSpeciesInfo[opponent->species].isLegendary, FALSE);
+        EXPECT_EQ((bool8)gSpeciesInfo[opponent->species].isSubLegendary, FALSE);
+        EXPECT_EQ((bool8)gSpeciesInfo[opponent->species].isRestrictedLegendary, FALSE);
         EXPECT_EQ((bool8)gSpeciesInfo[opponent->species].isMythical, FALSE);
         EXPECT_EQ((bool8)gSpeciesInfo[opponent->species].isUltraBeast, FALSE);
         EXPECT_EQ((bool8)gSpeciesInfo[opponent->species].isParadox, FALSE);

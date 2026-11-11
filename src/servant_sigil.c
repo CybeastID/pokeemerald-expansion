@@ -127,7 +127,7 @@ void CreateServantSigil(u32 battler)
     /* DebugPrintf("SIGIL create b=%d species=%d isCaster=%d tile=%04x tileStart=%04x pal=%04x",
     battler, GetBattlerVisualSpecies(battler), isCaster, tileTag,
     GetSpriteTileStartByTag(tileTag), palTag); */
-    u32 spriteId = CreateSprite(tmpl, x, y, 0);
+    u32 spriteId = CreateSpriteUnchecked(tmpl, x, y, 0);
     // DebugPrintf("SIGIL created spriteId=%d", spriteId);
     if (spriteId == MAX_SPRITES)
         return;

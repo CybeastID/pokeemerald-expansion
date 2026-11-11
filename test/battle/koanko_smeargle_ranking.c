@@ -29,7 +29,7 @@ static void PrepareRanking(void)
     gAiLogicData->aiCalcInProgress = TRUE;
     SetAIUsingGimmick(battler, USE_GIMMICK);
     SetBattlerAiData(battler, gAiLogicData);
-    SetBattlerAiData(B_POSITION_PLAYER_LEFT, gAiLogicData);
+    SetBattlerAiData(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), gAiLogicData);
 }
 
 static s32 Rank(u16 move)
@@ -178,7 +178,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Smeargle ranking uses HP dependent Eruption damage
         EXPECT_EQ(gAiLogicData->simulatedDmg[B_POSITION_OPPONENT_LEFT][B_POSITION_PLAYER_LEFT][0].median, foulDamage);
         s32 eruption = Rank(MOVE_ERUPTION);
         opponent->hp = 10;
-        SetBattlerAiData(B_POSITION_OPPONENT_LEFT, gAiLogicData);
+        SetBattlerAiData(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), gAiLogicData);
         EXPECT_LT(Rank(MOVE_ERUPTION), eruption);
     }
 }
@@ -242,7 +242,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Smeargle ranking separates Sash survival and charg
         s32 charge = Rank(MOVE_SOLAR_BEAM);
         EXPECT_GT(immediate, charge);
         player->item = ITEM_FOCUS_SASH;
-        SetBattlerAiData(B_POSITION_PLAYER_LEFT, gAiLogicData);
+        SetBattlerAiData(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), gAiLogicData);
         EXPECT_GT(immediate, Rank(MOVE_FUSION_BOLT));
     }
 }

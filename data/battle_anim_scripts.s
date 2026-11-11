@@ -5703,7 +5703,8 @@ gBattleAnimMove_Hurricane::
 	end
 
 gBattleAnimMove_HurricaneThrowOut::
-	loadspritegfx ANIM_TAG_GUST
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_GUST
+	delay 1 @ Preserve the original loading wait.
 	monbg ANIM_DEF_PARTNER
 	splitbgprio ANIM_TARGET
 	setalpha 12, 8
@@ -5729,7 +5730,8 @@ gBattleAnimMove_HurricaneThrowOut::
 	delay 10
 	stopsound
 	@ Whirlwind forced-out tail (throw out opponent, no return-to-ball)
-	loadspritegfx ANIM_TAG_WHIRLWIND_LINES
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_WHIRLWIND_LINES
+	delay 1 @ Preserve the original loading wait.
 	createsprite gWhirlwindLineSpriteTemplate, ANIM_ATTACKER, 2, 0, -8, ANIM_TARGET, 60, 0
 	createsprite gWhirlwindLineSpriteTemplate, ANIM_ATTACKER, 2, 0, 0, ANIM_TARGET, 60, 1
 	createsprite gWhirlwindLineSpriteTemplate, ANIM_ATTACKER, 2, 0, 8, ANIM_TARGET, 60, 2
@@ -5747,7 +5749,7 @@ gBattleAnimMove_HurricaneThrowOut::
 	waitforvisualfinish
 	clearmonbg ANIM_DEF_PARTNER
 	blendoff
-	call UnsetPsychicBg
+	call UnsetBackground
 	end
 HurricaneGust:
 	createsprite gEllipticalGustSpriteTemplate, ANIM_ATTACKER, 2, 0, -16
@@ -35110,8 +35112,10 @@ gBattleAnim_BugSpacePassiveOHKO::
 	end
 
 gBattleAnimMove_TrashCrush::
-	loadspritegfx ANIM_TAG_HANDS_AND_FEET @hands
-	loadspritegfx ANIM_TAG_EXPLOSION @burst
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_HANDS_AND_FEET@hands
+	delay 1 @ Preserve the original loading wait.
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_EXPLOSION@burst
+	delay 1 @ Preserve the original loading wait.
 	setalpha 15, 0
 	playsewithpan SE_M_VICEGRIP, 0
 	createsprite gKarateChopSpriteTemplate, ANIM_ATTACKER, 2, -32, 0, 0, 0, 10, 1, 3, 0     @left hand
@@ -35136,10 +35140,14 @@ gBattleAnimMove_TrashCrush::
 	end
 
 gBattleAnimMove_MeltVirus::
-	loadspritegfx ANIM_TAG_NEEDLE @sting
-	loadspritegfx ANIM_TAG_IMPACT @hit
-	loadspritegfx ANIM_TAG_POISON_BUBBLE @bubbles
-	loadspritegfx ANIM_TAG_TOXIC_BUBBLE @toxic
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_NEEDLE@sting
+	delay 1 @ Preserve the original loading wait.
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_IMPACT@hit
+	delay 1 @ Preserve the original loading wait.
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_POISON_BUBBLE@bubbles
+	delay 1 @ Preserve the original loading wait.
+	createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_TOXIC_BUBBLE@toxic
+	delay 1 @ Preserve the original loading wait.
 
 	@ Act 1 - Poison Sting: the injection
 	monbg ANIM_TARGET
@@ -35187,9 +35195,12 @@ gBattleAnimMove_TrashCrushOld::
 	
 gBattleAnimMove_Polymorph::
     @ --- 1. SIGNAL BEAM START ---
-    loadspritegfx ANIM_TAG_GLOWY_RED_ORB
-    loadspritegfx ANIM_TAG_GLOWY_GREEN_ORB
-    loadspritegfx ANIM_TAG_DUCK
+    createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_GLOWY_RED_ORB
+    delay 1 @ Preserve the original loading wait.
+    createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_GLOWY_GREEN_ORB
+    delay 1 @ Preserve the original loading wait.
+    createvisualtask AnimTask_PreloadFaerieParticles, 2, ANIM_TAG_DUCK
+    delay 1 @ Preserve the original loading wait.
     createvisualtask AnimTask_ShakeMon, 5, ANIM_ATTACKER, 0, 2, 25, 1
     delay 6
     panse SE_M_BUBBLE_BEAM, SOUND_PAN_ATTACKER, SOUND_PAN_TARGET, +1, 0

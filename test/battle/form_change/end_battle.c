@@ -8,7 +8,7 @@ SINGLE_BATTLE_TEST("Xerneas returns its Neutral Form upon battle end")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_XERNEAS_NEUTRAL);
     }
 }
@@ -20,7 +20,7 @@ SINGLE_BATTLE_TEST("Zacian returns its Hero Form upon battle end")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_ZACIAN_HERO);
     }
 }
@@ -33,7 +33,7 @@ SINGLE_BATTLE_TEST("Zacian returns its Hero Form upon battle end")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_ZACIAN_HERO);
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MOVE1), MOVE_IRON_HEAD);
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_PP1), 5); // Behemoth Blade's PP
@@ -47,7 +47,7 @@ SINGLE_BATTLE_TEST("Zamazenta returns its Hero Form upon battle end")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_ZAMAZENTA_HERO);
     }
 }
@@ -60,7 +60,7 @@ SINGLE_BATTLE_TEST("Zamazenta returns its Hero Form upon battle end")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_ZAMAZENTA_HERO);
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MOVE1), MOVE_IRON_HEAD);
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_PP1), 5); // Behemoth Bash's PP
@@ -83,7 +83,7 @@ SINGLE_BATTLE_TEST("Palafin returns to Zero form upon battle end")
         SEND_IN_MESSAGE("Palafin");
         ABILITY_POPUP(player, ABILITY_ZERO_TO_HERO);
         MESSAGE("Palafin underwent a heroic transformation!");
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_PALAFIN_ZERO);
     }
 }
@@ -101,7 +101,7 @@ SINGLE_BATTLE_TEST("Shaymin retains Land form if it was frozen or frostbitten in
         FREEZE_OR_FROSTBURN_STATUS(player, TRUE);
         NOT HP_BAR(player); // Regression caused by Mimikyu form change
         MESSAGE("Shaymin transformed!");
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_SHAYMIN_LAND);
     }
 }
@@ -117,7 +117,7 @@ SINGLE_BATTLE_TEST("Meloetta returns to Aria form upon battle end after using Re
         ANIMATION(ANIM_TYPE_MOVE, MOVE_RELIC_SONG, player);
         HP_BAR(opponent);
         MESSAGE("Meloetta transformed!");
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_MELOETTA_ARIA);
     }
 }
@@ -137,7 +137,7 @@ SINGLE_BATTLE_TEST("Battle Bond Greninja returns to base form upon battle end af
         ABILITY_POPUP(player, ABILITY_BATTLE_BOND);
         MESSAGE("Greninja became fully charged due to its bond with its trainer!");
         MESSAGE("Greninja became Ash-Greninja!");
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_GRENINJA_BATTLE_BOND);
     }
 }
@@ -152,7 +152,7 @@ SINGLE_BATTLE_TEST("Aegislash reverts to Shield Form upon battle end after using
     } SCENE {
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE, player);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SCRATCH, player);
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_AEGISLASH_SHIELD);
     }
 }
@@ -167,7 +167,7 @@ SINGLE_BATTLE_TEST("Wishiwashi reverts to Solo form upon battle end after changi
     } SCENE {
         ABILITY_POPUP(player, ABILITY_SCHOOLING);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE, player);
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_WISHIWASHI_SOLO);
     }
 }
@@ -183,7 +183,7 @@ SINGLE_BATTLE_TEST("Minior Meteor reverts to Core form upon battle end after cha
     } SCENE {
         ABILITY_POPUP(player, ABILITY_SHIELDS_DOWN);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE, player);
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_SPECIES), SPECIES_MINIOR_CORE);
     }
 }
@@ -203,7 +203,7 @@ SINGLE_BATTLE_TEST("Mimikyu Busted reverts to Disguised form upon battle end aft
         ANIMATION(ANIM_TYPE_MOVE, MOVE_AERIAL_ACE, opponent);
         ABILITY_POPUP(player, ABILITY_DISGUISE);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE_DISGUISE, player);
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), species);
     }
 }
@@ -219,7 +219,7 @@ SINGLE_BATTLE_TEST("Cramorant reverts to base Form upon battle end after using S
         ANIMATION(ANIM_TYPE_MOVE, MOVE_SURF, player);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE_INSTANT, player);
         HP_BAR(opponent);
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_CRAMORANT);
     }
 }
@@ -236,7 +236,7 @@ SINGLE_BATTLE_TEST("Eiscue Noice reverts to Ice Form upon battle end after being
         ABILITY_POPUP(player, ABILITY_ICE_FACE);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE, player);
         MESSAGE("Eiscue transformed!");
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_EISCUE_ICE);
     }
 }
@@ -252,7 +252,7 @@ SINGLE_BATTLE_TEST("Morpeko Hangry reverts to Full Belly Form upon battle end af
         MESSAGE("Morpeko used Celebrate!");
         MESSAGE("The opposing Wobbuffet used Celebrate!");
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_FORM_CHANGE, player);
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_MORPEKO_FULL_BELLY);
     }
 }
@@ -270,7 +270,7 @@ SINGLE_BATTLE_TEST("Ogerpon reverts to the correct form upon battle end after te
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE, gimmick: GIMMICK_TERA); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), species);
     }
 }
@@ -282,7 +282,7 @@ SINGLE_BATTLE_TEST("Terapagos reverts to the correct form upon battle end after 
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE, gimmick: GIMMICK_TERA); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_TERAPAGOS_NORMAL);
     }
 }
@@ -307,7 +307,7 @@ SINGLE_BATTLE_TEST("Power Construct Zygarde reverts to its original form upon ba
         ABILITY_POPUP(player, ABILITY_POWER_CONSTRUCT);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_POWER_CONSTRUCT, player);
 
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), baseSpecies);
     }
 }

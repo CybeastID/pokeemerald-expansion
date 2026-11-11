@@ -257,8 +257,9 @@ Delivery verification: local Markdown links resolve, with no trailing whitespace
   **`upgrade-branch`**. Worktree metadata uses relative links so Windows/MSYS
   Git and WSL Git can both access the same files.
 - Target: **`79dd436920845ebc145577649de624f65298c209`**, exact 1.17.2 release.
-  A `--no-commit --no-ff` merge is open in the implementation worktree.
-  **The merge is unfinished and the worktree is not an acceptance build.**
+  Checkpoint merge commit `f058e5220ce8177d38f99360199db0ad013a0a99` integrates
+  that target with the protected baseline. The merge is closed; resumed source
+  edits are uncommitted. **The worktree is not an acceptance build.**
 - Local recovery archive:
   `TEMPSCRIPTS/upstream-1.17.2/pre-migration.tar.gz`, SHA-256
   **`3aa906fafc2ec73ca43906ca83ca996f4ba16ce44a11ed17585a2356192cc629`**.
@@ -366,12 +367,20 @@ not coverage evidence. The full baseline suite includes the existing fixtures.
 Logs are in `TEMPSCRIPTS/upstream-1.17.2/baseline-*.log`.
 
 Migration checkpoint: numeric-manifest assertions and ARM identifier-header
-compilation passed. **No integrated ROM build or runtime suite has passed.**
-The initial merge had **107 conflicted paths**; all textual conflicts are now
-resolved. Seven core battle objects compile, but the migrated ROM has not
-linked and no migrated runtime tests have run. Custom-module compilation and
-battle-script assembly still fail. TX/Castoria/Koanko/Reduction ownership and
-normalization ports remain incomplete.
+compilation passed. The initial merge had **107 conflicted paths**, now resolved
+and preserved in checkpoint merge commit `f058e5220ce8177d38f99360199db0ad013a0a99`.
+Resumed migration builds the ROM through `resume-rom-09.log`, exit 0: EWRAM
+238,608 B, IWRAM 28,608 B, ROM 27,049,696 B. This includes the controller/history,
+AI configuration, multihit and summon-entry repairs. Actual focused
+passes: TX profiles 12/12, TX wishes 23/23, AFTER_CLEANUP 6/6, migration
+ownership 4/4, trainer control 21/21 and complete `arcanum.c` 71/71. Remaining
+Arcanum files pass Endurance 10/10, Debilitation 22/22, More Wishes 18/18,
+Normality 9/9 and Reduction 20/20. Break Bars pass 21/21, grants 13/13,
+exit HP 4/4, trainer bars 11/11 and wild bars 4/4.
+The TESTING-only trainer override preserves both authored production rows and
+target mock fixtures. Ordinary-engine and remaining custom files run serially;
+Chapter 15 records logs, source boundaries and outstanding acceptance checks.
+Ownership, normalization, script sequencing and overall acceptance are incomplete.
 
 The user requested a stopping checkpoint due to the usage window. Read
 [the durable migration checkpoint](15_upstream_migration_checkpoint.md) for
@@ -382,7 +391,8 @@ checkpoint for an accepted migration.
 Next: finish those semantic ports, compile a coherent target, run each focused
 suite from Section 9 with nonzero selections, repair unexpected failures, then
 run the full suite. Preserve the source snapshot for each test run. The terrain
-and pivot/phazing master fixes still need disposition; neither was imported.
+and pivot/phazing master fixes have now been inspected and applied/adapted as
+documented in Chapter 15. Their regression validation remains pending.
 No Stage 05 implementation, push or merge into `mypatch` has occurred.
 All fresh-game, animation, healthbox/menu reconstruction and resource checks
 remain required in the emulator after automated integration succeeds.

@@ -42,7 +42,7 @@ static void Task_ObserveEndurance(u8 taskId)
         DestroyTask(taskId);
         return;
     }
-    struct PartyState *data = GetBattlerPartyState(B_POSITION_OPPONENT_LEFT);
+    struct PartyState *data = GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
     if (data->breakBarSavedMaxHp[0] == 0)
         return;
     u32 slot = IndexOfSpritePaletteTag(TAG_BREAK_BAR_OPPONENT_LEFT_PAL);
@@ -171,7 +171,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Endurance remains outside production tactical s
         opponent->volatiles.castoriaTrueNameCharges = 0;
         EXPECT_EQ(EnduranceChooseMove(EnduranceProductionWishScore), 6);
         EXPECT_EQ(gBattleStruct->castoria.wishOutcome, CASTORIA_WISH_DOMINATION);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -366,15 +366,15 @@ SINGLE_BATTLE_TEST("Arcanum Wish Endurance obeys Taunt Encore Disable and Assaul
         sEnduranceChangeMaxHp = FALSE;
         gBattleStruct->castoria.nameResult = CASTORIA_NAME_FALSE;
         if (restriction == 0)
-            gDisableStructs[battler].tauntTimer = 1;
+            gBattleMons[battler].volatiles.tauntTimer = 1;
         else if (restriction == 1)
         {
-            gDisableStructs[battler].encoreTimer = 1;
-            gDisableStructs[battler].encoredMove = MOVE_TACKLE;
-            gDisableStructs[battler].encoredMovePos = 0;
+            gBattleMons[battler].volatiles.encoreTimer = 1;
+            gBattleMons[battler].volatiles.encoredMove = MOVE_TACKLE;
+            gBattleMons[battler].volatiles.encoredMovePos = 0;
         }
         else if (restriction == 2)
-            gDisableStructs[battler].disabledMove = MOVE_ARCANUM_WISH;
+            gBattleMons[battler].volatiles.disabledMove = MOVE_ARCANUM_WISH;
         else
             opponent->item = ITEM_ASSAULT_VEST;
         EXPECT_EQ(CastoriaCanWishFor(battler, CASTORIA_WISH_ENDURANCE), TRUE);
@@ -382,7 +382,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Endurance obeys Taunt Encore Disable and Assaul
         EXPECT_EQ(EnduranceChooseMove(EnduranceTestScore), 0);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, FALSE);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 0);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 

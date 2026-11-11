@@ -242,7 +242,7 @@ bool32 ReductionTryActivate(u32 initialLoss, u32 affectedSide)
     return TRUE;
 }
 
-bool32 ReductionEndTurn(u32 battler)
+bool32 ReductionEndTurn(enum BattlerId battler)
 {
     struct ReductionData *data = &gBattleStruct->reduction;
     bool32 effect = FALSE;

@@ -2,6 +2,7 @@
 #include "test/battle.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
+#include "battle_controllers.h"
 #include "battle_break_bar.h"
 #include "battle_koanko.h"
 #include "battle_koanko_smeargle_diagnostics.h"
@@ -17,6 +18,24 @@
 
 extern AiScoreFunc sDynamicAiFunc;
 
+// Preserve the former fixture's explicit weather/gimmick controls through the
+// target calculation context; exercise AI_CalcDamage's own scratch restoration.
+static struct SimulatedDamage FixtureDamage(enum Move move, enum BattlerId attacker,
+    enum BattlerId target, uq4_12_t *effectiveness, bool32 useAttackerGimmick,
+    bool32 useTargetGimmick, u32 weather)
+{
+    struct AiCalcValues context = {
+        .move = move,
+        .gimmickAtk = useAttackerGimmick ? gBattleStruct->gimmick.usableGimmick[attacker] : GIMMICK_NONE,
+        .gimmickDef = useTargetGimmick ? gBattleStruct->gimmick.usableGimmick[target] : GIMMICK_NONE,
+        .weather = weather,
+        .terrain = gFieldTimers.terrain,
+    };
+    struct SimulatedDamage damage = AI_CalcDamage(&context, attacker, target);
+    *effectiveness = context.typeEffectiveness;
+    return damage;
+}
+
 // Read authored production kits/levels/abilities/items/natures/EVs, not a
 // separately maintained approximation. Controlled player stats set the scenario.
 static void OriginalFixture(u32 index)
@@ -26,7 +45,7 @@ static void OriginalFixture(u32 index)
     OPPONENT(mon->species) {
         struct Pokemon *pokemon = gBattleTestRunnerState->data.currentMon;
         // No untagged rejection sampling in a test fixture. Nature = PID % 25.
-        CreateMon(pokemon, mon->species, mon->lvl, 31, TRUE, mon->nature, OT_ID_PRESET, 0);
+        CreateMonWithIVs(pokemon, mon->species, mon->lvl, mon->nature, OTID_STRUCT_PRESET(0), 31);
         static const u8 fields[] = {MON_DATA_HP_EV, MON_DATA_ATK_EV, MON_DATA_DEF_EV,
             MON_DATA_SPATK_EV, MON_DATA_SPDEF_EV, MON_DATA_SPEED_EV};
         for (u32 i = 0; i < ARRAY_COUNT(fields); i++)
@@ -94,13 +113,13 @@ static void PrepareConjured(u32 index)
     PokemonToBattleMon(&gEnemyParty[index], &gBattleMons[B_POSITION_OPPONENT_LEFT]);
     KoankoOnSwitchIn(B_POSITION_OPPONENT_LEFT);
     KoankoSmeargleDiagDisable();
-    // TESTING's intended-gimmick accessor replaces the production party mask.
-    // Mirror the actual factory mask, without requesting activation or use.
-    if (gBattleStruct->opponentMonCanTera & (1u << index))
-        gBattleTestRunnerState->data.chosenGimmick[B_SIDE_OPPONENT][index] = GIMMICK_TERA;
+    // Mirror generated eligibility in TESTING's intended-gimmick accessor,
+    // without requesting activation or use.
+    if (GetMonData(&gParties[B_TRAINER_OPPONENT_A][index], MON_DATA_TERA_TYPE) != TYPE_MYSTERY)
+        gBattleTestRunnerState->data.chosenGimmick[B_TRAINER_OPPONENT_A][index] = GIMMICK_TERA;
     AssignUsableGimmicks();
     SetAiLogicDataForTurn(gAiLogicData);
-    BattleAI_SetupAIData(0xF, B_POSITION_OPPONENT_LEFT);
+    BattleAI_SetupAIData(0xF, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
 }
 
 AI_SINGLE_BATTLE_TEST("Koanko AI Original Alcremie Glaceon and Vanilluxe avoid failed support")
@@ -274,7 +293,7 @@ AI_SINGLE_BATTLE_TEST("Koanko AI Cache conjured identities estimates and eligibi
             if (opponent->moves[slot] == MOVE_NONE)
                 continue;
             uq4_12_t effectiveness;
-            struct SimulatedDamage fresh = AI_CalcDamage(opponent->moves[slot], 1, 0, &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
+            struct SimulatedDamage fresh = FixtureDamage(opponent->moves[slot], 1, 0, &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
             EXPECT_EQ(gAiLogicData->simulatedDmg[1][0][slot].median, fresh.median);
             EXPECT_EQ(gAiLogicData->effectiveness[1][0][slot], effectiveness);
         }
@@ -470,9 +489,9 @@ AI_SINGLE_BATTLE_TEST("Koanko AI Calyrex optional Fire Tera activation deferral 
         PrepareConjured(2);
         EXPECT(CanActivateGimmick(1, GIMMICK_TERA));
         BattleAI_ChooseMoveIndex(1);
-        EXPECT_EQ(IsAIUsingGimmick(1), activate);
+        EXPECT_EQ(!!(gAiBattleData->aiUsingGimmick & (1u << 1)), activate);
         uq4_12_t effectiveness;
-        struct SimulatedDamage fresh = AI_CalcDamage(MOVE_TERA_BLAST, 1, 0, &effectiveness,
+        struct SimulatedDamage fresh = FixtureDamage(MOVE_TERA_BLAST, 1, 0, &effectiveness,
             activate ? USE_GIMMICK : NO_GIMMICK, NO_GIMMICK, AI_GetWeather());
         EXPECT_EQ(gAiLogicData->simulatedDmg[1][0][2].median, fresh.median);
         EXPECT_EQ(gAiLogicData->effectiveness[1][0][2], effectiveness);
@@ -524,26 +543,26 @@ AI_SINGLE_BATTLE_TEST("Koanko AI Cache simulation restores nesting dynamic conte
     } WHEN { TURN { MOVE(player, MOVE_CELEBRATE); } }
     THEN {
         uq4_12_t effectiveness;
-        struct SimulatedDamage baseline = AI_CalcDamage(MOVE_TERA_BLAST, 1, 0, &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
+        struct SimulatedDamage baseline = FixtureDamage(MOVE_TERA_BLAST, 1, 0, &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
         for (u32 nested = 0; nested < 2; nested++)
         {
             gAiLogicData->aiCalcInProgress = nested;
-            gBattleStruct->dynamicMoveType = TYPE_STEEL + 1;
-            gBattleStruct->swapDamageCategory = TRUE;
+            gBattleStruct->dynamicMoveType = TYPE_STEEL;
+            gBattleStruct->dynamicMoveCategory = DAMAGE_CATEGORY_PHYSICAL;
             gMultiHitCounter = 5;
-            struct SimulatedDamage simulated = AI_CalcDamage(MOVE_TERA_BLAST, 1, 0, &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
+            struct SimulatedDamage simulated = FixtureDamage(MOVE_TERA_BLAST, 1, 0, &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
             EXPECT_EQ(simulated.median, baseline.median);
             EXPECT_EQ((u32)gAiLogicData->aiCalcInProgress, nested);
-            EXPECT_EQ(gBattleStruct->dynamicMoveType, TYPE_STEEL + 1);
-            EXPECT_EQ((u32)gBattleStruct->swapDamageCategory, TRUE);
+            EXPECT_EQ(gBattleStruct->dynamicMoveType, TYPE_STEEL);
+            EXPECT_EQ((u32)gBattleStruct->dynamicMoveCategory, DAMAGE_CATEGORY_PHYSICAL);
             EXPECT_EQ(gMultiHitCounter, 5);
-            AI_CalcDamage(MOVE_POLLEN_PUFF, 1, BATTLE_PARTNER(1), &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
+            FixtureDamage(MOVE_POLLEN_PUFF, 1, GetPartnerBattler(1), &effectiveness, USE_GIMMICK, NO_GIMMICK, AI_GetWeather());
             EXPECT_EQ((u32)gAiLogicData->aiCalcInProgress, nested);
             EXPECT_EQ(effectiveness, 0);
         }
         gAiLogicData->aiCalcInProgress = FALSE;
-        gBattleStruct->dynamicMoveType = 0;
-        gBattleStruct->swapDamageCategory = FALSE;
+        gBattleStruct->dynamicMoveType = TYPE_NONE;
+        gBattleStruct->dynamicMoveCategory = DAMAGE_CATEGORY_NONE;
     }
 }
 
@@ -655,7 +674,7 @@ AI_SINGLE_BATTLE_TEST("Koanko AI Topology fresh refresh preserves custom flags a
         EXPECT_EQ(gAiBattleData->chosenTarget[1], 0);
         EXPECT_EQ(gChosenMoveByBattler[1], MOVE_CELEBRATE);
         // This does not create Stage07's independent ally or controller.
-        EXPECT(!BattlerHasAi(B_POSITION_PLAYER_LEFT));
+        EXPECT(!BattlerHasAi(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)));
         // No usable moves: the fresh doubles picker still returns a bounded
         // ordinary slot/real enemy for the executor's Struggle handling.
         opponent->pp[0] = 0;
@@ -723,9 +742,9 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics Whimsicott uses fresh disruption and avoid
         s32 fresh = TacticsScore(MOVE_TAILWIND);
         gSideTimers[B_SIDE_OPPONENT].tailwindTimer = 3;
         EXPECT_GT(fresh, TacticsScore(MOVE_TAILWIND));
-        gDisableStructs[0].tauntTimer = 0;
+        gBattleMons[0].volatiles.tauntTimer = 0;
         s32 taunt = TacticsScore(MOVE_TAUNT);
-        gDisableStructs[0].tauntTimer = 3;
+        gBattleMons[0].volatiles.tauntTimer = 3;
         EXPECT_GT(taunt, TacticsScore(MOVE_TAUNT));
         gBattleMons[0].volatiles.leechSeed = FALSE;
         s32 seed = TacticsScore(MOVE_LEECH_SEED);
@@ -804,14 +823,14 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics Audino values reachable Wish Encore and re
     } WHEN { TURN { MOVE(player, MOVE_CELEBRATE); } }
     THEN {
         opponent->hp = opponent->maxHP / 3;
-        gWishFutureKnock.wishCounter[1] = 0;
+        gBattleStruct->wish[1].counter = 0;
         s32 wish = TacticsScore(MOVE_WISH);
-        gWishFutureKnock.wishCounter[1] = 2;
+        gBattleStruct->wish[1].counter = 2;
         EXPECT_GT(wish, TacticsScore(MOVE_WISH));
         gAiLogicData->lastUsedMove[0] = MOVE_CELEBRATE;
-        gDisableStructs[0].encoreTimer = 0;
+        gBattleMons[0].volatiles.encoreTimer = 0;
         s32 encore = TacticsScore(MOVE_ENCORE);
-        gDisableStructs[0].encoreTimer = 3;
+        gBattleMons[0].volatiles.encoreTimer = 3;
         EXPECT_GT(encore, TacticsScore(MOVE_ENCORE));
         player->item = ITEM_LEFTOVERS;
         SetAiLogicDataForTurn(gAiLogicData);
@@ -833,7 +852,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics Blissey sustains and suppresses redundant 
     THEN {
         opponent->hp = opponent->maxHP / 5;
         s32 recovery = TacticsScore(MOVE_SOFT_BOILED);
-        opponent->volatiles.healBlock = TRUE;
+        opponent->volatiles.healBlockTimer = 1;
         EXPECT_GT(recovery, TacticsScore(MOVE_SOFT_BOILED));
         player->status1 = STATUS1_NONE;
         s32 toxic = TacticsScore(MOVE_TOXIC);
@@ -857,17 +876,17 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics TX coordinates delayed damage Wish and one
     THEN {
         PrepareConjured(1);
         opponent->hp = opponent->maxHP / 3;
-        gWishFutureKnock.wishCounter[1] = 0;
+        gBattleStruct->wish[1].counter = 0;
         s32 wish = TacticsScore(MOVE_WISH);
-        gWishFutureKnock.wishCounter[1] = 2;
+        gBattleStruct->wish[1].counter = 2;
         EXPECT_GT(wish, TacticsScore(MOVE_WISH));
-        gDisableStructs[1].protectUses = 0;
+        gBattleMons[1].volatiles.consecutiveMoveUses = 0;
         s32 protect = TacticsScore(MOVE_PROTECT);
-        gDisableStructs[1].protectUses = 1;
+        gBattleMons[1].volatiles.consecutiveMoveUses = 1;
         EXPECT_GT(protect, TacticsScore(MOVE_PROTECT));
-        gWishFutureKnock.futureSightCounter[0] = 0;
+        gBattleStruct->futureSight[0].counter = 0;
         s32 doom = TacticsScore(MOVE_DOOM_DESIRE);
-        gWishFutureKnock.futureSightCounter[0] = 2;
+        gBattleStruct->futureSight[0].counter = 2;
         EXPECT_GT(doom, TacticsScore(MOVE_DOOM_DESIRE));
         EXPECT(TxRollbackHasWishes(1));
     }
@@ -907,7 +926,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics Shadow Calyrex reads a real special kit wi
     THEN {
         PrepareConjured(2);
         // Mechanism fixture only: Stage06 still owns actual form/kit reload.
-        CreateMon(&gEnemyParty[2], SPECIES_CALYREX_SHADOW, 102, 31, TRUE, 0, OT_ID_PRESET, 0);
+        CreateMonWithIVs(&gEnemyParty[2], SPECIES_CALYREX_SHADOW, 102, 0, OTID_STRUCT_PRESET(0), 31);
         SetMonMoveSlot(&gEnemyParty[2], MOVE_ASTRAL_BARRAGE, 0);
         SetMonMoveSlot(&gEnemyParty[2], MOVE_PSYSHOCK, 1);
         SetMonMoveSlot(&gEnemyParty[2], MOVE_NASTY_PLOT, 2);

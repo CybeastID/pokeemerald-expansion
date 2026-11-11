@@ -15,9 +15,8 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     gBattleHistory = AllocZeroed(sizeof(*gBattleHistory));
     gBattlersCount = 2;
     gBattleStruct->koankoPhase = KOANKO_CONJURING;
-    gBattleStruct->givenExpMons = 0x3F;
-    gBattleStruct->opponentMonCanTera = 0x3F;
-    gBattleStruct->opponentMonCanDynamax = 0x3F;
+    gBattleStruct->givenExpMons[0] = 0x3F;
+    gBattleStruct->givenExpMons[1] = 0x15; // Opponent B is independent of this encounter.
     gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_DYNAMAX] = TRUE;
     gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA] = TRUE;
     gBattleStruct->gimmick.activated[B_POSITION_PLAYER_LEFT][GIMMICK_TERA] = TRUE;
@@ -29,11 +28,11 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     gBattleWeather = B_WEATHER_RAIN;
     gSideStatuses[B_SIDE_OPPONENT] = SIDE_STATUS_REFLECT;
     gSideTimers[B_SIDE_OPPONENT].spikesAmount = 2;
-    gWishFutureKnock.knockedOffMons[B_SIDE_OPPONENT] = 0x3F;
-    gWishFutureKnock.futureSightCounter[B_POSITION_OPPONENT_LEFT] = 2;
+    gBattleStruct->futureSight[B_POSITION_OPPONENT_LEFT].counter = 2;
     gBattleResults.opponentFaintCounter = 6;
     for (u32 i = 0; i < PARTY_SIZE; i++)
     {
+        gBattleStruct->partyState[B_TRAINER_OPPONENT_A][i].isKnockedOff = TRUE;
         gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarConfig = &gTrainerBreakBarProfiles[4];
         gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarSavedHp[0] = 42;
         gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarSavedMaxHp[0] = 100;
@@ -46,18 +45,20 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     static const u16 species[] = {SPECIES_SMEARGLE, SPECIES_TX_ROLLBACK, SPECIES_CALYREX_ICE, SPECIES_ETERNATUS, SPECIES_DIALGA_ORIGIN, SPECIES_ARCEUS};
     for (u32 i = 0; i < PARTY_SIZE; i++)
     {
-        EXPECT_EQ(GetMonData(&gEnemyParty[i], MON_DATA_SPECIES), species[i]);
-        EXPECT_EQ(GetMonData(&gEnemyParty[i], MON_DATA_LEVEL), 100 + i);
-        EXPECT_EQ(GetMonData(&gEnemyParty[i], MON_DATA_HP), GetMonData(&gEnemyParty[i], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_SPECIES), species[i]);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_LEVEL), 100 + i);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_TERA_TYPE), i == 2 ? TYPE_FIRE : TYPE_MYSTERY);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_DYNAMAX_LEVEL), BLOCK_AI_DYNAMAX);
+        EXPECT_EQ((u32)gBattleStruct->partyState[B_TRAINER_OPPONENT_A][i].isKnockedOff, FALSE);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarConfig, NULL);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarSavedMaxHp[0], 0);
         EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_OPPONENT][i].breakBarItemUsed, FALSE);
         EXPECT_EQ((u32)gAiPartyData->mons[B_SIDE_OPPONENT][i].isFainted, FALSE);
     }
     EXPECT_EQ(gBattleStruct->koankoPhase, KOANKO_CONJURED_TEAM);
-    EXPECT_EQ(gBattleStruct->givenExpMons, 0);
-    EXPECT_EQ((u32)gBattleStruct->opponentMonCanTera, 1 << 2);
-    EXPECT_EQ((u32)gBattleStruct->opponentMonCanDynamax, 0);
+    EXPECT_EQ(gBattleStruct->givenExpMons[0], 0);
+    EXPECT_EQ(gBattleStruct->givenExpMons[1], 0x15);
     EXPECT_EQ(gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_DYNAMAX], TRUE);
     // Only the opponent's Tera-used flag is renewed; the player's Tera usage is untouched.
     EXPECT_EQ(gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA], FALSE);
@@ -69,15 +70,14 @@ TEST("Koanko replacement creates fresh opponents while preserving player, field,
     EXPECT_EQ((u32)gSideTimers[B_SIDE_OPPONENT].spikesAmount, 2);
     EXPECT_EQ(gBattleWeather, B_WEATHER_RAIN);
     EXPECT_EQ(gSideStatuses[B_SIDE_OPPONENT], SIDE_STATUS_REFLECT);
-    EXPECT_EQ(gWishFutureKnock.futureSightCounter[B_POSITION_OPPONENT_LEFT], 2);
-    EXPECT_EQ(gWishFutureKnock.knockedOffMons[B_SIDE_OPPONENT], 0);
+    EXPECT_EQ((u32)gBattleStruct->futureSight[B_POSITION_OPPONENT_LEFT].counter, 2);
     EXPECT_EQ(gBattleResults.opponentFaintCounter, 6);
-    EXPECT_EQ(gEnemyPartyCount, 6);
+    EXPECT_EQ(gPartiesCount[B_TRAINER_OPPONENT_A], 6);
     // A second call cannot regenerate a defeated conjured Pokemon.
     u16 hp = 0;
-    SetMonData(&gEnemyParty[0], MON_DATA_HP, &hp);
+    SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP, &hp);
     ConjureKoankoTeam();
-    EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 0);
+    EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), 0);
     // ...and cannot renew the Tera opportunity a second time once it has been consumed.
     gBattleStruct->gimmick.activated[B_POSITION_OPPONENT_LEFT][GIMMICK_TERA] = TRUE;
     ConjureKoankoTeam();

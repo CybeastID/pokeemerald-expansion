@@ -365,7 +365,7 @@ AI_SINGLE_BATTLE_TEST("Koanko Smeargle cannot be Encored")
     } SCENE {
         MESSAGE("But it failed!");
     } THEN {
-        EXPECT_EQ(gDisableStructs[B_POSITION_OPPONENT_LEFT].encoredMove, MOVE_NONE);
+        EXPECT_EQ((u32)gBattleMons[B_POSITION_OPPONENT_LEFT].volatiles.encoredMove, MOVE_NONE);
         ResetScorerState();
     }
 }
@@ -432,15 +432,15 @@ AI_SINGLE_BATTLE_TEST("Koanko Smeargle real scoring: CHECK_VIABILITY raises a da
         EXPECT_EQ(gAiLogicData->simulatedDmg[atk][def][0].median, 0);
 
         // A limited candidate must clear the preceding move's entire slot cache.
-        gDisableStructs[atk].disabledMove = MOVE_TACKLE;
+        gBattleMons[atk].volatiles.disabledMove = MOVE_TACKLE;
         EXPECT_EQ(BattleAI_ScoreSlot0Candidate(atk, MOVE_TACKLE), 0);
         EXPECT_EQ(gAiLogicData->simulatedDmg[atk][def][0].median, 0);
         EXPECT_EQ(gAiLogicData->effectiveness[atk][def][0], 0);
         EXPECT_EQ(gAiLogicData->moveAccuracy[atk][def][0], 0);
-        gDisableStructs[atk].disabledMove = MOVE_NONE;
-        gDisableStructs[atk].tauntTimer = 1;
+        gBattleMons[atk].volatiles.disabledMove = MOVE_NONE;
+        gBattleMons[atk].volatiles.tauntTimer = 1;
         EXPECT_EQ(BattleAI_ScoreSlot0Candidate(atk, MOVE_CELEBRATE), 0);
-        gDisableStructs[atk].tauntTimer = 0;
+        gBattleMons[atk].volatiles.tauntTimer = 0;
 
         gAiThinkingStruct->aiFlags[atk] &= ~AI_FLAG_CHECK_VIABILITY;
         gAiLogicData->aiCalcInProgress = FALSE;

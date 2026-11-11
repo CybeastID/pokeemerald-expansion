@@ -2512,19 +2512,31 @@ static void Cmd_getexp(void)
     }
 }
 
-static u32 CountAliveMonsForBattlerSide(enum BattlerId battler)
+// Owner-aware variant of upstream 8b10030b4c42; pending layers remain alive.
+static u32 CountAliveMonsForTrainer(enum BattleTrainer trainer)
 {
     u32 aliveMons = 0;
-    struct Pokemon *party = GetBattlerParty(battler);
+    struct Pokemon *party = gParties[trainer];
 
-    for (u32 partyMon = 0; partyMon < PARTY_SIZE; partyMon++)
+    for (u32 slot = 0; slot < PARTY_SIZE; slot++)
     {
-        if (GetMonData(&party[partyMon], MON_DATA_SPECIES)
-         && (GetMonData(&party[partyMon], MON_DATA_HP) > 0
-          || gBattleStruct->partyState[GetBattlerSide(battler)][partyMon].breakBarPending)
-         && !GetMonData(&party[partyMon], MON_DATA_IS_EGG))
-            aliveMons++;
+        if (GetMonData(&party[slot], MON_DATA_SPECIES) == SPECIES_NONE
+         || GetMonData(&party[slot], MON_DATA_IS_EGG)
+         || (GetMonData(&party[slot], MON_DATA_HP) == 0
+          && !gBattleStruct->partyState[trainer][slot].breakBarPending))
+            continue;
+        aliveMons++;
     }
+
+    return aliveMons;
+}
+
+static u32 CountAliveMonsForBattlerSide(enum BattlerId battler)
+{
+    u32 aliveMons = CountAliveMonsForTrainer(GetBattlerTrainer(battler));
+
+    if (BattleSideHasTwoTrainers(GetBattlerSide(battler)))
+        aliveMons += CountAliveMonsForTrainer(GetBattlerTrainer(GetPartnerBattler(battler)));
 
     return aliveMons;
 }
@@ -5628,12 +5640,6 @@ static void Cmd_forcerandomswitch(void)
 {
     CMD_ARGS(const u8 *failInstr);
 
-    s32 battler1PartyId = 0;
-    s32 battler2PartyId = 0;
-
-    s32 firstMonId;
-    s32 lastMonId = 0; // + 1
-    struct Pokemon *party = NULL;
     u8 validMons[PARTY_SIZE];
     s32 validMonsCount = 0;
 
@@ -5688,88 +5694,20 @@ static void Cmd_forcerandomswitch(void)
         || redCardForcedSwitch
        )
     {
-        party = GetBattlerParty(gBattlerTarget);
+        enum BattlerId battlerIn1 = gBattlerTarget;
+        enum BattlerId battlerIn2 = IsDoubleBattle() ? GetPartnerBattler(battlerIn1) : battlerIn1;
+        struct Pokemon *party = GetBattlerParty(battlerIn1);
 
-        if (BATTLE_TWO_VS_ONE_OPPONENT && !IsOnPlayerSide(gBattlerTarget))
+        for (u32 slot = 0; slot < PARTY_SIZE; slot++)
         {
-            firstMonId = 0;
-            lastMonId = 6;
-            battler2PartyId = gBattlerPartyIndexes[gBattlerTarget];
-            battler1PartyId = gBattlerPartyIndexes[GetPartnerBattler(gBattlerTarget)];
-        }
-        else if ((gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER && gBattleTypeFlags & BATTLE_TYPE_LINK)
-            || (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER && gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)
-            || (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER))
-        {
-            if ((gBattlerTarget & BIT_FLANK) != B_FLANK_LEFT)
-            {
-                firstMonId = PARTY_SIZE / 2;
-                lastMonId = PARTY_SIZE;
-            }
-            else
-            {
-                firstMonId = 0;
-                lastMonId = PARTY_SIZE / 2;
-            }
-            battler2PartyId = gBattlerPartyIndexes[gBattlerTarget];
-            battler1PartyId = gBattlerPartyIndexes[GetPartnerBattler(gBattlerTarget)];
-        }
-        else if ((gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_LINK)
-                 || (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK))
-        {
-            firstMonId = 0;
-            lastMonId = PARTY_SIZE / 2;
-            battler2PartyId = gBattlerPartyIndexes[gBattlerTarget];
-            battler1PartyId = gBattlerPartyIndexes[GetPartnerBattler(gBattlerTarget)];
-        }
-        else if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
-        {
-            if (IsOnPlayerSide(gBattlerTarget))
-            {
-                firstMonId = 0;
-                lastMonId = PARTY_SIZE;
-            }
-            else
-            {
-                if ((gBattlerTarget & BIT_FLANK) != B_FLANK_LEFT)
-                {
-                    firstMonId = PARTY_SIZE / 2;
-                    lastMonId = PARTY_SIZE;
-                }
-                else
-                {
-                    firstMonId = 0;
-                    lastMonId = PARTY_SIZE / 2;
-                }
-            }
-            battler2PartyId = gBattlerPartyIndexes[gBattlerTarget];
-            battler1PartyId = gBattlerPartyIndexes[GetPartnerBattler(gBattlerTarget)];
-        }
-        else if (IsDoubleBattle())
-        {
-            firstMonId = 0;
-            lastMonId = PARTY_SIZE;
-            battler2PartyId = gBattlerPartyIndexes[gBattlerTarget];
-            battler1PartyId = gBattlerPartyIndexes[GetPartnerBattler(gBattlerTarget)];
-        }
-        else
-        {
-            firstMonId = 0;
-            lastMonId = PARTY_SIZE;
-            battler2PartyId = gBattlerPartyIndexes[gBattlerTarget]; // there is only one Pokémon out in single battles
-            battler1PartyId = gBattlerPartyIndexes[gBattlerTarget];
-        }
+            if (GetMonData(&party[slot], MON_DATA_HP) == 0
+             || GetMonData(&party[slot], MON_DATA_SPECIES) == SPECIES_NONE
+             || GetMonData(&party[slot], MON_DATA_IS_EGG)
+             || slot == gBattlerPartyIndexes[battlerIn1]
+             || (slot == gBattlerPartyIndexes[battlerIn2] && BattlersShareParty(battlerIn1, battlerIn2)))
+                continue;
 
-        for (u32 i = firstMonId; i < lastMonId; i++)
-        {
-            if (GetMonData(&party[i], MON_DATA_SPECIES) != SPECIES_NONE
-             && !GetMonData(&party[i], MON_DATA_IS_EGG)
-             && GetMonData(&party[i], MON_DATA_HP) != 0
-             && i != battler1PartyId
-             && i != battler2PartyId)
-             {
-                 validMons[validMonsCount++] = i;
-             }
+            validMons[validMonsCount++] = slot;
         }
 
         if (validMonsCount == 0)
@@ -13056,4 +12994,16 @@ void BS_JumpIfTrashCrushOhko(void)
     NATIVE_ARGS(const u8 *jumpInstr);
     gBattlescriptCurrInstr = gBattleStruct->trashCrushOhko & (1u << gBattlerTarget)
         ? cmd->jumpInstr : cmd->nextInstr;
+}
+
+// The Bug Space faint presentation skips the ordinary faint text, but keeps
+// the baseline Gulp Missile opportunity through the target ability dispatcher.
+// A form already consumed during move resolution cannot activate a second time.
+void BS_TryBugSpaceFaintGulpMissile(void)
+{
+    NATIVE_ARGS();
+    gBattlescriptCurrInstr = cmd->nextInstr;
+    enum Ability ability = GetBattlerAbility(gBattlerFainted);
+    if (gBattlerFainted == gBattlerTarget && ability == ABILITY_GULP_MISSILE)
+        AbilityBattleEffects(ABILITYEFFECT_FORM_CHANGE_ON_HIT, gBattlerFainted, ability, gCurrentMove, TRUE);
 }

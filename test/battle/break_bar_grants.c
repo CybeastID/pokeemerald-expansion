@@ -37,7 +37,7 @@ SINGLE_BATTLE_TEST("Break Bar Charm activates before entry hazards")
     } THEN {
         EXPECT_EQ(player->hp, 88);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 1);
-        EXPECT_EQ(GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarSavedHp[0], 1);
+        EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarSavedHp[0], 1);
     }
 }
 
@@ -113,7 +113,7 @@ SINGLE_BATTLE_TEST("Break Bar Charm saves partial HP, stays held, and grants onl
         EXPECT_EQ(player->hp, 7);
         EXPECT_EQ(player->item, ITEM_BREAK_CHARM);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 0);
-        EXPECT_EQ((u32)GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarItemUsed, TRUE);
+        EXPECT_EQ((u32)GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarItemUsed, TRUE);
         EXPECT_EQ(gBattleResults.playerFaintCounter, 0);
     }
 }
@@ -139,7 +139,7 @@ SINGLE_BATTLE_TEST("Break Bar Lunar Dance faints an unprotected user and restore
         EXPECT_EQ(player->status1, 0);
         EXPECT_EQ(player->pp[0], GetMovePP(MOVE_SCRATCH));
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 1);
-        EXPECT_EQ(GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarSavedHp[0], 100);
+        EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarSavedHp[0], 100);
     }
 }
 

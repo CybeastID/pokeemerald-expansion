@@ -10,7 +10,7 @@ SINGLE_BATTLE_TEST("Test event data starts clean after another test estimates fi
 {
     GIVEN {
         EXPECT_EQ(VarGet(TESTING_VAR_UNUSED_3), 0);
-        EXPECT_EQ(gStartingStatuses.grassyTerrain, FALSE);
+        EXPECT_EQ((u32)gStartingStatuses.grassyTerrain, FALSE);
         EXPECT_EQ(GetCurrentDifficultyLevel(), DIFFICULTY_NORMAL);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
@@ -24,7 +24,7 @@ SINGLE_BATTLE_TEST("Test event data starts clean after another test estimates fi
 SINGLE_BATTLE_TEST("Test event data flags start clean after another test estimates field settings")
 {
     GIVEN {
-        EXPECT_EQ(FlagGet(TESTING_FLAG_UNUSED_2), FALSE);
+        EXPECT_EQ(FlagGet(TESTING_FLAG_UNUSED_3), FALSE);
         PLAYER(SPECIES_WOBBUFFET);
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
@@ -38,7 +38,7 @@ SINGLE_BATTLE_TEST("Test event data can be set while estimating field settings")
     // including runners that will not execute this battle or its teardown.
     VarSet(TESTING_VAR_UNUSED_3, 1234);
     SetStartingStatus(STARTING_STATUS_GRASSY_TERRAIN);
-    FlagSet(TESTING_FLAG_UNUSED_2);
+    FlagSet(TESTING_FLAG_UNUSED_3);
 
     GIVEN {
         PLAYER(SPECIES_WOBBUFFET);

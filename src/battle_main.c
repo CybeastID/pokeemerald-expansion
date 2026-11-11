@@ -80,7 +80,7 @@
 #include "constants/weather.h"
 #include "cable_club.h"
 #include "castoria_name_theft.h"
-#include "test/test_runner_battle.h"
+#include "test/battle.h"
 #include "trainer_break_bars.h"
 #include "battle_break_bar.h"
 
@@ -1792,8 +1792,9 @@ void CB2_QuitRecordedBattle(void)
             if (taskId != TASK_NONE)
                 DestroyTask(taskId);
 
-            gCurrentActionFuncId = B_ACTION_FINISHED;
-            sEndTurnFuncsTable[gBattleOutcome & 0x7F](); // Contains TestRunner_Battle_AfterLastTurn
+            // Inspect live combat state before cleanup; AFTER_CLEANUP has its
+            // own guarded dispatch below, matching the preserved harness contract.
+            TestRunner_Battle_AfterLastTurn();
 #if TESTING
             if (TestRunner_Battle_HasPendingAfterCleanup())
             {
@@ -3573,7 +3574,7 @@ static void TryDoEventsBeforeFirstTurn(void)
                 return;
             }
         }
-        gBattleStruct->eventState.beforeFristTurn++;
+        gBattleStruct->eventState.beforeFirstTurn++;
         break;
     }
     case FIRST_TURN_EVENTS_END:
@@ -5486,6 +5487,10 @@ static void HandleEndTurn_FinishBattle(void)
             TryPutBreakingNewsOnAir();
         }
 
+        RecordedBattle_SetPlaybackFinished();
+        if (gTestRunnerEnabled)
+            TestRunner_Battle_AfterLastTurn();
+
         BeginFastPaletteFade(3);
         FadeOutMapMusic(5);
         TryRestoreHeldItems();
@@ -5498,9 +5503,6 @@ static void HandleEndTurn_FinishBattle(void)
         // This helper includes ordinary form/stat restoration and consolidates
         // saved HP layers after restoring canonical player maxima.
         RestorePlayerBreakBarHp();
-        RecordedBattle_SetPlaybackFinished();
-        if (gTestRunnerEnabled)
-            TestRunner_Battle_AfterLastTurn();
         if (gTestRunnerEnabled && TestRunner_Battle_HasPendingAfterCleanup())
             TestRunner_Battle_AfterCleanup();
 

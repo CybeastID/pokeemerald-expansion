@@ -68,8 +68,8 @@ static void InvokePolymorph(void)
         void (*func)(void);
     } command = {0, BS_PolymorphTarget};
     const u8 *saved = gBattlescriptCurrInstr;
-    gBattlerAttacker = B_POSITION_OPPONENT_LEFT;
-    gBattlerTarget = B_POSITION_PLAYER_LEFT;
+    gBattlerAttacker = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
+    gBattlerTarget = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
     gCurrentMove = MOVE_POLYMORPH;
     gBattlescriptCurrInstr = (const u8 *)&command;
     BS_PolymorphTarget();
@@ -159,7 +159,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction uses exact lower-level stats without 
     } THEN {
         // The runner assigns artificial turn-order speeds when none are supplied.
         CalculateMonStats(&gPlayerParty[0]);
-        CopyMonLevelAndBaseStatsToBattleMon(0, &gPlayerParty[0]);
+        CopyMonLevelAndBaseStatsToBattleMon(0, &gPlayerParty[0], TRUE);
         struct Pokemon original = gPlayerParty[0];
         struct Pokemon scratch = original;
         CalculateMonStatsAtLevel(&scratch, 70);
@@ -577,7 +577,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction genuine level gains preserve the accu
         u32 exp = gExperienceTables[gSpeciesInfo[SPECIES_VENUSAUR].growthRate][51];
         SetMonData(&gPlayerParty[0], MON_DATA_EXP, &exp);
         CalculateMonStats(&gPlayerParty[0]);
-        CopyMonLevelAndBaseStatsToBattleMon(0, &gPlayerParty[0]);
+        CopyMonLevelAndBaseStatsToBattleMon(0, &gPlayerParty[0], TRUE);
         EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 51);
         EXPECT_EQ(player->level, 21);
         EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_EXP), exp);

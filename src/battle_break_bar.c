@@ -43,6 +43,13 @@ static const u16 sBreakBarPaletteTags[MAX_BATTLERS_COUNT] =
 
 static u8 sLoadedBreakBarColors[MAX_BATTLERS_COUNT];
 static void Task_BreakBarPaletteFade(u8 taskId);
+static bool32 HasFreeBreakBarFadeTask(void)
+{
+    for (u32 taskId = 0; taskId < NUM_TASKS; taskId++)
+        if (!gTasks[taskId].isActive)
+            return TRUE;
+    return FALSE;
+}
 static bool8 sKazuraStackBreakerActive[MAX_BATTLERS_COUNT];
 static u8 sKazuraStackBreakerPixels[MAX_BATTLERS_COUNT];
 
@@ -209,7 +216,7 @@ void RefreshBreakBarPalette(u32 battler, bool32 animate)
         sLoadedBreakBarColors[battler] = color;
 
         // CreateTask returns 0 on exhaustion, so check capacity before using its ID.
-        if (animate && GetTaskCount() < NUM_TASKS)
+        if (animate && HasFreeBreakBarFadeTask())
         {
             LoadPalette(gBattleInterface_BallDisplayPal, OBJ_PLTT_ID(slot), PLTT_SIZE_4BPP);
             u32 taskId = CreateTask(Task_BreakBarPaletteFade, 0);

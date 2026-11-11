@@ -262,7 +262,9 @@ static bool32 FirstEventBlockEvents(struct BattleCalcValues *calcValues)
         gBattleStruct->eventState.battlerSwitchIn++;
         break;
     case FIRST_EVENT_BLOCK_HAZARDS:
-        if (!gBattleStruct->battlerState[battler].switchIn)
+        if (!gBattleStruct->battlerState[battler].switchIn
+         || (gBattleStruct->txRollback.stage == TX_ROLLBACK_ENTERING
+          && TxRollbackIsSummonedPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler])))
         {
             gBattleStruct->eventState.battlerSwitchIn++;
         }

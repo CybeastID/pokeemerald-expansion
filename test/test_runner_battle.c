@@ -7,6 +7,7 @@
 #include "battle_gimmick.h"
 #include "battle_z_move.h"
 #include "castoria_name_theft.h"
+#include "data.h"
 #include "event_data.h"
 #include "fieldmap.h"
 #include "item_menu.h"
@@ -57,10 +58,23 @@ static inline bool32 RngSeedNotDefault(const rng_value_t *seed)
 #define TRAINER_LEAF_TEST   2
 #define PARTNER_STEVEN_TEST 1
 
-const struct Trainer gTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT] =
+static const struct Trainer sTestTrainers[DIFFICULTY_COUNT][TRAINERS_COUNT] =
 {
     #include "battle/trainer_control.h"
 };
+
+// Keep target trainer-control fixtures while custom encounter tests read the
+// same authored production kits/AI flags as the ROM, without copying boss data.
+const struct Trainer *Test_GetTrainerOverride(u16 trainerId)
+{
+    enum DifficultyLevel difficulty = GetCurrentDifficultyLevel();
+
+    if (trainerId >= TRAINERS_COUNT || sTestTrainers[DIFFICULTY_NORMAL][trainerId].party == NULL)
+        return NULL;
+    if (sTestTrainers[difficulty][trainerId].party == NULL)
+        difficulty = DIFFICULTY_NORMAL;
+    return &sTestTrainers[difficulty][trainerId];
+}
 
 const struct Trainer gBattlePartners[DIFFICULTY_COUNT][PARTNER_COUNT] =
 {
@@ -282,7 +296,9 @@ static bool32 IsAIDoublesTest(void)
 
 static enum BattleTrainer Test_GetBattlerTrainer(enum BattlerId battlerId)
 {
-    if (DATA.hasSummonedOpponent && battlerId == B_POSITION_OPPONENT_RIGHT)
+    // Test declarations bind battler IDs to matching positions. The summon
+    // does not exist in gBattlerPositions yet during action recording.
+    if (DATA.hasSummonedOpponent && battlerId == B_BATTLER_3)
         return B_TRAINER_OPPONENT_A;
     return (gBattleTestRunnerState->data.battlerTrainers >> (2 * battlerId)) & 0x3;
 }
@@ -2988,7 +3004,8 @@ void DeclareSummonedOpponent(u32 sourceLine)
     INVALID_IF(DATA.turns == 0 || DATA.turnState != TURN_CLOSED, "Declare the summon after its creation TURN");
     DATA.hasSummonedOpponent = TRUE;
     DATA.currentMonIndexes[B_POSITION_OPPONENT_RIGHT] = PARTY_SIZE - 1;
-    CreateMon(&DATA.summonedOpponentMon, SPECIES_TX_ROLLBACK, 50, 31, TRUE, 0, OT_ID_PRESET, 0x12345678);
+    CreateMonWithIVs(&DATA.summonedOpponentMon, SPECIES_TX_ROLLBACK, 50, 0,
+                    OTID_STRUCT_PRESET(0x12345678), 31);
     // Match the summoned profile installed by BS_TxRollbackCreate. EXPECT_MOVE
     // resolves against this declaration before the runtime summon exists.
     const u16 moves[MAX_MON_MOVES] = {MOVE_FOLLOW_ME, MOVE_WIDE_GUARD, MOVE_LIFE_DEW, MOVE_POWER_GEM};
@@ -3021,7 +3038,7 @@ void CloseTurn(u32 sourceLine)
 
 static struct Pokemon *CurrentMon(enum BattlerId battlerId)
 {
-    if (DATA.hasSummonedOpponent && battlerId == B_POSITION_OPPONENT_RIGHT)
+    if (DATA.hasSummonedOpponent && battlerId == B_BATTLER_3)
         return &DATA.summonedOpponentMon;
     enum BattleTrainer trainer = Test_GetBattlerTrainer(battlerId);
     struct Pokemon *party = DATA.recordedBattle.parties[trainer];
