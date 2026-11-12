@@ -200,7 +200,7 @@ SINGLE_BATTLE_TEST("Venusaur returns its base Form upon battle end after Mega Ev
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE, gimmick: GIMMICK_MEGA); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_VENUSAUR);
     }
 }
@@ -212,7 +212,7 @@ SINGLE_BATTLE_TEST("Rayquaza returns its base Form upon battle end after Mega Ev
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE, gimmick: GIMMICK_MEGA); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_RAYQUAZA);
     }
 }

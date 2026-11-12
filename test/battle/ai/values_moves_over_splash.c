@@ -645,7 +645,8 @@ AI_DOUBLE_BATTLE_TEST("AI values moves above Splash, 801-900")
         case EFFECT_HAPPY_HOUR:
         case EFFECT_REVIVAL_BLESSING_2:
         case EFFECT_TRASH_CRUSH: // OHKO is not handled nicely!
-            break;
+        case EFFECT_INFINITE_GROWTH:
+            break; 
         default:
             PARAMETRIZE { move = j; }
         }

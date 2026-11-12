@@ -344,7 +344,7 @@ SINGLE_BATTLE_TEST("Primal Reversion is reverted upon battle end")
         OPPONENT(SPECIES_WOBBUFFET);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), species);
     }
 }

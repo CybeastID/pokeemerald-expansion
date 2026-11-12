@@ -27,7 +27,7 @@ SINGLE_BATTLE_TEST("Burmy changes form based on the environment it appeared in-b
         Environment(environment);
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
-    } THEN {
+    } AFTER_CLEANUP {
         EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), newForm);
     }
 }
