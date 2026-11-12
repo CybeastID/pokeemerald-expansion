@@ -19,7 +19,7 @@ static u32 GrownStat(u32 value, u32 count)
 static u32 BaseStat(u32 stat)
 {
     static const u16 sMonData[NUM_STATS] = {0, MON_DATA_ATK, MON_DATA_DEF, MON_DATA_SPEED, MON_DATA_SPATK, MON_DATA_SPDEF};
-    return GetMonData(&gPlayerParty[0], sMonData[stat]);
+    return GetMonData(&gParties[B_TRAINER_PLAYER][0], sMonData[stat]);
 }
 
 static u32 CurrentStat(struct BattlePokemon *mon, u32 stat)

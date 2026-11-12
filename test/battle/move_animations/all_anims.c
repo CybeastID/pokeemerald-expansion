@@ -7,6 +7,13 @@
 #define ANIM_TEST_START_MOVE 1              //  First move to test
 #define ANIM_TEST_END_MOVE   MOVES_COUNT-1  //  Last move to test
 
+static bool32 IsRevivalMove(enum Move move)
+{
+    if (GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING || GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING_2)
+        return TRUE;
+    return FALSE;
+}
+
 static void ParametrizeMovesAndSpecies(u32 j, enum Move *pMove, enum Species *pSpecies, u32 variation)
 {
     enum BattleMoveEffects effect = GetMoveEffect(j);
@@ -331,7 +338,7 @@ static void DoublesWhen(enum Move move, struct BattlePokemon *attacker, struct B
             MOVE(target, MOVE_POUND, target: attacker);
             MOVE(ignore2, MOVE_CELEBRATE);
         }
-        else if (effect == EFFECT_REVIVAL_BLESSING)
+        else if (effect == EFFECT_REVIVAL_BLESSING || effect == EFFECT_REVIVAL_BLESSING_2)
         { // Player selects party member
             MOVE(attacker, move, partyIndex: 2);
             MOVE(target, MOVE_LAST_RESORT, target: attacker); // Last Resort, so there's no anim on the opponent's side.
@@ -378,6 +385,13 @@ static void DoublesWhen(enum Move move, struct BattlePokemon *attacker, struct B
             else if (variation == 1)
                 MOVE(attacker, move, target: target, WITH_RNG(RNG_SHELL_SIDE_ARM, TRUE));
         }
+        
+    else if (move == MOVE_TRASH_CRUSH)
+{
+    MOVE(target, MOVE_LAST_RESORT, target: attacker);
+    MOVE(attacker, move, target: target,
+         WITH_RNG(RNG_TRASH_CRUSH_OHKO, 0));
+}
         else
         { // All other moves
             MOVE(target, MOVE_LAST_RESORT, target: attacker); // Last Resort, so there's no anim on the opponent's side.
@@ -685,7 +699,7 @@ SINGLE_BATTLE_TEST("Move Animations don't leak when used - Singles (player to op
         }
         PLAYER(SPECIES_WOBBUFFET)   {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -736,7 +750,7 @@ SINGLE_BATTLE_TEST("Move Animations don't leak when used - Singles (opponent to 
         }
         OPPONENT(SPECIES_WOBBUFFET)   {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -805,7 +819,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (playerLeft t
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -878,7 +892,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (opponentLeft
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -953,7 +967,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (playerLeft t
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1028,7 +1042,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (opponentRigh
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1103,7 +1117,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (playerRight 
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1178,7 +1192,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (opponentLeft
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1253,7 +1267,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (playerRight 
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1328,7 +1342,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (opponentRigh
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1392,7 +1406,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (playerLeft t
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1454,7 +1468,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (playerRight 
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1516,7 +1530,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (opponentleft
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1578,7 +1592,7 @@ DOUBLE_BATTLE_TEST("Move Animations don't leak when used - Doubles (opponentRigh
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -1636,7 +1650,7 @@ SINGLE_BATTLE_TEST("Move Animations occur before their stat change animations - 
         }
         PLAYER(SPECIES_WOBBUFFET)   {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -2363,6 +2377,8 @@ DOUBLE_BATTLE_TEST("Move Animations work 1")
     struct BattlePokemon *ignore1 = playerRight;
     struct BattlePokemon *ignore2 = opponentRight;
     for (; j <= ANIM_TEST_END_MOVE; j += 4) {
+        if (j == MOVE_ARCANUM_WISH) // Arcanum wish requires special handling to show an animation.
+            continue;
         variationsNumber = GetVariationsNumber(j, TRUE);
         for (k = 0; k < variationsNumber; k++) {
             ParametrizeMovesAndSpecies(j, &tempMove, &tempSpecies, k);
@@ -2397,7 +2413,7 @@ DOUBLE_BATTLE_TEST("Move Animations work 1")
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -2438,6 +2454,9 @@ DOUBLE_BATTLE_TEST("Move Animations work 2")
     struct BattlePokemon *ignore1 = playerRight;
     struct BattlePokemon *ignore2 = opponentRight;
     for (; j <= ANIM_TEST_END_MOVE; j += 4) {
+        if (j == MOVE_ARCANUM_WISH)
+            continue;
+        
         variationsNumber = GetVariationsNumber(j, TRUE);
         for (k = 0; k < variationsNumber; k++) {
             ParametrizeMovesAndSpecies(j, &tempMove, &tempSpecies, k);
@@ -2472,7 +2491,7 @@ DOUBLE_BATTLE_TEST("Move Animations work 2")
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -2513,6 +2532,8 @@ DOUBLE_BATTLE_TEST("Move Animations work 3")
     struct BattlePokemon *ignore1 = playerRight;
     struct BattlePokemon *ignore2 = opponentRight;
     for (; j <= ANIM_TEST_END_MOVE; j += 4) {
+        if (j == MOVE_ARCANUM_WISH)
+        continue; 
         variationsNumber = GetVariationsNumber(j, TRUE);
         for (k = 0; k < variationsNumber; k++) {
             ParametrizeMovesAndSpecies(j, &tempMove, &tempSpecies, k);
@@ -2547,7 +2568,7 @@ DOUBLE_BATTLE_TEST("Move Animations work 3")
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);
@@ -2588,6 +2609,8 @@ DOUBLE_BATTLE_TEST("Move Animations work 4")
     struct BattlePokemon *ignore1 = playerRight;
     struct BattlePokemon *ignore2 = opponentRight;
     for (; j <= ANIM_TEST_END_MOVE; j += 4) {
+        if (j == MOVE_ARCANUM_WISH)
+            continue;
         variationsNumber = GetVariationsNumber(j, TRUE);
         for (k = 0; k < variationsNumber; k++) {
             ParametrizeMovesAndSpecies(j, &tempMove, &tempSpecies, k);
@@ -2622,7 +2645,7 @@ DOUBLE_BATTLE_TEST("Move Animations work 4")
         }
         PLAYER(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); MaxHP(9999); Moves(MOVE_POUND, MOVE_CELEBRATE);
-            HP(GetMoveEffect(move) == EFFECT_REVIVAL_BLESSING ? 0 : 9998);
+            HP(IsRevivalMove(move) ? 0 : 9998);
         }
         OPPONENT(SPECIES_WOBBUFFET) {
             Gender(MON_MALE); HP(9998); MaxHP(9999); SpDefense(9999); Defense(9999); Ability(ABILITY_TELEPATHY);

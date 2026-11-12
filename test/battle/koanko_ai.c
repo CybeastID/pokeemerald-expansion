@@ -110,7 +110,7 @@ static void PrepareConjured(u32 index)
     gBattleStruct->koankoPhase = KOANKO_CONJURING;
     ConjureKoankoTeam();
     gBattlerPartyIndexes[B_POSITION_OPPONENT_LEFT] = index;
-    PokemonToBattleMon(&gEnemyParty[index], &gBattleMons[B_POSITION_OPPONENT_LEFT]);
+    PokemonToBattleMon(&gParties[B_TRAINER_OPPONENT_A][index], &gBattleMons[B_POSITION_OPPONENT_LEFT]);
     KoankoOnSwitchIn(B_POSITION_OPPONENT_LEFT);
     KoankoSmeargleDiagDisable();
     // Mirror generated eligibility in TESTING's intended-gimmick accessor,
@@ -239,9 +239,9 @@ AI_SINGLE_BATTLE_TEST("Koanko AI TX ordinary Wish cannot credit unreachable inju
         EXPECT(TxRollbackHasWishes(1)); // Entry registers the solo combat profile.
         for (u32 i = 0; i < PARTY_SIZE; i++)
             if (i != 1)
-                SetMonData(&gEnemyParty[i], MON_DATA_HP, &(u16){1});
+                SetMonData(&gParties[B_TRAINER_OPPONENT_A][i], MON_DATA_HP, &(u16){1});
         EXPECT(!ShouldUseWishAromatherapy(1, 0, MOVE_WISH));
-        SetMonData(&gEnemyParty[1], MON_DATA_HP, &(u16){100});
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HP, &(u16){100});
         opponent->hp = 100;
         SetAiLogicDataForTurn(gAiLogicData);
         EXPECT(ShouldUseWishAromatherapy(1, 0, MOVE_WISH));
@@ -415,7 +415,7 @@ AI_SINGLE_BATTLE_TEST("Koanko AI Resources player healing PP and revival remain 
         if (resource == 1) EXPECT_EQ(player->pp[0], 10);
         if (resource == 2)
         {
-            EXPECT_EQ(GetMonData(&gPlayerParty[1], MON_DATA_HP), GetMonData(&gPlayerParty[1], MON_DATA_MAX_HP));
+            EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_MAX_HP));
             EXPECT_EQ(CountUsablePartyMons(0), 1);
         }
         SetAiLogicDataForTurn(gAiLogicData);
@@ -926,12 +926,12 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics Shadow Calyrex reads a real special kit wi
     THEN {
         PrepareConjured(2);
         // Mechanism fixture only: Stage06 still owns actual form/kit reload.
-        CreateMonWithIVs(&gEnemyParty[2], SPECIES_CALYREX_SHADOW, 102, 0, OTID_STRUCT_PRESET(0), 31);
-        SetMonMoveSlot(&gEnemyParty[2], MOVE_ASTRAL_BARRAGE, 0);
-        SetMonMoveSlot(&gEnemyParty[2], MOVE_PSYSHOCK, 1);
-        SetMonMoveSlot(&gEnemyParty[2], MOVE_NASTY_PLOT, 2);
-        SetMonMoveSlot(&gEnemyParty[2], MOVE_NONE, 3);
-        PokemonToBattleMon(&gEnemyParty[2], opponent);
+        CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][2], SPECIES_CALYREX_SHADOW, 102, 0, OTID_STRUCT_PRESET(0), 31);
+        SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][2], MOVE_ASTRAL_BARRAGE, 0);
+        SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][2], MOVE_PSYSHOCK, 1);
+        SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][2], MOVE_NASTY_PLOT, 2);
+        SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][2], MOVE_NONE, 3);
+        PokemonToBattleMon(&gParties[B_TRAINER_OPPONENT_A][2], opponent);
         SetAiLogicDataForTurn(gAiLogicData);
         s32 setup = TacticsScore(MOVE_NASTY_PLOT);
         opponent->statStages[STAT_SPATK] = MAX_STAT_STAGE;
@@ -957,9 +957,9 @@ AI_SINGLE_BATTLE_TEST("Koanko Tactics Eternatus forms use current recovery and a
         if (eternamax)
         {
             u16 form = SPECIES_ETERNATUS_ETERNAMAX;
-            SetMonData(&gEnemyParty[3], MON_DATA_SPECIES, &form);
-            CalculateMonStats(&gEnemyParty[3]);
-            PokemonToBattleMon(&gEnemyParty[3], opponent);
+            SetMonData(&gParties[B_TRAINER_OPPONENT_A][3], MON_DATA_SPECIES, &form);
+            CalculateMonStats(&gParties[B_TRAINER_OPPONENT_A][3]);
+            PokemonToBattleMon(&gParties[B_TRAINER_OPPONENT_A][3], opponent);
         }
         opponent->hp = opponent->maxHP / 5;
         s32 recovery = TacticsScore(MOVE_RECOVER);

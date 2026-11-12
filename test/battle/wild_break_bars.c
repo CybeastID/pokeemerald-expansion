@@ -121,7 +121,7 @@ WILD_BATTLE_TEST("Wild Break Bars reject ordinary and Master Balls until the fin
         HP_BAR(opponent, hp: 0);
         HP_BAR(opponent, hp: 10);
     } THEN {
-        EXPECT_EQ(GetMonData(&gPlayerParty[1], MON_DATA_SPECIES), SPECIES_WOBBUFFET);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_SPECIES), SPECIES_WOBBUFFET);
         ScriptContext_Init();
     }
 }
