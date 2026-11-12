@@ -10,7 +10,7 @@
 // Battle Debug Menu
 #define DEBUG_BATTLE_MENU               DISABLED_ON_RELEASE // If set to TRUE, enables a debug menu to use in battles by pressing the Select button.
 #define DEBUG_AI_DELAY_TIMER            FALSE   // If set to TRUE, displays the number of frames it takes for the AI to choose a move. Replaces the "What will PKMN do" text. Useful for devs or anyone who modifies the AI code and wants to see if it doesn't take too long to run.
-#define DEBUG_KOANKO_SMEARGLE_DIAGNOSTICS TRUE // Development only: log real Smeargle decisions to mGBA. TESTING can enable capture via its API independently.
+#define DEBUG_KOANKO_SMEARGLE_DIAGNOSTICS FALSE // Development only: log real Smeargle decisions to mGBA. TESTING can enable capture via its API independently.
 
 // Pokémon Debug
 #define DEBUG_POKEMON_SPRITE_VISUALIZER DISABLED_ON_RELEASE // Enables a debug menu for Pokémon sprites and icons, accessed by pressing Select in the summary screen.

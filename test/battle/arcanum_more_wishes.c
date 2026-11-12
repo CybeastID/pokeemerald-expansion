@@ -61,7 +61,7 @@ static void Task_ObstructRollbackCreation(u8 taskId)
 {
     if (gBattleStruct->txRollback.stage == TX_ROLLBACK_REQUESTED)
     {
-        CreateMonWithIVs(&gEnemyParty[PARTY_SIZE - 1], SPECIES_PICHU, 50, 0, OTID_STRUCT_PRESET(123), 31);
+        CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][PARTY_SIZE - 1], SPECIES_PICHU, 50, 0, OTID_STRUCT_PRESET(123), 31);
         DestroyTask(taskId);
     }
 }
@@ -71,7 +71,7 @@ static void Task_SeedRollbackConditions(u8 taskId)
     if (gBattleStruct->txRollback.stage == TX_ROLLBACK_AMBUSH_PENDING)
     {
         gBattleMons[3].status1 = STATUS1_SLEEP_TURN(3) | STATUS1_FREEZE | STATUS1_PARALYSIS;
-        SetMonData(&gEnemyParty[PARTY_SIZE - 1], MON_DATA_STATUS, &gBattleMons[3].status1);
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][PARTY_SIZE - 1], MON_DATA_STATUS, &gBattleMons[3].status1);
         gBattleMons[3].volatiles.flinched = TRUE;
         gBattleMons[3].volatiles.tauntTimer = 3;
         DestroyTask(taskId);
@@ -102,7 +102,7 @@ static void BS_TestMoreWishesAmbush(void)
         if (sAmbushEffect == 1)
             GrantSavedBreakBar(B_POSITION_PLAYER_LEFT);
         gBattleMons[B_POSITION_PLAYER_LEFT].hp = 0;
-        SetMonData(&gPlayerParty[gBattlerPartyIndexes[0]], MON_DATA_HP, &gBattleMons[0].hp);
+        SetMonData(&gParties[B_TRAINER_PLAYER][gBattlerPartyIndexes[0]], MON_DATA_HP, &gBattleMons[0].hp);
     }
     if (sAlterSpeed)
     {
@@ -233,8 +233,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes converts live Singles and preser
         NOT ANIMATION(ANIM_TYPE_MOVE, MOVE_SEISMIC_TOSS, player);
     } THEN {
         EXPECT_EQ(gBattlersCount, 4);
-        EXPECT_EQ(gPlayerPartyCount, 2);
-        EXPECT_EQ(gEnemyPartyCount, 6);
+        EXPECT_EQ(gPartiesCount[B_TRAINER_PLAYER], 2);
+        EXPECT_EQ(gPartiesCount[B_TRAINER_OPPONENT_A], 6);
         EXPECT_EQ(gBattleMons[3].species, SPECIES_TX_ROLLBACK);
         EXPECT_EQ(gBattleMons[3].moves[0], MOVE_FOLLOW_ME);
         EXPECT_EQ(gBattleMons[3].moves[1], MOVE_WIDE_GUARD);
@@ -289,7 +289,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes joins ordinary selection next tu
         EXPECT_EQ(gBattleMons[3].pp[0], GetMovePP(MOVE_FOLLOW_ME));
         EXPECT_EQ(gBattleStruct->txRollback.stage, TX_ROLLBACK_ACTIVE);
         EXPECT_EQ(IsBattlerAlive(2), FALSE);
-        EXPECT_EQ(GetMonData(&gPlayerParty[1], MON_DATA_HP), GetMonData(&gPlayerParty[1], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_MAX_HP));
     }
 }
 
@@ -410,7 +410,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes retires its defeated slot while 
         EXPECT_EQ(IsBattlerAlive(3), FALSE);
         EXPECT_EQ(IsBattlerAlive(1), TRUE);
         EXPECT_EQ(gBattleOutcome, B_OUTCOME_PLAYER_TELEPORTED);
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_HP), GetMonData(&gEnemyParty[1], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_MAX_HP));
         EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, PARTY_SIZE - 1), FALSE);
         EXPECT_EQ(TxRollbackCanRevive(B_TRAINER_OPPONENT_A, 1), TRUE);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 1);
@@ -435,14 +435,14 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes retires its defeated slot while 
             else
                 BS_TryRevivalBlessing2();
             EXPECT_EQ(gBattlescriptCurrInstr, fail);
-            EXPECT_EQ(GetMonData(&gEnemyParty[PARTY_SIZE - 1], MON_DATA_HP), 0);
+            EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][PARTY_SIZE - 1], MON_DATA_HP), 0);
         }
         gLastUsedItem = ITEM_MAX_REVIVE;
         gBattleStruct->itemPartyIndex[1] = PARTY_SIZE - 1;
         gBattlescriptCurrInstr = (const u8 *)&command;
         BS_ItemRestoreHP();
         EXPECT_EQ(gBattlescriptCurrInstr, fail);
-        EXPECT_EQ(GetMonData(&gEnemyParty[PARTY_SIZE - 1], MON_DATA_HP), 0);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][PARTY_SIZE - 1], MON_DATA_HP), 0);
         gBattlescriptCurrInstr = savedScript;
     }
 }
@@ -496,7 +496,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes replaces only player-left and do
         EXPECT_EQ(IsBattlerAlive(2), FALSE);
         EXPECT_EQ(gBattlerSpriteIds[2], MAX_SPRITES);
         EXPECT_EQ(gHealthboxSpriteIds[2], MAX_SPRITES);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP));
         EXPECT_EQ(sAmbushCalls, 1);
     }
 }
@@ -553,7 +553,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes ambush fainting does not give th
     } THEN {
         EXPECT_EQ(gBattlerPartyIndexes[0], 1);
         EXPECT_EQ(gBattleResults.playerFaintCounter, 1);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_PP1), 5);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_PP1), 5);
         EXPECT_EQ(IsBattlerAlive(2), FALSE);
         EXPECT_EQ(sAmbushCalls, 1);
     }
@@ -674,7 +674,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes failure during preparation does 
         EXPECT_EQ(gBattleStruct->txRollback.stage, TX_ROLLBACK_NONE);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, FALSE);
         EXPECT_EQ(sAmbushCalls, 0);
-        EXPECT_EQ(GetMonData(&gEnemyParty[PARTY_SIZE - 1], MON_DATA_SPECIES), SPECIES_PICHU);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][PARTY_SIZE - 1], MON_DATA_SPECIES), SPECIES_PICHU);
     }
 }
 
@@ -696,7 +696,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish More Wishes interruption never creates its c
         EXPECT_EQ(gBattleStruct->txRollback.stage, TX_ROLLBACK_NONE);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, FALSE);
         EXPECT_EQ(sAmbushCalls, 0);
-        EXPECT_EQ(GetMonData(&gEnemyParty[PARTY_SIZE - 1], MON_DATA_SPECIES), SPECIES_NONE);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][PARTY_SIZE - 1], MON_DATA_SPECIES), SPECIES_NONE);
     }
 }
 

@@ -5347,7 +5347,7 @@ static void RestorePlayerBreakBarHp(void)
 
         // The party stores the active layer, including switched-out mons.
         consolidatedHp[slot] = GetMonData(
-            &gPlayerParty[slot], MON_DATA_HP);
+            &gParties[B_TRAINER_PLAYER][slot], MON_DATA_HP);
 
         // Prefer the live battle HP for mons still on the field.
         for (u32 battler = 0; battler < gBattlersCount; battler++)
@@ -5369,7 +5369,7 @@ static void RestorePlayerBreakBarHp(void)
         // each surviving layer as a fraction, not absolute HP from that form.
         if (state->polymorphed)
         {
-            u32 maxHp = GetMonData(&gPlayerParty[slot], MON_DATA_MAX_HP);
+            u32 maxHp = GetMonData(&gParties[B_TRAINER_PLAYER][slot], MON_DATA_MAX_HP);
             restorePolymorphHp[slot] = TRUE;
             if (maxHp != 0)
                 polymorphHpFraction[slot] = ((u64)consolidatedHp[slot] << 24) / maxHp;
@@ -5394,7 +5394,7 @@ static void RestorePlayerBreakBarHp(void)
 
         if (!changedForm
          && (B_RECALCULATE_STATS >= GEN_5 || hasBreakBars[slot]))
-            CalculateMonStats(&gPlayerParty[slot]);
+            CalculateMonStats(&gParties[B_TRAINER_PLAYER][slot]);
     }
 
     // Apply consolidated HP, capped at ordinary Max HP.
@@ -5403,7 +5403,7 @@ static void RestorePlayerBreakBarHp(void)
         if (!hasBreakBars[slot])
             continue;
 
-        u32 maxHp = GetMonData(&gPlayerParty[slot], MON_DATA_MAX_HP);
+        u32 maxHp = GetMonData(&gParties[B_TRAINER_PLAYER][slot], MON_DATA_MAX_HP);
         u16 hp = min(consolidatedHp[slot], maxHp);
         if (restorePolymorphHp[slot])
         {
@@ -5413,7 +5413,7 @@ static void RestorePlayerBreakBarHp(void)
                 hp = 1;
         }
 
-        SetMonData(&gPlayerParty[slot], MON_DATA_HP, &hp);
+        SetMonData(&gParties[B_TRAINER_PLAYER][slot], MON_DATA_HP, &hp);
     }
 }
 

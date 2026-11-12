@@ -106,7 +106,7 @@ static void CleanupBattle(void *results, const u32 i, struct BattlePokemon *play
             EXPECT_EQ(sCleanupCalls, sCleanupCallsAtThen + 1);
             EXPECT(gBattleStruct != NULL);
             EXPECT(gBattleResources != NULL);
-            EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 55);
+            EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 55);
             EXPECT_EQ((u32)gBattleTestRunnerState->runGiven, FALSE);
             EXPECT_EQ((u32)gBattleTestRunnerState->runWhen, FALSE);
             EXPECT_EQ((u32)gBattleTestRunnerState->runScene, FALSE);

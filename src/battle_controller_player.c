@@ -2233,7 +2233,7 @@ void PlayerHandleExpUpdate(enum BattlerId battler)
     {
         LoadBattleBarGfx(1);
         expPointsToGive = T1_READ_32(&gBattleResources->bufferA[battler][2]);
-        struct Pokemon *mon = &gPlayerParty[monId];
+        struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][monId];
         u16 species = GetMonData(mon, MON_DATA_SPECIES);
         u32 currentExp = GetMonData(mon, MON_DATA_EXP);
         u32 maxExp = gExperienceTables[gSpeciesInfo[species].growthRate][PLAYER_MAX_LV];

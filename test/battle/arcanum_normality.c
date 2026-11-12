@@ -122,14 +122,14 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Normality ends active gimmicks and changes t
             MESSAGE("Gengar returned to normal and became Normal type!");
     } THEN {
         EXPECT_EQ(player->species, expectedSpecies);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_SPECIES), expectedSpecies);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), expectedSpecies);
         EXPECT_EQ(GetActiveGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), GIMMICK_NONE);
         EXPECT_EQ(player->types[0], TYPE_NORMAL);
         EXPECT_EQ(player->types[1], TYPE_NORMAL);
         EXPECT_EQ(player->types[2], TYPE_MYSTERY);
-        EXPECT_EQ(player->ability, GetMonAbility(&gPlayerParty[0]));
-        EXPECT_EQ(player->attack, GetMonData(&gPlayerParty[0], MON_DATA_ATK));
-        EXPECT_EQ(player->defense, GetMonData(&gPlayerParty[0], MON_DATA_DEF));
+        EXPECT_EQ(player->ability, GetMonAbility(&gParties[B_TRAINER_PLAYER][0]));
+        EXPECT_EQ(player->attack, GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_ATK));
+        EXPECT_EQ(player->defense, GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_DEF));
         if (gimmick == GIMMICK_DYNAMAX)
         {
             EXPECT_EQ(player->maxHP, sOriginalMaxHP);

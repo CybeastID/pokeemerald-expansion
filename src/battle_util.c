@@ -8967,10 +8967,10 @@ bool32 TryRevertPartyMonFormChange(u32 partyIndex)
         u32 original = gBattleStruct->partyState[B_SIDE_PLAYER][partyIndex].changedSpecies;
 
         if (original != SPECIES_NONE
-         && GetMonData(&gPlayerParty[partyIndex], MON_DATA_SPECIES) != original)
+         && GetMonData(&gParties[B_TRAINER_PLAYER][partyIndex], MON_DATA_SPECIES) != original)
         {
-            SetMonData(&gPlayerParty[partyIndex], MON_DATA_SPECIES, &original);
-            CalculateMonStats(&gPlayerParty[partyIndex]);
+            SetMonData(&gParties[B_TRAINER_PLAYER][partyIndex], MON_DATA_SPECIES, &original);
+            CalculateMonStats(&gParties[B_TRAINER_PLAYER][partyIndex]);
             changedForm = TRUE;
         }
     }

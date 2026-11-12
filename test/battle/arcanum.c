@@ -682,7 +682,7 @@ SINGLE_BATTLE_TEST("Arcanum Revivify restores a fainted ally to full HP without 
         MESSAGE("The opposing Caster? cast Revivify!");
         MESSAGE("Pichu was revived and is ready to fight again!");
     } THEN {
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_HP), GetMonData(&gEnemyParty[1], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_MAX_HP));
         EXPECT_EQ(opponent->pp[0], GetMovePP(MOVE_CELEBRATE));
     }
 }

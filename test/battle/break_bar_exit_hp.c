@@ -63,7 +63,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar exit HP adds active and saved layers")
 
     EXPECT(state->breakBarConfig != NULL);
     EXPECT_EQ(state->breakBarSavedHp[0], 25);
-    EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 55);
+    EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 55);
     EXPECT_EQ((s32)state->breakBarsRemaining, 1);
 EXPECT_NE(state->breakBarSavedMaxHp[0], 0);
      }
@@ -81,7 +81,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar exit HP caps consolidated HP at ordinary maximu
     } THEN {
         EXPECT(sRegistered);
     }
-    AFTER_CLEANUP { EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP)); }
+    AFTER_CLEANUP { EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP)); }
 }
 
 AI_SINGLE_BATTLE_TEST("Break Bar exit HP consolidates a switched out party member")
@@ -99,7 +99,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar exit HP consolidates a switched out party membe
         EXPECT(sRegistered);
         
     }
-    AFTER_CLEANUP { EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 55); }
+    AFTER_CLEANUP { EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 55); }
 }
 
 AI_SINGLE_BATTLE_TEST("Break Bar exit HP ignores empty saved layers")
@@ -113,7 +113,7 @@ AI_SINGLE_BATTLE_TEST("Break Bar exit HP ignores empty saved layers")
         TURN { MOVE(player, MOVE_SEISMIC_TOSS); }
     } THEN {
         EXPECT(sRegistered);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 30);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 30);
     }
-    AFTER_CLEANUP { EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 30); }
+    AFTER_CLEANUP { EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 30); }
 }

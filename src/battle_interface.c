@@ -609,7 +609,7 @@ static const union TextColor sHealthBoxTextColor =
 enum BattleCoordTypes GetBattlerCoordsIndex(enum BattlerId battler)
 {
     if (GetBattlerPosition(battler) == B_POSITION_PLAYER_LEFT
-     && (gPlayerPartyCount == 1 || TxRollbackGetSlotPolicy(GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT)) == TX_SLOT_DISABLED) && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+     && (gPartiesCount[B_TRAINER_PLAYER] == 1 || TxRollbackGetSlotPolicy(GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT)) == TX_SLOT_DISABLED) && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
         return BATTLE_COORDS_SINGLES;
     else if (GetBattlerPosition(battler) == B_POSITION_OPPONENT_LEFT && gPartiesCount[B_TRAINER_OPPONENT_A] == 1 && !(gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS))
         return BATTLE_COORDS_SINGLES;

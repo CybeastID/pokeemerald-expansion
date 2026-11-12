@@ -6252,7 +6252,7 @@ void ItemUseCB_EvolutionStone(u8 taskId, TaskFunc task)
 {
     u16 item = gSpecialVar_ItemId;
     u8 partyMonId = gPartyMenu.slotId;
-    struct Pokemon *mon = &gPlayerParty[partyMonId];
+    struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][partyMonId];
     
     PlaySE(SE_SELECT);
     gCB2_AfterEvolution = gPartyMenu.exitCallback;
