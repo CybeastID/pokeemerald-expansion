@@ -36,6 +36,9 @@
 #include "constants/moves.h"
 #include "constants/items.h"
 #include "constants/trainers.h"
+#include "battle_util.h"
+#include "battle_tx_rollback.h"
+#include "battle_break_bar.h"
 
 #if TESTING
 #include "test/battle.h"
@@ -7010,8 +7013,676 @@ s32 AI_TagBattlePreferFoe(enum BattlerId battlerAtk, enum BattlerId battlerDef, 
     return score;
 }
 
+static bool32 AR_OwnsEncounter(u32 trainer, u32 a, u32 d)
+{
+    return gBattleStruct != NULL && gAiLogicData != NULL
+        && (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+        && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_FRONTIER
+                              | BATTLE_TYPE_TWO_OPPONENTS))
+        && TRAINER_BATTLE_PARAM.opponentA == trainer
+        && a < gBattlersCount && d < gBattlersCount
+        && !IsOnPlayerSide(a) && IsBattlerAlive(a) && IsBattlerAlive(d)
+        && !IsBattlerAlly(a, d);
+}
+
+static bool32 AR_Usable(u32 a, u32 slot)
+{
+    return slot < MAX_MON_MOVES && gBattleMons[a].moves[slot] != MOVE_NONE
+        && !(gAiLogicData->moveLimitations[a] & (1u << slot));
+}
+
+static bool32 AR_Immediate(u32 a, u32 move)
+{
+    enum BattleMoveEffects effect = GetMoveEffect(move);
+    return move != MOVE_NONE && !IsBattleMoveStatus(move)
+        && move != MOVE_DMS_PREROGATIVE
+        && !IsTwoTurnNotSemiInvulnerableMove(a, move)
+        && effect != EFFECT_SEMI_INVULNERABLE && effect != EFFECT_FUTURE_SIGHT
+        && effect != EFFECT_REFLECT_DAMAGE
+        && effect != EFFECT_FOCUS_PUNCH;
+}
+
+static u32 AR_Expected(u32 a, u32 d, u32 slot)
+{
+    if (!AR_Usable(a, slot) || IsBattleMoveStatus(gBattleMons[a].moves[slot])
+     || gBattleMons[a].moves[slot] == MOVE_DMS_PREROGATIVE)
+        return 0;
+    return AI_GetReachableDamage(d, gAiLogicData->simulatedDmg[a][d][slot].median)
+        * min(100, gAiLogicData->moveAccuracy[a][d][slot]) / 100;
+}
+
+static u32 AR_Best(u32 a, u32 d)
+{
+    u32 best = 0;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        if (AR_Usable(a, i) && AR_Immediate(a, gBattleMons[a].moves[i]))
+            best = max(best, AR_Expected(a, d, i));
+    return best;
+}
+
+/* Raw maximum roll, not accuracy-discounted: a miss is not a survival plan.
+ * One strongest usable immediate attack per living opponent. This reads known
+ * kits/caches, never the player's selected command. */
+static u32 AR_Pressure(u32 a, u32 candidate, bool32 beforeOnly,
+                      enum DamageCategory category)
+{
+    u32 total = 0;
+    for (u32 foe = 0; foe < gBattlersCount; foe++)
+    {
+        if (!IsBattlerAlive(foe) || IsBattlerAlly(a, foe))
+            continue;
+        u32 best = 0;
+        for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        {
+            u32 m = gBattleMons[foe].moves[i];
+            if (!AR_Usable(foe, i) || !AR_Immediate(foe, m)
+             || (category != DAMAGE_CATEGORY_STATUS && GetMoveCategory(m) != category))
+                continue;
+            /* A tie is unsafe for budgeting. AI_IsFaster is strict. */
+            if (beforeOnly && AI_IsFaster(a, foe, candidate, m, CONSIDER_PRIORITY))
+                continue;
+            best = max(best, max(0, gAiLogicData->simulatedDmg[foe][a][i].maximum));
+        }
+        total += best;
+    }
+    return total;
+}
+
+static u32 AR_Incoming(u32 a)
+{
+    /* STATUS means all attack categories for this helper. */
+    return AR_Pressure(a, MOVE_NONE, FALSE, DAMAGE_CATEGORY_STATUS);
+}
+
+static bool32 AR_Ko(u32 a, u32 d, u32 slot)
+{
+    return AR_Usable(a, slot) && AR_Immediate(a, gBattleMons[a].moves[slot])
+        && gAiLogicData->moveAccuracy[a][d][slot] >= 90
+        && AI_GetDamageOutcome(a, d, gBattleMons[a].moves[slot],
+            gAiLogicData->simulatedDmg[a][d][slot].minimum) == AI_DAMAGE_KO;
+}
+
+static bool32 AR_Finish(u32 a, u32 d)
+{
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        if (AR_Ko(a, d, i)
+         && AR_Pressure(a, gBattleMons[a].moves[i], TRUE, DAMAGE_CATEGORY_STATUS)
+            < gBattleMons[a].hp)
+            return TRUE;
+    return FALSE;
+}
+
+
+// 1.17: Overheat-style drops are MOVE_EFFECT_STAT_MINUS with a self flag and a per-stat amount.
+static bool32 AR_SelfDropsSpAtkBy2(enum Move m)
+{
+    u32 n = GetMoveAdditionalEffectCount(m);
+    for (u32 i = 0; i < n; i++)
+    {
+        const struct AdditionalEffect *e = GetMoveAdditionalEffectById(m, i);
+        if (e->moveEffect == MOVE_EFFECT_STAT_MINUS && e->self == TRUE && e->spAtk >= 2)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static bool32 AR_Comparable(u32 a, u32 d, u32 slot)
+{
+    u32 current = AR_Expected(a, d, slot);
+    if (current == 0)
+        return FALSE;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+    {
+        u32 m = gBattleMons[a].moves[i];
+        if (i != slot && AR_Usable(a, i) && AR_Immediate(a, m)
+         && !MoveHasAdditionalEffectSelf(m, MOVE_EFFECT_RECHARGE)
+         && !AR_SelfDropsSpAtkBy2(m)
+         && AR_Expected(a, d, i) * 100 >= current * 85)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static s32 AR_AttackDelta(u32 a, u32 d, u32 slot, s32 score)
+{
+    u32 expected = AR_Expected(a, d, slot);
+    if (expected == 0 || score < AI_SCORE_DEFAULT)
+        return 0; /* Do not undo ordinary immunity/failure penalties. */
+    s32 value = expected >= AR_Best(a, d) ? 3 : 0;
+    if (AR_Ko(a, d, slot))
+        value += 8;
+    else if (AR_Immediate(a, gBattleMons[a].moves[slot])
+          && gAiLogicData->moveAccuracy[a][d][slot] >= 90)
+    {
+        enum AiDamageOutcome result = AI_GetDamageOutcome(a, d,
+            gBattleMons[a].moves[slot], gAiLogicData->simulatedDmg[a][d][slot].minimum);
+        if (result == AI_DAMAGE_BREAK_LAYER || result == AI_DAMAGE_REVEAL_SAVED_LAYER)
+            value += 3; /* Progress, not victory; next layer/phase still exists. */
+    }
+    return value;
+}
+
+static bool32 AR_SpeedPayoff(u32 a, u32 d, u32 numerator, u32 denominator)
+{
+    if (gFieldStatuses & STATUS_FIELD_TRICK_ROOM)
+        return FALSE;
+    u32 speed = gAiLogicData->speedStats[d];
+    u32 ownSpeed = gAiLogicData->speedStats[a];
+    if (ownSpeed <= speed && ownSpeed * numerator > speed * denominator)
+        return TRUE;
+    struct Pokemon *party = GetBattlerParty(a);
+    if (HasNoOrderChange(a))
+        return FALSE;
+    for (u32 i = 0; i < PARTY_SIZE; i++)
+        if (i != gBattlerPartyIndexes[a] && GetMonData(&party[i], MON_DATA_HP) != 0
+         && GetMonData(&party[i], MON_DATA_SPEED) <= speed
+         && GetMonData(&party[i], MON_DATA_SPEED) * numerator > speed * denominator)
+            return TRUE; /* Opportunity estimate; not a switch prediction. */
+    return FALSE;
+}
+
+static s32 AR_Setup(u32 a, u32 d, u32 move, u32 boost)
+{
+    u32 hp = gBattleMons[a].hp;
+    u32 incoming = AR_Incoming(a);
+    u32 best = 0;
+    for (u32 i = 0; i < MAX_MON_MOVES; i++)
+        if (AR_Usable(a, i) && AR_Immediate(a, gBattleMons[a].moves[i])
+         && GetMoveCategory(gBattleMons[a].moves[i]) == DAMAGE_CATEGORY_SPECIAL)
+            best = max(best, AR_Expected(a, d, i));
+    u32 stage = gBattleMons[a].statStages[STAT_SPATK];
+    bool32 specialFoe = AR_Pressure(a, move, FALSE, DAMAGE_CATEGORY_SPECIAL) != 0;
+    bool32 defensePayoff = move != MOVE_NASTY_PLOT && specialFoe
+        && gBattleMons[a].statStages[STAT_SPDEF] < DEFAULT_STAT_STAGE + 2;
+    if (gAiLogicData->abilities[a] == ABILITY_CONTRARY || best == 0
+     || (stage >= DEFAULT_STAT_STAGE + 2 && !defensePayoff)
+     || (stage == MAX_STAT_STAGE && !defensePayoff)
+     || AR_Finish(a, d) || IsBreakBarPending(a))
+        return -12;
+    u32 margin = gAiLogicData->holdEffects[a] == HOLD_EFFECT_LIFE_ORB
+        ? max(1, gBattleMons[a].maxHP / 10) : 0;
+    if (incoming + margin >= hp || incoming * 2 + margin >= hp)
+        return -10; /* Do not assume a current extra layer or Sash is free setup. */
+    s32 value = 6;
+    /* Estimated offensive payoff only, never labelled a proven boosted KO. */
+    u32 numerator = stage >= DEFAULT_STAT_STAGE ? stage - DEFAULT_STAT_STAGE + 2 : 2;
+    if (stage >= DEFAULT_STAT_STAGE && gAiLogicData->abilities[d] != ABILITY_UNAWARE
+     && best < gBattleMons[d].hp
+     && best * (numerator + boost) / numerator >= gBattleMons[d].hp)
+        value += 3;
+    if (defensePayoff && gAiLogicData->abilities[d] != ABILITY_UNAWARE)
+        value += 2;
+    if (move == MOVE_QUIVER_DANCE && AR_SpeedPayoff(a, d, 3, 2))
+        value += 2;
+    return value;
+}
+
+static bool32 AR_Residual(u32 d)
+{
+    return (gBattleMons[d].status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON | STATUS1_BURN))
+        && gAiLogicData->abilities[d] != ABILITY_MAGIC_GUARD
+        && gAiLogicData->abilities[d] != ABILITY_POISON_HEAL;
+}
+
+static bool32 AR_WishRecipient(u32 a)
+{
+    if (gBattleMons[a].hp * 100 < gBattleMons[a].maxHP * 70)
+        return TRUE;
+    if (HasNoOrderChange(a))
+        return FALSE;
+    struct Pokemon *party = GetBattlerParty(a);
+    for (u32 i = 0; i < PARTY_SIZE; i++)
+    {
+        u32 hp = GetMonData(&party[i], MON_DATA_HP);
+        u32 maxHp = GetMonData(&party[i], MON_DATA_MAX_HP);
+        if (i != gBattlerPartyIndexes[a] && hp != 0 && maxHp != 0 && hp * 100 < maxHp * 65)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+static s32 AR_Wish(u32 a)
+{
+    if (gBattleStruct->wish[a].counter || gBattleMons[a].volatiles.healBlockTimer
+     || IsBreakBarPending(a))
+        return -12;
+    u32 incoming = AR_Incoming(a);
+    if (incoming >= gBattleMons[a].hp)
+        return -12;
+    if (!AR_WishRecipient(a))
+        return -6;
+    /* Protect can bridge the following turn, not the casting turn itself. */
+    return gBattleMons[a].hp * 100 <= gBattleMons[a].maxHP * 60 ? 10 : 5;
+}
+
+static s32 AR_Protect(u32 a, u32 d)
+{
+    if (gBattleMons[a].volatiles.consecutiveMoveUses)
+        return -12;
+    if (gBattleStruct->wish[a].counter == 1
+     && gBattleMons[a].hp < gBattleMons[a].maxHP && !gBattleMons[a].volatiles.healBlockTimer)
+        return 12;
+    if (AR_Incoming(a) == 0)
+        return -6;
+    if (AR_Residual(d) || gBattleMons[d].volatiles.leechSeed)
+        return 4;
+    if (gBattleStruct->futureSight[d].counter == 1)
+        return 3;
+    return HasMoveWithCategory(d, DAMAGE_CATEGORY_STATUS) ? -8 : -4;
+}
+
+static s32 AR_Rest(u32 a, u32 d)
+{
+    u32 hp = gBattleMons[a].hp, maximum = gBattleMons[a].maxHP;
+    if (gBattleMons[a].volatiles.healBlockTimer || (gBattleMons[a].status1 & STATUS1_SLEEP)
+     || IsBreakBarPending(a) || AR_Finish(a, d))
+        return -12;
+    u32 incoming = AR_Incoming(a);
+    if (AR_Pressure(a, MOVE_REST, TRUE, DAMAGE_CATEGORY_STATUS) >= hp
+     || incoming * 3 >= maximum)
+        return -12;
+    bool32 cure = (gBattleMons[a].status1 & STATUS1_ANY) != 0;
+    if (hp * 100 > maximum * 70 && !cure)
+        return -8;
+    s32 value = hp * 100 <= maximum * 50 ? 10 : cure ? 6 : 2;
+    if (IsBattlerTrapped(a, d))
+        value += 2;
+    return value;
+}
+
+static bool32 AR_StatusTarget(u32 a, u32 d, u32 move)
+{
+    return gBattleMons[d].status1 == 0
+        && gAiLogicData->abilities[d] != ABILITY_MAGIC_BOUNCE
+        && gAiLogicData->abilities[d] != ABILITY_GOOD_AS_GOLD
+        && !DoesSubstituteBlockMove(a, d, move);
+}
+
+static bool32 AR_Secondary(u32 a, u32 d, u32 move)
+{
+    return !DoesSubstituteBlockMove(a, d, move)
+        && !IsAdditionalEffectBlocked(a, gAiLogicData->abilities[a], d, gAiLogicData->abilities[d], move)
+        && gAiLogicData->abilities[a] != ABILITY_SHEER_FORCE;
+}
+
+static s32 AR_Drain(u32 a, u32 d, u32 slot)
+{
+    if (gBattleMons[a].volatiles.healBlockTimer || gAiLogicData->abilities[d] == ABILITY_LIQUID_OOZE)
+        return 0;
+    u32 hp = gBattleMons[a].hp, maximum = gBattleMons[a].maxHP;
+    u32 heal = min(maximum - hp, AR_Expected(a, d, slot) / 2);
+    if (heal == 0 || AR_Pressure(a, gBattleMons[a].moves[slot], TRUE, DAMAGE_CATEGORY_STATUS) >= hp)
+        return 0;
+    if (AR_Incoming(a) >= hp && AR_Incoming(a) < hp + heal)
+        return 7;
+    return heal * 100 >= maximum * 15 ? 3 : 1;
+}
+
+static s32 AR_Kazuradrop(u32 a, u32 d, u32 move, s32 score, u32 slot)
+{
+    u32 tier = gBattleStruct->bugSpace.currentTier;
+    bool32 swapped = (gBattleStruct->bugSpace.moveSwapActive & (1u << a)) != 0;
+    s32 delta = 0;
+    if (!swapped)
+    {
+        /* Retain the intentional opener and late-tier Stomp override. */
+        if (gBattleResults.battleTurnCounter - VarGet(VAR_TEMP_0) <= 1)
+            delta += move == MOVE_QUIVER_DANCE ? 20 : -20;
+        if (tier >= BUGSPACE_TIER_OHKO)
+            delta += move == MOVE_STOMP ? 100 : -100;
+        if (AR_Incoming(a) >= gBattleMons[a].hp && move == MOVE_QUIVER_DANCE)
+            delta += 30; /* Preserve the existing transformation-slot contingency. */
+        else if (move == MOVE_QUIVER_DANCE
+              && gBattleResults.battleTurnCounter - VarGet(VAR_TEMP_0) > 1
+              && tier < BUGSPACE_TIER_OHKO && score >= AI_SCORE_DEFAULT)
+            delta += AR_Setup(a, d, move, 1);
+        if (move != MOVE_QUIVER_DANCE && tier < BUGSPACE_TIER_OHKO)
+            delta += AR_AttackDelta(a, d, slot, score);
+    }
+    else if (!gBattleMons[a].volatiles.infiniteGrowth)
+        delta = move == MOVE_INFINITE_GROWTH ? 50 : -20;
+    else if (!gBattleMons[d].volatiles.meltVirus
+          && gAiLogicData->abilities[d] != ABILITY_MAGIC_GUARD
+          && tier < BUGSPACE_TIER_OHKO && move == MOVE_MELT_VIRUS
+          && score >= AI_SCORE_DEFAULT && AR_Expected(a, d, slot) != 0
+          && AR_Secondary(a, d, move))
+        delta = 50;
+    else
+    {
+        delta += AR_AttackDelta(a, d, slot, score);
+        if (score >= AI_SCORE_DEFAULT && AR_Expected(a, d, slot) != 0)
+        {
+            if (move == MOVE_TRASH_CRUSH && tier >= BUGSPACE_TIER_MINIMIZE)
+                delta += 15;
+            if (move == MOVE_CRACK_ICE && !gBattleMons[d].volatiles.timestop
+             && !(gBattleMons[d].status1 & STATUS1_INCAPACITATED)
+             && tier < BUGSPACE_TIER_MINIMIZE && AR_Secondary(a, d, move))
+                delta += 4; /* 33% disruption, not guaranteed safety. */
+            if (slot == 2 && move != MOVE_INFINITE_GROWTH)
+            {
+                delta += 3; /* Actual generated attack, not a presumed special move. */
+                if (move == MOVE_GIGA_DRAIN)
+                    delta += AR_Drain(a, d, slot);
+                if (move == MOVE_SPIRIT_BREAK && AR_Secondary(a, d, move)
+                 && HasMoveWithCategory(d, DAMAGE_CATEGORY_SPECIAL)
+                 && gAiLogicData->abilities[d] != ABILITY_CONTRARY
+                 && CanLowerStat(a, d, gAiLogicData, STAT_SPATK))
+                    delta += 2;
+            }
+        }
+    }
+    /* ADJUST_SCORE's tracing macro requires a local named battlerAtk. */
+    u32 battlerAtk = a;
+    ADJUST_SCORE(delta);
+    return score;
+}
+
+static s32 AR_AliceMoves(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
+{
+    u32 a = battlerAtk, d = battlerDef, slot = gAiThinkingStruct->movesetIndex;
+    if (!AR_Usable(a, slot) || gBattleMons[a].moves[slot] != move || score <= 0)
+        return score;
+    if (gBattleMons[a].species == SPECIES_KAZURADROP)
+        return AR_Kazuradrop(a, d, move, score, slot);
+    s32 delta = AR_AttackDelta(a, d, slot, score);
+    bool32 useful = score >= AI_SCORE_DEFAULT;
+    switch (gBattleMons[a].species)
+    {
+    case SPECIES_ESPEON:
+        if (move == MOVE_CALM_MIND && useful)
+            delta += AR_Setup(a, d, move, 1);
+        break;
+    case SPECIES_UMBREON:
+        if (move == MOVE_WISH && useful)
+            delta += AR_Wish(a);
+        if (move == MOVE_PROTECT && useful)
+            delta += AR_Protect(a, d);
+        if (move == MOVE_TOXIC && useful)
+        {
+            if (!AR_StatusTarget(a, d, move)
+             || !AI_CanPoison(a, d, gAiLogicData->abilities[d], move, MOVE_NONE)
+             || gAiLogicData->abilities[d] == ABILITY_MAGIC_GUARD
+             || gAiLogicData->abilities[d] == ABILITY_POISON_HEAL)
+                delta -= 12;
+            else if (AR_Pressure(a, move, TRUE, DAMAGE_CATEGORY_STATUS) >= gBattleMons[a].hp)
+                delta -= 10;
+            else
+                delta += AR_Incoming(a) * 2 < gBattleMons[a].hp ? 9 : 2;
+        }
+        break;
+    case SPECIES_GOTHITELLE:
+        if (move == MOVE_REST && useful)
+            delta += AR_Rest(a, d);
+        break;
+    case SPECIES_PALKIA:
+        if (move == MOVE_DRACO_METEOR && !AR_Ko(a, d, slot)
+         && gAiLogicData->abilities[a] != ABILITY_CONTRARY && AR_Comparable(a, d, slot))
+            delta -= 4;
+        break;
+    case SPECIES_HOOPA:
+        if (move == MOVE_NASTY_PLOT && useful)
+            delta += AR_Setup(a, d, move, 2);
+        if (move == MOVE_HYPERSPACE_HOLE && useful && gBattleMons[d].volatiles.consecutiveMoveUses
+         && AR_Expected(a, d, slot) != 0
+         && AR_Expected(a, d, slot) * 100 >= AR_Best(a, d) * 85)
+            delta += 3;
+        break;
+    default:
+        return score;
+    }
+    if (IsBattleMoveStatus(move) && AR_Finish(a, d))
+        delta -= 18;
+    ADJUST_SCORE(delta);
+    return score;
+}
+
+static bool32 AR_AuthorityBlocked(u32 a, u32 d)
+{
+    enum Ability ability = gAiLogicData->abilities[d];
+    if (gAiLogicData->abilities[a] == ABILITY_CONTRARY || ability == ABILITY_CONTRARY
+     || ability == ABILITY_CLEAR_BODY || ability == ABILITY_WHITE_SMOKE
+     || ability == ABILITY_FULL_METAL_BODY || ability == ABILITY_HYPER_CUTTER
+     || ability == ABILITY_BIG_PECKS || ability == ABILITY_KEEN_EYE
+     || ability == ABILITY_MINDS_EYE
+     || (GetConfig(B_ILLUMINATE_EFFECT) >= GEN_9 && ability == ABILITY_ILLUMINATE)
+     || IsFlowerVeilProtected(d) || gAiLogicData->holdEffects[d] == HOLD_EFFECT_CLEAR_AMULET
+     || ((gSideStatuses[GetBattlerSide(d)] & SIDE_STATUS_MIST)
+      && gAiLogicData->abilities[a] != ABILITY_INFILTRATOR))
+        return TRUE;
+    for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
+        if (gBattleMons[d].statStages[stat] > MIN_STAT_STAGE)
+            return FALSE;
+    return TRUE;
+}
+
+static s32 AR_RazeMoves(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
+{
+    u32 a = battlerAtk, d = battlerDef, slot = gAiThinkingStruct->movesetIndex;
+    if (!AR_Usable(a, slot) || gBattleMons[a].moves[slot] != move || score <= 0)
+        return score;
+    bool32 useful = score >= AI_SCORE_DEFAULT;
+    bool32 finish = AR_Finish(a, d);
+    s32 delta = AR_AttackDelta(a, d, slot, score);
+    u32 species = GET_BASE_SPECIES_ID(gBattleMons[a].species);
+    if (TxRollbackHasWishes(a))
+    {
+        if (move == MOVE_PROTECT && useful)
+            delta += AR_Protect(a, d);
+        if (move == MOVE_CELEBRATE)
+            delta -= 20;
+    }
+    else switch (species)
+    {
+    case SPECIES_RAZE_KIRLIA:
+        if ((move == MOVE_WILL_O_WISP || move == MOVE_THUNDER_WAVE) && useful)
+        {
+            if (!AR_StatusTarget(a, d, move))
+                delta -= 12;
+            else if (AR_Pressure(a, move, TRUE, DAMAGE_CATEGORY_STATUS) >= gBattleMons[a].hp)
+                delta -= 8;
+            else if (move == MOVE_WILL_O_WISP)
+            {
+                enum Ability ability = gAiLogicData->abilities[d];
+                if (!AI_CanBurn(a, d, ability, GetPartnerBattler(a), move, MOVE_NONE)
+                 || ability == ABILITY_GUTS || ability == ABILITY_FLARE_BOOST
+                 || ability == ABILITY_MAGIC_GUARD)
+                    delta -= 12;
+                else
+                    delta += AR_Pressure(a, move, FALSE, DAMAGE_CATEGORY_PHYSICAL) != 0 ? 9 : 1;
+            }
+            else if (gAiLogicData->abilities[d] == ABILITY_QUICK_FEET)
+                delta -= 6;
+            else if (AI_CanParalyze(a, d, gAiLogicData->abilities[d], move, MOVE_NONE))
+                delta += AR_SpeedPayoff(a, d, B_PARALYSIS_SPEED >= GEN_7 ? 2 : 4, 1) ? 8 : 2;
+            else
+                delta -= 12;
+        }
+        break;
+    case SPECIES_MEWTWO:
+        if (move == MOVE_DMS_PREROGATIVE)
+        {
+            if (AR_AuthorityBlocked(a, d))
+                delta -= 40;
+            else if (useful)
+            {
+                u32 swing = 0;
+                const u8 stats[] = {STAT_SPATK, STAT_DEF, STAT_SPDEF, STAT_SPEED};
+                for (u32 i = 0; i < ARRAY_COUNT(stats); i++)
+                    swing += MAX_STAT_STAGE - gBattleMons[a].statStages[stats[i]]
+                           + gBattleMons[d].statStages[stats[i]] - MIN_STAT_STAGE;
+                delta += finish ? -18 : min(30, 6 + swing / 2);
+            }
+        }
+        if (move == MOVE_ROAR_OF_TIME && !AR_Ko(a, d, slot) && AR_Comparable(a, d, slot))
+            delta -= 5;
+        if (move == MOVE_SHADOW_FORCE && AR_Comparable(a, d, slot))
+            delta -= 4;
+        break;
+    case SPECIES_HOOPA: /* GET_BASE_SPECIES_ID also maps Hoopa-Unbound here. */
+        if (move == MOVE_DRAIN_PUNCH && useful)
+            delta += AR_Drain(a, d, slot);
+        if (move == MOVE_HYPERSPACE_FURY && useful)
+        {
+            if (gAiLogicData->abilities[a] != ABILITY_CONTRARY
+             && !AR_Ko(a, d, slot) && AR_Comparable(a, d, slot))
+                delta -= 3;
+            if (gBattleMons[d].volatiles.consecutiveMoveUses && AR_Expected(a, d, slot) != 0
+             && AR_Expected(a, d, slot) * 100 >= AR_Best(a, d) * 85)
+                delta += 3;
+        }
+        break;
+    case SPECIES_ALAKAZAM:
+        if (move == MOVE_CALM_MIND && useful)
+            delta += AR_Setup(a, d, move, 1);
+        break;
+    case SPECIES_CASTORIA:
+        if (move == MOVE_CALM_MIND && useful)
+            delta += AR_Setup(a, d, move, 1);
+        if (move == MOVE_REVIVAL_BLESSING_2 && useful)
+        {
+            if (GetFirstFaintedPartyIndex(a) == PARTY_SIZE)
+                delta -= 20;
+            else if (AR_Pressure(a, move, TRUE, DAMAGE_CATEGORY_STATUS) >= gBattleMons[a].hp)
+                delta -= 12;
+            else
+                delta += 10; /* Engine selects/revives an eligible reserve. */
+        }
+        break;
+    default:
+        return score;
+    }
+    if (IsBattleMoveStatus(move) && finish)
+        delta -= 18;
+    ADJUST_SCORE(delta);
+    return score;
+}
+
+static s32 AR_TxSpell(u32 a, u32 d, u32 move)
+{
+    if (move != MOVE_ARCANUM_WISH)
+        return 0;
+    u32 chosen = TX_WISH_NONE, recipient = MAX_BATTLERS_COUNT;
+    s32 best = 0;
+    /* Fixed tie order is intentional and deterministic. Restoration first. */
+    const u8 wishes[] = {TX_WISH_RESTORATION, TX_WISH_REVERSAL,
+        TX_WISH_RECLAMATION, TX_WISH_CALAMITY, TX_WISH_RECIPROCITY};
+    for (u32 i = 0; i < ARRAY_COUNT(wishes); i++)
+    {
+        for (u32 target = 0; target < gBattlersCount; target++)
+        {
+            if (!TxRollbackCanWishFor(a, wishes[i], target))
+                continue;
+            s32 value = 0;
+            switch (wishes[i])
+            {
+            case TX_WISH_RESTORATION:
+                value = 116 + (AR_Incoming(target) >= gBattleMons[target].hp ? 4 : 0);
+                break;
+            case TX_WISH_REVERSAL:
+            {
+                u32 boosts = 0;
+                for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
+                    if (gBattleMons[d].statStages[stat] > DEFAULT_STAT_STAGE)
+                        boosts += gBattleMons[d].statStages[stat] - DEFAULT_STAT_STAGE;
+                value = 106 + min(12, boosts * 2);
+                break;
+            }
+            case TX_WISH_RECLAMATION:
+                value = 112; /* API proves an actually transferable benefit. */
+                break;
+            case TX_WISH_CALAMITY:
+                value = HasNoOrderChange(d) || IsBattlerTrapped(a, d) ? 114 : 104;
+                break;
+            case TX_WISH_RECIPROCITY:
+                value = HasMoveWithCategory(d, DAMAGE_CATEGORY_STATUS) ? 103 : 101;
+                break;
+            }
+            if (value > best)
+            {
+                best = value;
+                chosen = wishes[i];
+                recipient = target;
+            }
+        }
+    }
+    if (AR_Finish(a, d))
+        best = 0;
+    gBattleStruct->txRollback.wishCandidate = best != 0 ? chosen : TX_WISH_NONE;
+    gBattleStruct->txRollback.wishCandidateTarget = best != 0 ? recipient : MAX_BATTLERS_COUNT;
+    return best;
+}
+
+static s32 AR_CastoriaSpell(u32 a, u32 d, u32 move, s32 score)
+{
+    /* No normal-slot indexing in this function. The caller checked ownership. */
+    if (move == MOVE_REVIVAL_BLESSING_2)
+    {
+        if (GetFirstFaintedPartyIndex(a) == PARTY_SIZE)
+            return 0;
+        if (gBattleMons[a].volatiles.perishSong)
+            return INT32_MAX; /* Preserve the current encounter exception. */
+        if (AR_Finish(a, d)
+         || AR_Pressure(a, move, TRUE, DAMAGE_CATEGORY_STATUS) >= gBattleMons[a].hp)
+            return 0;
+        return 110;
+    }
+    if (move == MOVE_POLYMORPH)
+    {
+        if (GetMoveSlot(gBattleMons[d].moves, MOVE_PERISH_SONG) < MAX_MON_MOVES)
+            return INT32_MAX - 1; /* Preserve existing anti-Perish policy. */
+        /* DEVIATION from the proposal: the proposal returned 0 here, which would disable Polymorph
+         * outside the Perish Song countermeasure. Keep the engine's existing behaviour (the caller's
+         * default score) until a payoff model exists. */
+        return score;
+    }
+    if (move == MOVE_ARCANUM_WISH)
+    {
+        u32 wish = CASTORIA_WISH_NONE;
+        s32 value = 0;
+        if (CastoriaCanWishFor(a, CASTORIA_WISH_DOMINATION))
+            wish = CASTORIA_WISH_DOMINATION, value = 114;
+        else if (CastoriaCanWishFor(a, CASTORIA_WISH_MORE_WISHES))
+            wish = CASTORIA_WISH_MORE_WISHES, value = 120;
+        else if (CastoriaCanWishFor(a, CASTORIA_WISH_ENDURANCE)
+              && AR_Incoming(a) * 2 >= gBattleMons[a].hp)
+            wish = CASTORIA_WISH_ENDURANCE, value = 118;
+        else if (CastoriaCanWishFor(a, CASTORIA_WISH_REDUCTION)
+              && AR_Incoming(a) != 0)
+            wish = CASTORIA_WISH_REDUCTION, value = 112;
+        else if (CastoriaCanWishFor(a, CASTORIA_WISH_DEBILITATION)
+              && !(gBattleMons[d].status1 & STATUS1_INCAPACITATED)
+              && AR_Incoming(a) != 0)
+            wish = CASTORIA_WISH_DEBILITATION, value = 110;
+        if (AR_Finish(a, d))
+            wish = CASTORIA_WISH_NONE, value = 0;
+        gBattleStruct->castoria.wishCandidate = wish;
+        return value;
+    }
+    if (move == MOVE_FIREBALL)
+    {
+        /* Virtual spell has no ordinary four-slot cache entry. Use the existing
+         * save/restore simulation wrapper, never a temporary installed move. */
+        uq4_12_t effectiveness;
+        struct SimulatedDamage damage = AI_CalcDamageSaveBattlers(move, a, d,
+            &effectiveness, GIMMICK_NONE, GIMMICK_NONE);
+        u32 accuracy = min(100, Ai_SetMoveAccuracy(gAiLogicData, a, d, move));
+        u32 expected = AI_GetReachableDamage(d, damage.median) * accuracy / 100;
+        if (effectiveness == UQ_4_12(0.0) || expected == 0 || AR_Finish(a, d))
+            return 0;
+        /* Require a material coverage improvement to spend finite spell uses. */
+        return expected * 100 > AR_Best(a, d) * 120 ? score + 8 : 0;
+    }
+    return 0;
+}
+
 s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
+    if (AR_OwnsEncounter(TRAINER_ALICE2, battlerAtk, battlerDef))
+    {
+        if (BattleAI_IsScoringArcanum())
+            return 0;
+        return AR_AliceMoves(battlerAtk, battlerDef, move, score);
+    }
     // Alice has no spell-scoring policy; keep her existing regular-move rules.
     if (BattleAI_IsScoringArcanum())
         return 0;
@@ -7325,6 +7996,18 @@ s32 AI_AliceTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 
 s32 AI_RazeluxeTrainer (u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
 {
+    if (AR_OwnsEncounter(TRAINER_RAZELUXE, battlerAtk, battlerDef))
+    {
+        if (BattleAI_IsScoringArcanum())
+        {
+            if (TxRollbackHasWishes(battlerAtk))
+                return AR_TxSpell(battlerAtk, battlerDef, move);
+            if (gBattleMons[battlerAtk].species == SPECIES_CASTORIA)
+                return AR_CastoriaSpell(battlerAtk, battlerDef, move, score);
+            return 0;
+        }
+        return AR_RazeMoves(battlerAtk, battlerDef, move, score);
+    }
     if (BattleAI_IsScoringArcanum())
     {
         if (!IsOnPlayerSide(battlerAtk) && gBattleMons[battlerAtk].species == SPECIES_CASTORIA)
