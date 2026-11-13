@@ -2618,7 +2618,6 @@ u32 CountNegativeStatStages(enum BattlerId battlerId)
 bool32 CanIndexMoveFaintTarget(enum BattlerId battlerAtk, enum BattlerId battlerDef, u32 moveIndex, enum DamageCalcContext calcContext)
 {
     s32 dmg;
-    enum Move *moves = gBattleMons[battlerAtk].moves;
 
     if (IsDoubleBattle() && battlerDef == GetPartnerBattler(battlerAtk))
         dmg = AI_GetDamage(battlerAtk, battlerDef, moveIndex, AI_ATTACKING_PARTNER, gAiLogicData); // Attacking partner, be careful
@@ -5385,7 +5384,7 @@ void DecideTerastal(enum BattlerId battler)
     if (!IsBattle1v1())
         return;
 
-    // TODO: A lot of these checks are most effective for an omnicient ai.
+    // TODO: A lot of these checks are most effective for an omniscient ai.
     // If we don't have enough information about the opponent's moves, consider simpler checks based on type effectivness.
 
     enum BattlerId opposingBattler = GetOppositeBattler(battler);
@@ -5491,7 +5490,6 @@ enum AIConsiderGimmick ShouldTeraFromCalcs(enum BattlerId battler, enum BattlerI
     }
 
     u32 aiHp = gBattleMons[battler].hp;
-    u32 oppHp = gBattleMons[opposingBattler].hp;
 
     enum Move *aiMoves = GetMovesArray(battler);
     enum Move *oppMoves = GetMovesArray(opposingBattler);
