@@ -50,6 +50,9 @@
 #if IS_FRLG
 
 #include "constants/flags_frlg.h"
+#define FLAG_PLAYER_SMOL                  FLAG_0x020
+#define FLAG_KAZURADROP_ENTERED_BATTLE   FLAG_0x022
+#define FLAG_GUTS_SNAP                   FLAG_0x024
 
 #else
 
