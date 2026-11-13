@@ -23,7 +23,7 @@ static bool32 ThreatensKo(u32 attacker, u32 target, u32 move, bool32 *beforeMove
 {
     bool32 threatened = FALSE;
     *beforeMove = FALSE;
-    u16 *moves = GetMovesArray(target);
+    enum Move *moves = GetMovesArray(target);
     for (u32 slot = 0; slot < MAX_MON_MOVES; slot++)
     {
         if (!(gAiLogicData->moveLimitations[target] & (1u << slot))
@@ -70,16 +70,16 @@ static s32 RankStatus(u32 attacker, u32 target, u32 move, s32 score, bool32 thre
         if (score >= AI_SCORE_DEFAULT && AI_CanPutToSleep(attacker, target, gAiLogicData->abilities[target], move, MOVE_NONE))
             rank = 120;
     }
-    else if (IsNonVolatileStatusMove(effect))
+    else if (IsNonVolatileStatusMove(move))
     {
         if (gBattleMons[target].status1 != STATUS1_NONE)
             return 1;
         if (score >= AI_SCORE_DEFAULT)
             rank += 40;
     }
-    else if (effect == EFFECT_ATTACK_UP || effect == EFFECT_ATTACK_UP_2 || effect == EFFECT_SPECIAL_ATTACK_UP
-          || effect == EFFECT_SPECIAL_ATTACK_UP_2 || effect == EFFECT_DRAGON_DANCE || effect == EFFECT_QUIVER_DANCE
-          || effect == EFFECT_SHELL_SMASH || effect == EFFECT_GEOMANCY)
+    else if (move == MOVE_SWORDS_DANCE || move == MOVE_MEDITATE || move == MOVE_SHARPEN
+          || move == MOVE_DRAGON_DANCE || move == MOVE_NASTY_PLOT || move == MOVE_QUIVER_DANCE
+          || move == MOVE_SHELL_SMASH || move == MOVE_GEOMANCY)
     {
         if (score >= AI_SCORE_DEFAULT && !threatened)
             rank += 40;
@@ -114,8 +114,7 @@ static s32 RankDamage(u32 attacker, u32 target, u32 move, s32 score, bool32 befo
         koChance = damage->minimum >= hp ? 100 : 100 * (damage->maximum - hp + 1) / (damage->maximum - damage->minimum + 1);
     bool32 charge = IsTwoTurnNotSemiInvulnerableMove(attacker, move)
                  || (effect == EFFECT_SEMI_INVULNERABLE && gAiLogicData->holdEffects[attacker] != HOLD_EFFECT_POWER_HERB);
-    bool32 conditional = effect == EFFECT_FOCUS_PUNCH || effect == EFFECT_COUNTER
-                     || effect == EFFECT_MIRROR_COAT || effect == EFFECT_METAL_BURST || effect == EFFECT_FUTURE_SIGHT;
+    bool32 conditional = effect == EFFECT_FOCUS_PUNCH || effect == EFFECT_REFLECT_DAMAGE || effect == EFFECT_FUTURE_SIGHT;
     u32 reliableKo = koChance * accuracy / 100;
     if (charge || conditional)
         reliableKo = 0; // Damage may happen later or require an opponent action.
@@ -142,12 +141,12 @@ static s32 RankDamage(u32 attacker, u32 target, u32 move, s32 score, bool32 befo
     rank -= min(50, 100 * recoil / max(1, gBattleMons[attacker].maxHP));
     if (recoil >= gBattleMons[attacker].hp)
         rank -= 60;
-    if (effect == EFFECT_EXPLOSION || effect == EFFECT_MISTY_EXPLOSION)
+    if (IsExplosionMove(move))
         rank -= 110;
     for (u32 i = 0; i < GetMoveAdditionalEffectCount(move); i++)
     {
         const struct AdditionalEffect *additional = GetMoveAdditionalEffectById(move, i);
-        if (additional->self && IsSelfStatLoweringEffect(additional->moveEffect)
+        if (additional->self && additional->moveEffect == MOVE_EFFECT_STAT_MINUS
          && ability != ABILITY_CONTRARY)
             rank -= 10;
     }
@@ -179,8 +178,7 @@ static bool32 IsImmediateAttack(u32 attacker, u32 move)
     enum BattleMoveEffects effect = GetMoveEffect(move);
     return !IsBattleMoveStatus(move) && !IsTwoTurnNotSemiInvulnerableMove(attacker, move)
         && effect != EFFECT_SEMI_INVULNERABLE && effect != EFFECT_FUTURE_SIGHT
-        && effect != EFFECT_COUNTER && effect != EFFECT_MIRROR_COAT
-        && effect != EFFECT_METAL_BURST && effect != EFFECT_FOCUS_PUNCH;
+        && effect != EFFECT_REFLECT_DAMAGE && effect != EFFECT_FOCUS_PUNCH;
 }
 
 static u32 ExpectedDamage(u32 attacker, u32 target, u32 slot)
@@ -243,7 +241,7 @@ static u32 IncomingDamage(u32 attacker)
 static bool32 PlanningMax(u32 attacker)
 {
     return GetActiveGimmick(attacker) == GIMMICK_DYNAMAX
-        || (IsAIUsingGimmick(attacker) && gBattleStruct->gimmick.usableGimmick[attacker] == GIMMICK_DYNAMAX);
+        || ((gAiBattleData->aiUsingGimmick & (1u << attacker)) && gBattleStruct->gimmick.usableGimmick[attacker] == GIMMICK_DYNAMAX);
 }
 
 static bool32 TailwindChangesOrder(u32 attacker, u32 target)
@@ -269,7 +267,7 @@ static s32 RecoveryValue(u32 attacker, u32 move)
 {
     u32 hp = gBattleMons[attacker].hp;
     u32 maximum = gBattleMons[attacker].maxHP;
-    if (hp == maximum || gBattleMons[attacker].volatiles.healBlock || IsBreakBarPending(attacker))
+    if (hp == maximum || gBattleMons[attacker].volatiles.healBlockTimer || IsBreakBarPending(attacker))
         return -10;
     u32 before = IncomingDamageBefore(attacker, move, TRUE);
     u32 incoming = IncomingDamage(attacker);
@@ -390,7 +388,7 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         // Disrupt a useful target, establish speed for the team, then pressure.
         if (move == MOVE_MOONBLAST)
             delta += attack;
-        else if (move == MOVE_TAUNT && useful && gDisableStructs[battlerDef].tauntTimer == 0)
+        else if (move == MOVE_TAUNT && useful && gBattleMons[battlerDef].volatiles.tauntTimer == 0)
             delta += HasMoveWithCategory(battlerDef, DAMAGE_CATEGORY_STATUS) ? 5 : -6;
         else if (move == MOVE_TAILWIND)
         {
@@ -412,7 +410,7 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         {
             delta += attack;
             if (move == MOVE_DAZZLING_GLEAM && PlanningMax(battlerAtk)
-             && gBattleMons[battlerAtk].hp < gBattleMons[battlerAtk].maxHP && !gBattleMons[battlerAtk].volatiles.healBlock)
+             && gBattleMons[battlerAtk].hp < gBattleMons[battlerAtk].maxHP && !gBattleMons[battlerAtk].volatiles.healBlockTimer)
                 delta += 3;
             if (move == MOVE_MYSTICAL_FIRE && useful && !PlanningMax(battlerAtk)
              && HasMoveWithCategory(battlerDef, DAMAGE_CATEGORY_SPECIAL)
@@ -437,15 +435,15 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
             delta += 2;
         if (move == MOVE_FREEZE_DRY && expected != 0 && expected == bestDamage && IS_BATTLER_OF_TYPE(battlerDef, TYPE_WATER))
             delta += 2;
-        if (move == MOVE_TAUNT && useful && gDisableStructs[battlerDef].tauntTimer == 0)
+        if (move == MOVE_TAUNT && useful && gBattleMons[battlerDef].volatiles.tauntTimer == 0)
             delta += HasMoveWithCategory(battlerDef, DAMAGE_CATEGORY_STATUS) ? 3 : -6;
         break;
 
     case SPECIES_AUDINO:
         if (move == MOVE_WISH)
-            delta += gWishFutureKnock.wishCounter[battlerAtk] ? -10
+            delta += gBattleStruct->wish[battlerAtk].counter ? -10
                 : useful ? (ReachableWishRecipient(battlerAtk) ? 6 : -4) : 0;
-        else if (move == MOVE_ENCORE && useful && !gDisableStructs[battlerDef].encoreTimer
+        else if (move == MOVE_ENCORE && useful && !gBattleMons[battlerDef].volatiles.encoreTimer
               && gAiLogicData->lastUsedMove[battlerDef] != MOVE_NONE
               && IsBattleMoveStatus(gAiLogicData->lastUsedMove[battlerDef]) && HasDamagingMove(battlerDef))
             delta += 4;
@@ -453,7 +451,7 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
               && AI_CanParalyze(battlerAtk, battlerDef, gAiLogicData->abilities[battlerDef], move, MOVE_NONE))
             delta += gAiLogicData->speedStats[battlerDef] >= gAiLogicData->speedStats[battlerAtk] ? 4 : 2;
         else if (move == MOVE_KNOCK_OFF && expected != 0)
-            delta += attack + (useful && CanKnockOffItem(battlerDef, gAiLogicData->items[battlerDef]) ? 3 : 0);
+            delta += attack + (useful && CanKnockOffItem(battlerAtk, battlerDef, gAiLogicData->items[battlerDef]) ? 3 : 0);
         break;
 
     case SPECIES_BLISSEY:
@@ -473,7 +471,7 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
         // Current solo real kit only. Summon Wishes/Meteo need their owning stages.
         if (move == MOVE_WISH)
         {
-            if (gWishFutureKnock.wishCounter[battlerAtk])
+            if (gBattleStruct->wish[battlerAtk].counter)
                 delta -= 10;
             else if (useful)
             {
@@ -491,11 +489,11 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
             }
         }
         else if (move == MOVE_DOOM_DESIRE)
-            delta += gWishFutureKnock.futureSightCounter[battlerDef] ? -10 : useful && expected != 0 ? 4 : 0;
+            delta += gBattleStruct->futureSight[battlerDef].counter ? -10 : useful && expected != 0 ? 4 : 0;
         else if (move == MOVE_PROTECT)
-            delta += gDisableStructs[battlerAtk].protectUses ? -8
-                : gWishFutureKnock.wishCounter[battlerAtk] && IncomingDamage(battlerAtk) != 0 ? 6
-                : gWishFutureKnock.futureSightCounter[battlerDef] ? 2 : -4;
+            delta += gBattleMons[battlerAtk].volatiles.consecutiveMoveUses ? -8
+                : gBattleStruct->wish[battlerAtk].counter && IncomingDamage(battlerAtk) != 0 ? 6
+                : gBattleStruct->futureSight[battlerDef].counter ? 2 : -4;
         break;
 
     case SPECIES_CALYREX_ICE:
@@ -523,7 +521,7 @@ s32 AI_KoankoTrainer(u32 battlerAtk, u32 battlerDef, u32 move, s32 score)
             delta -= 3;
         if (move == MOVE_ROAR_OF_ETERNITY && useful && !gBattleMons[battlerDef].volatiles.timestop
          && !DoesSubstituteBlockMove(battlerAtk, battlerDef, move)
-         && !IsAdditionalEffectBlocked(battlerAtk, gAiLogicData->abilities[battlerAtk], battlerDef, gAiLogicData->abilities[battlerDef])
+         && !IsAdditionalEffectBlocked(battlerAtk, gAiLogicData->abilities[battlerAtk], battlerDef, gAiLogicData->abilities[battlerDef], move)
          && gAiLogicData->abilities[battlerAtk] != ABILITY_SHEER_FORCE && expected != 0 && !ko)
             for (u32 i = 0; i < GetMoveAdditionalEffectCount(move); i++)
             {

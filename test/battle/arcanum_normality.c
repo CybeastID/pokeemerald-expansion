@@ -52,7 +52,7 @@ static bool32 ExecuteNormality(void)
     const u8 *savedScript = gBattlescriptCurrInstr;
     bool32 success;
 
-    gBattlerAttacker = B_POSITION_OPPONENT_LEFT;
+    gBattlerAttacker = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
     gChosenMovePos = gCurrMovePos = 6;
     gChosenMove = gCurrentMove = MOVE_ARCANUM_WISH;
     gBattleStruct->castoria.wishOutcome = CASTORIA_WISH_NORMALITY;
@@ -122,14 +122,14 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Normality ends active gimmicks and changes t
             MESSAGE("Gengar returned to normal and became Normal type!");
     } THEN {
         EXPECT_EQ(player->species, expectedSpecies);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_SPECIES), expectedSpecies);
-        EXPECT_EQ(GetActiveGimmick(B_POSITION_PLAYER_LEFT), GIMMICK_NONE);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), expectedSpecies);
+        EXPECT_EQ(GetActiveGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), GIMMICK_NONE);
         EXPECT_EQ(player->types[0], TYPE_NORMAL);
         EXPECT_EQ(player->types[1], TYPE_NORMAL);
         EXPECT_EQ(player->types[2], TYPE_MYSTERY);
-        EXPECT_EQ(player->ability, GetMonAbility(&gPlayerParty[0]));
-        EXPECT_EQ(player->attack, GetMonData(&gPlayerParty[0], MON_DATA_ATK));
-        EXPECT_EQ(player->defense, GetMonData(&gPlayerParty[0], MON_DATA_DEF));
+        EXPECT_EQ(player->ability, GetMonAbility(&gParties[B_TRAINER_PLAYER][0]));
+        EXPECT_EQ(player->attack, GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_ATK));
+        EXPECT_EQ(player->defense, GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_DEF));
         if (gimmick == GIMMICK_DYNAMAX)
         {
             EXPECT_EQ(player->maxHP, sOriginalMaxHP);
@@ -137,7 +137,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Normality ends active gimmicks and changes t
             EXPECT_EQ(gBattleStruct->dynamax.dynamaxTurns[B_POSITION_PLAYER_LEFT], 0);
         }
         if (gimmick != GIMMICK_NONE)
-            EXPECT_EQ(HasTrainerUsedGimmick(B_POSITION_PLAYER_LEFT, gimmick), TRUE);
+            EXPECT_EQ(HasTrainerUsedGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), gimmick), TRUE);
         EXPECT_EQ(gBattleWeather & (B_WEATHER_SUN_PRIMAL | B_WEATHER_RAIN_PRIMAL), 0);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
         EXPECT_EQ(gBattleStruct->castoria.wishOutcome, CASTORIA_WISH_NONE);
@@ -178,8 +178,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Normality leaves one-off Z-Moves alone")
         ANIMATION(ANIM_TYPE_MOVE, MOVE_ARCANUM_WISH, opponent);
         MESSAGE("Wobbuffet used Breakneck Blitz!");
     } THEN {
-        EXPECT_EQ(HasTrainerUsedGimmick(B_POSITION_PLAYER_LEFT, GIMMICK_Z_MOVE), TRUE);
-        EXPECT_EQ(GetActiveGimmick(B_POSITION_PLAYER_LEFT), GIMMICK_NONE);
+        EXPECT_EQ(HasTrainerUsedGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), GIMMICK_Z_MOVE), TRUE);
+        EXPECT_EQ(GetActiveGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), GIMMICK_NONE);
     }
 }
 
@@ -262,8 +262,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Normality type change clears on switching an
         TURN { SWITCH(player, 1); }
         TURN { SWITCH(player, 0); }
     } THEN {
-        EXPECT_EQ(GetActiveGimmick(B_POSITION_PLAYER_LEFT), GIMMICK_NONE);
-        EXPECT_EQ(HasTrainerUsedGimmick(B_POSITION_PLAYER_LEFT, GIMMICK_TERA), TRUE);
+        EXPECT_EQ(GetActiveGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), GIMMICK_NONE);
+        EXPECT_EQ(HasTrainerUsedGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), GIMMICK_TERA), TRUE);
         EXPECT_EQ(player->types[0], TYPE_GHOST);
         EXPECT_EQ(player->types[1], TYPE_POISON);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
@@ -286,6 +286,6 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Normality interruption preserves Wish and th
         }
     } THEN {
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, FALSE);
-        EXPECT_EQ(GetActiveGimmick(B_POSITION_PLAYER_LEFT), GIMMICK_TERA);
+        EXPECT_EQ(GetActiveGimmick(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), GIMMICK_TERA);
     }
 }

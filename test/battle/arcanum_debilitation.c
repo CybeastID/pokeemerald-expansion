@@ -190,7 +190,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Debilitation cures leave No Order Change int
         else
         {
             EXPECT_EQ(player->status1, 0);
-            EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_STATUS), 0);
+            EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_STATUS), 0);
         }
     }
 }
@@ -284,8 +284,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change suppresses damaging pivots but pr
         EXPECT_LT(opponent->hp, opponent->maxHP);
         EXPECT_EQ(gBattlerPartyIndexes[B_POSITION_PLAYER_LEFT], 0);
         EXPECT_EQ(HasNoOrderChange(B_POSITION_PLAYER_LEFT), TRUE);
-        EXPECT_EQ(AI_CanBattlerEscape(B_POSITION_PLAYER_LEFT), FALSE);
-        EXPECT_EQ(IsBattlerTrapped(B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_LEFT), TRUE);
+        EXPECT_EQ(AI_CanBattlerEscape(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), FALSE);
+        EXPECT_EQ(IsBattlerTrapped(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)), TRUE);
     }
 }
 
@@ -347,7 +347,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change allows Lunar Dance genuine faint 
         MESSAGE("Wobbuffet fainted!");
         MESSAGE("Wynaut became cloaked in mystical moonlight!");
     } THEN {
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 0);
         EXPECT_EQ(gBattlerPartyIndexes[B_POSITION_PLAYER_LEFT], 1);
         EXPECT_EQ(HasNoOrderChange(B_POSITION_PLAYER_LEFT), FALSE);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 1);
@@ -533,7 +533,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change preserves Chilly Reception weathe
 AI_SINGLE_BATTLE_TEST("Arcanum No Order Change blocks Gen 4 Healing Wish withdrawal after its bar breaks")
 {
     GIVEN {
-        WITH_CONFIG(CONFIG_HEALING_WISH_SWITCH, GEN_4);
+        WITH_CONFIG(B_HEALING_WISH_SWITCH, GEN_4);
         AI_FLAGS(AI_FLAG_DYNAMIC_FUNC);
         DebilitationFixture(FALSE, B_POSITION_PLAYER_LEFT, 1);
         PLAYER(SPECIES_WOBBUFFET) { HP(100); MaxHP(100); Speed(100); }
@@ -632,7 +632,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum No Order Change indicator reloads after its graph
             EXPECT_EQ(HasNoOrderChange(battler), TRUE);
 
             // The normal healthbox rebuild recreates the icon from battle state.
-            UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], &gPlayerParty[0], HEALTHBOX_ALL);
+            UpdateHealthboxAttribute(gHealthboxSpriteIds[battler], &gParties[B_TRAINER_PLAYER][0], HEALTHBOX_ALL);
             ExpectNoOrderChangeIcon(battler, TRUE);
             EXPECT_NE(GetSpriteTileStartByTag(tileTag), 0xFFFF);
             EXPECT_NE(IndexOfSpritePaletteTag(paletteTag), 0xFF);

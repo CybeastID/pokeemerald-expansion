@@ -16,7 +16,7 @@ SINGLE_BATTLE_TEST("Break Bar final red layer can still faint from passive damag
         HP_BAR(player, hp: 0);
         MESSAGE("Wobbuffet fainted!");
     } THEN {
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 0);
         EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarsRemaining, 0);
     }
 }
@@ -37,7 +37,7 @@ SINGLE_BATTLE_TEST("Break Bar Charm activates before entry hazards")
     } THEN {
         EXPECT_EQ(player->hp, 88);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 1);
-        EXPECT_EQ(GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarSavedHp[0], 1);
+        EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarSavedHp[0], 1);
     }
 }
 
@@ -113,7 +113,7 @@ SINGLE_BATTLE_TEST("Break Bar Charm saves partial HP, stays held, and grants onl
         EXPECT_EQ(player->hp, 7);
         EXPECT_EQ(player->item, ITEM_BREAK_CHARM);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 0);
-        EXPECT_EQ((u32)GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarItemUsed, TRUE);
+        EXPECT_EQ((u32)GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarItemUsed, TRUE);
         EXPECT_EQ(gBattleResults.playerFaintCounter, 0);
     }
 }
@@ -134,12 +134,12 @@ SINGLE_BATTLE_TEST("Break Bar Lunar Dance faints an unprotected user and restore
         STATUS_ICON(player, none: TRUE);
         MESSAGE("Wynaut gained an extra HP bar!");
     } THEN {
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 0);
         EXPECT_EQ(player->hp, 100);
         EXPECT_EQ(player->status1, 0);
         EXPECT_EQ(player->pp[0], GetMovePP(MOVE_SCRATCH));
         EXPECT_EQ(GetBreakBarCount(B_POSITION_PLAYER_LEFT), 1);
-        EXPECT_EQ(GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarSavedHp[0], 100);
+        EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarSavedHp[0], 100);
     }
 }
 
@@ -160,7 +160,7 @@ SINGLE_BATTLE_TEST("Break Bar Lunar Dance consumes the user's bar before switchi
         HP_BAR(player, hp: 100);
         MESSAGE("Wynaut gained an extra HP bar!");
     } THEN {
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 23);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 23);
         EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarsRemaining, 0);
         EXPECT_EQ((u32)gBattleStruct->partyState[B_SIDE_PLAYER][0].breakBarPending, FALSE);
         EXPECT_EQ(gBattleResults.playerFaintCounter, 0);

@@ -165,10 +165,10 @@ SINGLE_BATTLE_TEST("Kazuradrop Legendary Clause judges Mega forms by their base 
         TURN { }
     } THEN {
         u16 species = SPECIES_LATIOS_MEGA;
-        SetMonData(&gPlayerParty[gBattlerPartyIndexes[B_POSITION_PLAYER_LEFT]], MON_DATA_SPECIES, &species);
+        SetMonData(&gParties[B_TRAINER_PLAYER][gBattlerPartyIndexes[B_POSITION_PLAYER_LEFT]], MON_DATA_SPECIES, &species);
         EXPECT_EQ(GetKazuraLegendTier(B_POSITION_PLAYER_LEFT), 1);
         species = SPECIES_GARCHOMP_MEGA;
-        SetMonData(&gPlayerParty[gBattlerPartyIndexes[B_POSITION_PLAYER_LEFT]], MON_DATA_SPECIES, &species);
+        SetMonData(&gParties[B_TRAINER_PLAYER][gBattlerPartyIndexes[B_POSITION_PLAYER_LEFT]], MON_DATA_SPECIES, &species);
         EXPECT_EQ(GetKazuraLegendTier(B_POSITION_PLAYER_LEFT), 0);
     }
 }

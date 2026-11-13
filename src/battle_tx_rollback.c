@@ -1,4 +1,5 @@
 #include "global.h"
+#include "battle_script_native.h"
 #include "battle.h"
 #include "battle_ai_main.h"
 #include "battle_ai_util.h"
@@ -52,6 +53,7 @@ static EWRAM_DATA struct
     u16 chosenMove;
     u8 currentMovePos;
     u8 chosenMovePos;
+    bool8 unableToUseMove;
 } sAmbushContext = {0};
 
 static EWRAM_DATA const u8 *sAmbushFinishInstr = NULL;
@@ -87,18 +89,18 @@ bool32 TxRollbackCanPopulateSlot(u32 battler)
     return TxRollbackGetSlotPolicy(battler) == TX_SLOT_NORMAL;
 }
 
-bool32 TxRollbackOwnsPartyMon(u32 side, u32 partyIndex)
+bool32 TxRollbackOwnsPartyMon(enum BattleTrainer trainer, u32 partyIndex)
 {
     return gBattleStruct != NULL && gBattleStruct->txRollback.combatProfile != TX_PROFILE_NONE
-        && side == gBattleStruct->txRollback.ownerSide
+        && trainer == gBattleStruct->txRollback.ownerTrainer
         && partyIndex == gBattleStruct->txRollback.partyIndex;
 }
 
-bool32 TxRollbackIsSummonedPartyMon(u32 side, u32 partyIndex)
+bool32 TxRollbackIsSummonedPartyMon(enum BattleTrainer trainer, u32 partyIndex)
 {
     return gBattleStruct != NULL
         && gBattleStruct->txRollback.combatProfile == TX_PROFILE_CASTORIA_SUMMON
-        && TxRollbackOwnsPartyMon(side, partyIndex);
+        && TxRollbackOwnsPartyMon(trainer, partyIndex);
 }
 
 u32 TxRollbackGetOwnerBattler(void)
@@ -106,7 +108,7 @@ u32 TxRollbackGetOwnerBattler(void)
     if (gBattleStruct == NULL || gBattleStruct->txRollback.ownerDefeated)
         return MAX_BATTLERS_COUNT;
     for (u32 battler = 0; battler < gBattlersCount; battler++)
-        if (TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler])
+        if (TxRollbackOwnsPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler])
          && !(gAbsentBattlerFlags & (1u << battler)))
             return battler;
     return MAX_BATTLERS_COUNT;
@@ -129,21 +131,21 @@ void TxRollbackRegisterKoanko(u32 battler)
         // Solo ownership has no summon revival ban. A genuine revived re-entry
         // starts fresh local effects; the global Reduction remains untouched.
         if (data->combatProfile == TX_PROFILE_KOANKO_SOLO && data->ownerDefeated
-         && TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler])
+         && TxRollbackOwnsPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler])
          && IsBattlerAlive(battler))
             data->ownerDefeated = FALSE;
         return;
     }
     data->combatProfile = TX_PROFILE_KOANKO_SOLO;
-    data->ownerSide = GetBattlerSide(battler);
+    data->ownerTrainer = GetBattlerTrainer(battler);
     data->partyIndex = gBattlerPartyIndexes[battler];
     data->wishTargetPartyIndex = PARTY_SIZE;
     data->wishCandidateTarget = MAX_BATTLERS_COUNT;
 }
 
-bool32 TxRollbackCanRevive(u32 side, u32 partyIndex)
+bool32 TxRollbackCanRevive(enum BattleTrainer trainer, u32 partyIndex)
 {
-    return !TxRollbackIsSummonedPartyMon(side, partyIndex);
+    return !TxRollbackIsSummonedPartyMon(trainer, partyIndex);
 }
 
 static bool32 CanPrepareCreation(u32 caster)
@@ -156,7 +158,7 @@ static bool32 CanPrepareCreation(u32 caster)
      || gBattleStruct->castoria.wishUsed
      || GetBattlerPosition(caster) != B_POSITION_OPPONENT_LEFT
      || gBattleMons[caster].species != SPECIES_CASTORIA || !IsBattlerAlive(caster)
-     || GetMonData(&gEnemyParty[TX_PARTY_INDEX], MON_DATA_SPECIES) != SPECIES_NONE)
+     || GetMonData(&gParties[B_TRAINER_OPPONENT_A][TX_PARTY_INDEX], MON_DATA_SPECIES) != SPECIES_NONE)
         return FALSE;
 
     if (gTestRunnerEnabled)
@@ -186,7 +188,7 @@ bool32 TxRollbackRequestCreation(u32 caster)
     data->casterPartyIndex = gBattlerPartyIndexes[caster];
     data->partyIndex = TX_PARTY_INDEX;
     data->combatProfile = TX_PROFILE_CASTORIA_SUMMON;
-    data->ownerSide = B_SIDE_OPPONENT;
+    data->ownerTrainer = GetBattlerTrainer(caster);
     data->ownerDefeated = FALSE;
     data->savedTarget = gBattlerTarget;
     data->savedEffectBattler = gEffectBattler;
@@ -212,14 +214,14 @@ void BS_TxRollbackCreate(void)
     }
 
     // Fixed Hardy personality, 31 IVs, no EVs/item and a non-shiny OT.
-    CreateMon(&gEnemyParty[TX_PARTY_INDEX], SPECIES_TX_ROLLBACK,
-        gBattleMons[data->caster].level, 31, TRUE, 0, OT_ID_PRESET, 0x12345678);
-    SetMonData(&gEnemyParty[TX_PARTY_INDEX], MON_DATA_NICKNAME, COMPOUND_STRING("TX Rollback"));
+    CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][TX_PARTY_INDEX], SPECIES_TX_ROLLBACK,
+        gBattleMons[data->caster].level, 0, OTID_STRUCT_PRESET(0x12345678), 31);
+    SetMonData(&gParties[B_TRAINER_OPPONENT_A][TX_PARTY_INDEX], MON_DATA_NICKNAME, COMPOUND_STRING("TX Rollback"));
     static const u16 moves[MAX_MON_MOVES] = {MOVE_FOLLOW_ME, MOVE_WIDE_GUARD, MOVE_LIFE_DEW, MOVE_POWER_GEM};
     for (u32 i = 0; i < MAX_MON_MOVES; i++)
-        SetMonMoveSlot(&gEnemyParty[TX_PARTY_INDEX], moves[i], i);
-    gEnemyPartyCount = CalculatePartyCount(gEnemyParty);
-    gAiPartyData->count[B_SIDE_OPPONENT] = gEnemyPartyCount;
+        SetMonMoveSlot(&gParties[B_TRAINER_OPPONENT_A][TX_PARTY_INDEX], moves[i], i);
+    gPartiesCount[B_TRAINER_OPPONENT_A] = CalculatePartyCount(B_TRAINER_OPPONENT_A);
+    gAiPartyData->count[B_TRAINER_OPPONENT_A] = gPartiesCount[B_TRAINER_OPPONENT_A];
 
     // Existing positions, actors, choices and queue entries are untouched.
     gBattleTypeFlags |= BATTLE_TYPE_DOUBLE;
@@ -230,7 +232,6 @@ void BS_TxRollbackCreate(void)
         gBattlerPositions[battler] = battler;
         gBattlerPartyIndexes[battler] = battler == B_POSITION_OPPONENT_RIGHT ? TX_PARTY_INDEX : gBattlerPartyIndexes[0];
         memset(&gBattleMons[battler], 0, sizeof(gBattleMons[battler]));
-        memset(&gDisableStructs[battler], 0, sizeof(gDisableStructs[battler]));
         memset(&gProtectStructs[battler], 0, sizeof(gProtectStructs[battler]));
         memset(&gSpecialStatuses[battler], 0, sizeof(gSpecialStatuses[battler]));
         memset(&gBattleStruct->battlerState[battler], 0, sizeof(gBattleStruct->battlerState[battler]));
@@ -249,10 +250,10 @@ void BS_TxRollbackCreate(void)
     }
     gAbsentBattlerFlags |= 1u << B_POSITION_PLAYER_RIGHT;
     gAbsentBattlerFlags &= ~(1u << B_POSITION_OPPONENT_RIGHT);
-    gBattleScripting.battler = B_POSITION_OPPONENT_RIGHT;
-    BtlController_EmitGetMonData(B_POSITION_OPPONENT_RIGHT, B_COMM_TO_CONTROLLER,
+    gBattleScripting.battler = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
+    BtlController_EmitGetMonData(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT), B_COMM_TO_CONTROLLER,
         REQUEST_ALL_BATTLE, 1u << TX_PARTY_INDEX);
-    MarkBattlerForControllerExec(B_POSITION_OPPONENT_RIGHT);
+    MarkBattlerForControllerExec(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT));
     gBattlescriptCurrInstr = cmd->nextInstr;
 }
 
@@ -264,7 +265,6 @@ void BS_TxRollbackInitialize(void)
     TxRollbackInitializeHealth(battler);
     ActivateBreakBar(battler, &sTxBreakBars);
     gBattleStruct->battlerState[battler].noOrderChange = TRUE;
-    gDisableStructs[battler].hazardsDone = TRUE;
     BattleLoadTxRollbackHealthboxGfx();
     gHealthboxSpriteIds[battler] = CreateBattlerHealthboxSprites(battler);
     InitBattlerHealthboxCoords(battler);
@@ -327,7 +327,7 @@ void BS_TxRollbackFinishEntry(void)
 
 void TxRollbackOnFaint(u32 battler)
 {
-    if (TxRollbackOwnsPartyMon(GetBattlerSide(battler), gBattlerPartyIndexes[battler])
+    if (TxRollbackOwnsPartyMon(GetBattlerTrainer(battler), gBattlerPartyIndexes[battler])
      && !IsBreakBarPending(battler) && gBattleMons[battler].hp == 0)
     {
         struct TxRollbackBattleData *data = &gBattleStruct->txRollback;
@@ -362,6 +362,7 @@ bool32 TxRollbackTryAmbush(void)
     sAmbushContext.chosenMove = gChosenMove;
     sAmbushContext.currentMovePos = gCurrMovePos;
     sAmbushContext.chosenMovePos = gChosenMovePos;
+    sAmbushContext.unableToUseMove = gBattleStruct->unableToUseMove;
     gBattlerAttacker = gBattleScripting.battler = battler;
     gBattlerTarget = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
     gCurrentMove = gChosenMove = MOVE_NONE;
@@ -401,7 +402,8 @@ void BS_TxRollbackFinishAmbush(void)
     gChosenMove = sAmbushContext.chosenMove;
     gCurrMovePos = sAmbushContext.currentMovePos;
     gChosenMovePos = sAmbushContext.chosenMovePos;
-    const u32 transientHitMarkers = HITMARKER_DISABLE_ANIMATION | HITMARKER_UNABLE_TO_USE_MOVE | HITMARKER_OBEYS;
+    gBattleStruct->unableToUseMove = sAmbushContext.unableToUseMove;
+    const u32 transientHitMarkers = HITMARKER_DISABLE_ANIMATION;
     gHitMarker = (gHitMarker & ~transientHitMarkers) | (sAmbushContext.hitMarker & transientHitMarkers);
     gCurrentActionFuncId = data->savedActionFunc;
     gBattlescriptCurrInstr = cmd->nextInstr;

@@ -2,6 +2,7 @@
 #include "test/battle.h"
 #include "castoria_name_theft.h"
 #include "battle_ai_util.h"
+#include "battle_controllers.h"
 
 // Script-native entry point; normally referenced only from assembly.
 extern void BS_TryInstruct(void);
@@ -96,7 +97,7 @@ static bool32 ArcanumTestExecuteWish(u32 slot, u32 chosenMove, u32 currentMove)
     const u8 *savedScript = gBattlescriptCurrInstr;
     bool32 success;
 
-    gBattlerAttacker = B_POSITION_OPPONENT_LEFT;
+    gBattlerAttacker = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
     gChosenMovePos = gCurrMovePos = slot;
     gChosenMove = chosenMove;
     gCurrentMove = currentMove;
@@ -192,7 +193,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish commits its outcome only when it wins and conse
         sArcanumTestRegularScore = 110;
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, ArcanumTestWishScore), 0);
         EXPECT_EQ(gBattleStruct->castoria.wishOutcome, CASTORIA_WISH_NONE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -212,22 +213,22 @@ SINGLE_BATTLE_TEST("Arcanum Wish preserves Taunt Encore Disable and Assault Vest
         u32 battler = B_POSITION_OPPONENT_LEFT;
         gBattleStruct->castoria.nameResult = CASTORIA_NAME_TRUE;
         if (restriction == 0)
-            gDisableStructs[battler].tauntTimer = 1;
+            gBattleMons[battler].volatiles.tauntTimer = 1;
         else if (restriction == 1)
         {
-            gDisableStructs[battler].encoreTimer = 1;
-            gDisableStructs[battler].encoredMove = MOVE_TACKLE;
-            gDisableStructs[battler].encoredMovePos = 0;
+            gBattleMons[battler].volatiles.encoreTimer = 1;
+            gBattleMons[battler].volatiles.encoredMove = MOVE_TACKLE;
+            gBattleMons[battler].volatiles.encoredMovePos = 0;
         }
         else if (restriction == 2)
-            gDisableStructs[battler].disabledMove = MOVE_ARCANUM_WISH;
+            gBattleMons[battler].volatiles.disabledMove = MOVE_ARCANUM_WISH;
         else
             opponent->item = ITEM_ASSAULT_VEST;
         EXPECT_EQ(IsArcanumSlotUsable(battler, 6), FALSE);
         sArcanumTestRegularScore = 90;
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, ArcanumTestWishScore), 0);
         EXPECT_EQ(gBattleStruct->castoria.wishOutcome, CASTORIA_WISH_NONE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -317,7 +318,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish casts Domination through real selection and 
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
         EXPECT_EQ(opponent->pp[0], GetMovePP(MOVE_CELEBRATE));
         EXPECT_EQ(gLastMoves[B_POSITION_OPPONENT_LEFT], MOVE_NONE);
-        EXPECT_EQ(gWishFutureKnock.wishCounter[B_POSITION_OPPONENT_LEFT], 0);
+        EXPECT_EQ(gBattleStruct->wish[B_POSITION_OPPONENT_LEFT].counter, 0);
     }
 }
 
@@ -488,7 +489,7 @@ SINGLE_BATTLE_TEST("Arcanum Mage Armor belongs only to the backed-out name resul
             void (*func)(void);
         } command = {0, BS_ApplyCastoriaNameResult};
         const u8 *savedScript = gBattlescriptCurrInstr;
-        gBattlerAttacker = B_POSITION_OPPONENT_LEFT;
+        gBattlerAttacker = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
         gBattleStruct->castoria.mageArmorPartyMask = 0;
         gBattleStruct->castoria.nameResult = nameResult;
         gBattlescriptCurrInstr = (const u8 *)&command;
@@ -656,11 +657,11 @@ SINGLE_BATTLE_TEST("Arcanum AI includes Mage Armor in all three simulated damage
     } THEN {
         uq4_12_t effectiveness;
         struct SimulatedDamage armored = AI_CalcDamageSaveBattlers(MOVE_AERIAL_ACE,
-            B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT, &effectiveness, NO_GIMMICK, NO_GIMMICK);
+            GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), &effectiveness, GIMMICK_NONE, GIMMICK_NONE);
         u8 savedArmor = gBattleStruct->castoria.mageArmorPartyMask;
         gBattleStruct->castoria.mageArmorPartyMask = 0;
         struct SimulatedDamage normal = AI_CalcDamageSaveBattlers(MOVE_AERIAL_ACE,
-            B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT, &effectiveness, NO_GIMMICK, NO_GIMMICK);
+            GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), &effectiveness, GIMMICK_NONE, GIMMICK_NONE);
         gBattleStruct->castoria.mageArmorPartyMask = savedArmor;
         EXPECT_GT(normal.minimum, 0);
         EXPECT_MUL_EQ(normal.minimum, UQ_4_12(0.7), armored.minimum);
@@ -681,7 +682,7 @@ SINGLE_BATTLE_TEST("Arcanum Revivify restores a fainted ally to full HP without 
         MESSAGE("The opposing Caster? cast Revivify!");
         MESSAGE("Pichu was revived and is ready to fight again!");
     } THEN {
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_HP), GetMonData(&gEnemyParty[1], MON_DATA_MAX_HP));
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HP), GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_MAX_HP));
         EXPECT_EQ(opponent->pp[0], GetMovePP(MOVE_CELEBRATE));
     }
 }
@@ -708,7 +709,7 @@ SINGLE_BATTLE_TEST("Arcanum Special AI requires both the flag and a registered c
         EXPECT_EQ(sArcanumTestSpellCalls, expectedSpellCalls);
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
         EXPECT_EQ(sArcanumTestUsedVirtualIndex, FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -742,7 +743,7 @@ SINGLE_BATTLE_TEST("Arcanum Special AI preserves regular ties and can adjust reg
         EXPECT_EQ(opponent->pp[0], GetMovePP(MOVE_FIREBALL));
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
         EXPECT_EQ(sArcanumTestUsedVirtualIndex, FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -763,17 +764,17 @@ SINGLE_BATTLE_TEST("Arcanum Special AI never offers unavailable spells to the ca
         sArcanumTestRegularScore = 100;
         if (encore)
         {
-            gDisableStructs[battler].encoreTimer = 1;
-            gDisableStructs[battler].encoredMove = MOVE_TACKLE;
+            gBattleMons[battler].volatiles.encoreTimer = 1;
+            gBattleMons[battler].volatiles.encoredMove = MOVE_TACKLE;
         }
         else
         {
-            gDisableStructs[battler].tauntTimer = 1;
+            gBattleMons[battler].volatiles.tauntTimer = 1;
         }
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, ArcanumTestDynamicScore), 0);
         EXPECT_EQ(sArcanumTestSeenSpells, encore ? 0 : (1u << 0));
         EXPECT_EQ(sArcanumTestSpellCalls, encore ? 0 : 1);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -799,7 +800,7 @@ SINGLE_BATTLE_TEST("Arcanum Special AI leaves non-owners and empty pools on ordi
                                       ArcanumTestDynamicScore), 0);
         EXPECT_EQ(sArcanumTestSpellCalls, 0);
         EXPECT_EQ(sArcanumTestRegularCalls, 1);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -819,7 +820,7 @@ SINGLE_BATTLE_TEST("Arcanum Razeluxe Special AI scores spells without an ordinar
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
         for (slot = 0; slot < MAX_MON_MOVES; slot++)
             EXPECT_EQ(opponent->pp[slot], 0);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -843,7 +844,7 @@ SINGLE_BATTLE_TEST("Arcanum Razeluxe prioritizes Polymorph against unrevealed Pe
         EXPECT_EQ(ArcanumTestChooseMove(B_POSITION_OPPONENT_LEFT, AI_FLAG_DYNAMIC_FUNC,
                                       AI_RazeluxeTrainer), perishSlot < MAX_MON_MOVES ? 7 : 0);
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -863,10 +864,10 @@ SINGLE_BATTLE_TEST("Arcanum Razeluxe prioritizes Revivify while affected by Peri
     } THEN {
         u32 battler = B_POSITION_OPPONENT_LEFT;
         opponent->volatiles.perishSong = TRUE;
-        gDisableStructs[battler].perishSongTimer = countdown;
+        gBattleMons[battler].volatiles.perishSongTimer = countdown;
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer), 5);
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -885,14 +886,14 @@ SINGLE_BATTLE_TEST("Arcanum Revivify priority outranks Polymorph independently o
         u32 battler = B_POSITION_OPPONENT_LEFT;
         player->moves[1] = MOVE_PERISH_SONG;
         opponent->volatiles.perishSong = TRUE;
-        gDisableStructs[battler].perishSongTimer = 1;
+        gBattleMons[battler].volatiles.perishSongTimer = 1;
         if (reversed)
         {
             gBattleStruct->castoria.arcanumMoves[1] = MOVE_POLYMORPH;
             gBattleStruct->castoria.arcanumMoves[3] = MOVE_REVIVAL_BLESSING_2;
         }
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer), reversed ? 7 : 5);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -913,7 +914,7 @@ SINGLE_BATTLE_TEST("Arcanum Revivify priority requires a fainted ally and active
         u32 battler = B_POSITION_OPPONENT_LEFT;
         opponent->volatiles.perishSong = affected;
         // A leftover timer alone must not trigger the rule.
-        gDisableStructs[battler].perishSongTimer = 1;
+        gBattleMons[battler].volatiles.perishSongTimer = 1;
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer),
                   fainted && affected ? 5 : 0);
         // With no viable ordinary move, an impossible Revivify must still lose.
@@ -922,7 +923,7 @@ SINGLE_BATTLE_TEST("Arcanum Revivify priority requires a fainted ally and active
             opponent->pp[0] = 0;
             EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer), 4);
         }
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -942,28 +943,28 @@ SINGLE_BATTLE_TEST("Arcanum unavailable Revivify does not override selection res
     } THEN {
         u32 battler = B_POSITION_OPPONENT_LEFT;
         opponent->volatiles.perishSong = TRUE;
-        gDisableStructs[battler].perishSongTimer = 1;
+        gBattleMons[battler].volatiles.perishSongTimer = 1;
         if (restriction == 0)
-            gDisableStructs[battler].tauntTimer = 1;
+            gBattleMons[battler].volatiles.tauntTimer = 1;
         else if (restriction == 1)
         {
-            gDisableStructs[battler].encoreTimer = 1;
-            gDisableStructs[battler].encoredMove = MOVE_CELEBRATE;
-            gDisableStructs[battler].encoredMovePos = 0;
+            gBattleMons[battler].volatiles.encoreTimer = 1;
+            gBattleMons[battler].volatiles.encoredMove = MOVE_CELEBRATE;
+            gBattleMons[battler].volatiles.encoredMovePos = 0;
         }
         else if (restriction == 2)
         {
-            gDisableStructs[battler].disabledMove = MOVE_REVIVAL_BLESSING_2;
-            gDisableStructs[battler].disableTimer = 1;
+            gBattleMons[battler].volatiles.disabledMove = MOVE_REVIVAL_BLESSING_2;
+            gBattleMons[battler].volatiles.disableTimer = 1;
         }
         else
         {
-            opponent->volatiles.healBlock = TRUE;
-            gDisableStructs[battler].healBlockTimer = 1;
+            opponent->volatiles.healBlockTimer = 1;
+            gBattleMons[battler].volatiles.healBlockTimer = 1;
         }
         EXPECT_EQ(IsArcanumSlotUsable(battler, 5), FALSE);
         EXPECT_NE(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer), 5);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -982,7 +983,7 @@ SINGLE_BATTLE_TEST("Arcanum Razeluxe chooses Revivify after being outsped by Per
         u32 battler = B_POSITION_OPPONENT_LEFT;
         EXPECT_EQ((u32)opponent->volatiles.perishSong, TRUE);
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer), 5);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -1001,21 +1002,21 @@ SINGLE_BATTLE_TEST("Arcanum Perish Song priority respects Polymorph selection re
         u32 battler = B_POSITION_OPPONENT_LEFT;
         player->moves[1] = MOVE_PERISH_SONG;
         if (restriction == 0)
-            gDisableStructs[battler].tauntTimer = 1;
+            gBattleMons[battler].volatiles.tauntTimer = 1;
         else if (restriction == 1)
         {
-            gDisableStructs[battler].encoreTimer = 1;
-            gDisableStructs[battler].encoredMove = MOVE_TACKLE;
-            gDisableStructs[battler].encoredMovePos = 0;
+            gBattleMons[battler].volatiles.encoreTimer = 1;
+            gBattleMons[battler].volatiles.encoredMove = MOVE_TACKLE;
+            gBattleMons[battler].volatiles.encoredMovePos = 0;
         }
         else
         {
-            gDisableStructs[battler].disableTimer = 1;
-            gDisableStructs[battler].disabledMove = MOVE_POLYMORPH;
+            gBattleMons[battler].volatiles.disableTimer = 1;
+            gBattleMons[battler].volatiles.disabledMove = MOVE_POLYMORPH;
         }
         EXPECT_EQ(ArcanumTestChooseMove(battler, AI_FLAG_DYNAMIC_FUNC, AI_RazeluxeTrainer), 0);
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -1031,7 +1032,7 @@ SINGLE_BATTLE_TEST("Arcanum Alice Special AI does not inherit Razeluxe spell pol
                                       AI_AliceTrainer), 0);
         EXPECT_EQ(gAiThinkingStruct->score[0], AI_SCORE_DEFAULT);
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -1048,7 +1049,7 @@ SINGLE_BATTLE_TEST("Arcanum wiring preserves Razeluxe's existing regular Mewtwo 
         EXPECT_EQ(gAiThinkingStruct->score[0], AI_SCORE_DEFAULT + 30);
         EXPECT_EQ(gAiThinkingStruct->score[1], AI_SCORE_DEFAULT);
         EXPECT_EQ(BattleAI_IsScoringArcanum(), FALSE);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -1124,20 +1125,20 @@ SINGLE_BATTLE_TEST("Arcanum availability checks bounds ownership empty pools and
         EXPECT_EQ(IsArcanumSlotUsable(battler, 5), TRUE);
         EXPECT_EQ(HasUsableArcanumMove(battler), TRUE);
 
-        gDisableStructs[battler].tauntTimer = 1;
+        gBattleMons[battler].volatiles.tauntTimer = 1;
         EXPECT_EQ(IsArcanumSlotUsable(battler, 5), FALSE);
         EXPECT_EQ(IsArcanumSlotUsable(battler, 4), TRUE);
-        gDisableStructs[battler].tauntTimer = 0;
+        gBattleMons[battler].volatiles.tauntTimer = 0;
 
-        gDisableStructs[battler].disabledMove = MOVE_FIREBALL;
+        gBattleMons[battler].volatiles.disabledMove = MOVE_FIREBALL;
         EXPECT_EQ(IsArcanumSlotUsable(battler, 4), FALSE);
-        gDisableStructs[battler].disabledMove = MOVE_NONE;
+        gBattleMons[battler].volatiles.disabledMove = MOVE_NONE;
 
-        gDisableStructs[battler].encoreTimer = 1;
-        gDisableStructs[battler].encoredMove = MOVE_CELEBRATE;
+        gBattleMons[battler].volatiles.encoreTimer = 1;
+        gBattleMons[battler].volatiles.encoredMove = MOVE_CELEBRATE;
         EXPECT_EQ(HasUsableArcanumMove(battler), FALSE);
-        gDisableStructs[battler].encoreTimer = 0;
-        gDisableStructs[battler].encoredMove = MOVE_NONE;
+        gBattleMons[battler].volatiles.encoreTimer = 0;
+        gBattleMons[battler].volatiles.encoredMove = MOVE_NONE;
 
         opponent->species = SPECIES_WOBBUFFET;
         EXPECT_EQ(HasUsableArcanumMove(battler), FALSE);
@@ -1162,12 +1163,12 @@ SINGLE_BATTLE_TEST("Arcanum Struggle decision includes spells without changing o
         EXPECT_EQ(AreAllMovesUnusable(battler), FALSE);
         EXPECT_EQ((u32)gProtectStructs[battler].noValidMoves, FALSE);
 
-        gDisableStructs[battler].encoreTimer = 1;
-        gDisableStructs[battler].encoredMove = MOVE_CELEBRATE;
+        gBattleMons[battler].volatiles.encoreTimer = 1;
+        gBattleMons[battler].volatiles.encoredMove = MOVE_CELEBRATE;
         EXPECT_EQ(AreAllMovesUnusable(battler), TRUE);
         EXPECT_EQ((u32)gProtectStructs[battler].noValidMoves, TRUE);
-        gDisableStructs[battler].encoreTimer = 0;
-        gDisableStructs[battler].encoredMove = MOVE_NONE;
+        gBattleMons[battler].volatiles.encoreTimer = 0;
+        gBattleMons[battler].volatiles.encoredMove = MOVE_NONE;
         EXPECT_EQ(AreAllMovesUnusable(battler), FALSE);
 
         opponent->species = SPECIES_WOBBUFFET;
@@ -1223,8 +1224,8 @@ SINGLE_BATTLE_TEST("Arcanum Instruct fails on a missing remembered move with a v
             const u8 *failInstr;
         } command = {0, BS_TryInstruct, fail};
         const u8 *savedScript = gBattlescriptCurrInstr;
-        gBattlerAttacker = B_POSITION_PLAYER_LEFT;
-        gBattlerTarget = B_POSITION_OPPONENT_LEFT;
+        gBattlerAttacker = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+        gBattlerTarget = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
         gLastPrintedMoves[gBattlerTarget] = MOVE_SPLASH;
         gCurrMovePos = 7;
         gBattlescriptCurrInstr = (const u8 *)&command;
@@ -1255,6 +1256,10 @@ SINGLE_BATTLE_TEST("Arcanum AI damage reads handle virtual and invalid slots wit
         EXPECT_EQ(AI_GetDamageForMove(attacker, defender, MOVE_FIREBALL, AI_ATTACKING, gAiLogicData), damage);
         EXPECT_EQ(opponent->species, species);
         EXPECT_EQ(opponent->hp, hp);
+        // The target determines AI ownership from the controller, not side.
+        // Exercise own-slot caches and roll policies in an explicit AI context.
+        u8 savedController = gBattlerBattleController[attacker];
+        gBattlerBattleController[attacker] = BATTLE_CONTROLLER_OPPONENT;
         gAiLogicData->simulatedDmg[attacker][defender][0] = (struct SimulatedDamage){ .minimum = 11, .median = 22, .maximum = 33 };
         gAiThinkingStruct->aiFlags[attacker] = 0;
         EXPECT_EQ(AI_GetDamage(attacker, defender, 0, AI_ATTACKING, gAiLogicData), 22);
@@ -1264,6 +1269,7 @@ SINGLE_BATTLE_TEST("Arcanum AI damage reads handle virtual and invalid slots wit
         gAiThinkingStruct->aiFlags[attacker] = AI_FLAG_CONSERVATIVE;
         EXPECT_EQ(AI_GetDamage(attacker, defender, 0, AI_ATTACKING, gAiLogicData), 11);
         gAiThinkingStruct->aiFlags[attacker] = 0;
+        gBattlerBattleController[attacker] = savedController;
     }
 }
 
@@ -1302,7 +1308,7 @@ SINGLE_BATTLE_TEST("Arcanum spell IDs in regular slots still say used")
 SINGLE_BATTLE_TEST("Arcanum preserves the regular move for Encore and enforces its lock")
 {
     GIVEN {
-        WITH_CONFIG(CONFIG_ENCORE_TARGET, GEN_5);
+        WITH_CONFIG(B_ENCORE_TARGET, GEN_5);
         PLAYER(SPECIES_WOBBUFFET) { Speed(10); }
         OPPONENT(SPECIES_CASTORIA) { Speed(20); Moves(MOVE_CELEBRATE); }
     } WHEN {
@@ -1349,7 +1355,7 @@ SINGLE_BATTLE_TEST("Arcanum preserves the regular move for Mimic")
 SINGLE_BATTLE_TEST("Arcanum failed casts preserve regular history")
 {
     GIVEN {
-        WITH_CONFIG(CONFIG_ENCORE_TARGET, GEN_5);
+        WITH_CONFIG(B_ENCORE_TARGET, GEN_5);
         PLAYER(SPECIES_WOBBUFFET) { Speed(10); }
         OPPONENT(SPECIES_CASTORIA) { Speed(20); Moves(MOVE_CELEBRATE); }
     } WHEN {
@@ -1453,8 +1459,8 @@ SINGLE_BATTLE_TEST("Arcanum regression: Grudge depletes all PP from a Max Move's
         MESSAGE("Wobbuffet used Grudge!");
         ANIMATION(ANIM_TYPE_MOVE, MOVE_GRUDGE, player);
         MESSAGE("The opposing Wobbuffet used Max Strike!");
+        MESSAGE("The opposing Wobbuffet lost all of Scratch's PP due to the grudge!");
         MESSAGE("Wobbuffet fainted!");
-        MESSAGE("The opposing Wobbuffet's Scratch lost all its PP due to the grudge!");
     } THEN {
         EXPECT_GT(opponent->pp[0], 0);
         EXPECT_EQ(opponent->pp[1], 0);
@@ -1497,7 +1503,7 @@ SINGLE_BATTLE_TEST("Arcanum regression: Encore forces consecutive move uses for 
     PARAMETRIZE { encoreUser = opponent; encoreTarget = player; speedPlayer = 10; speedOpponent = 20; }
     PARAMETRIZE { encoreUser = player; encoreTarget = opponent; speedPlayer = 20; speedOpponent = 10; }
     GIVEN {
-        WITH_CONFIG(CONFIG_ENCORE_TARGET, GEN_3);
+        WITH_CONFIG(B_ENCORE_TARGET, GEN_3);
         PLAYER(SPECIES_WOBBUFFET) { Speed(speedPlayer); }
         OPPONENT(SPECIES_WOBBUFFET) { Speed(speedOpponent); }
     } WHEN {
@@ -1526,7 +1532,7 @@ SINGLE_BATTLE_TEST("Arcanum regression: Encore forces consecutive move uses for 
     PARAMETRIZE { encoreUser = opponent; encoreTarget = player; speedPlayer = 20; speedOpponent = 10; }
     PARAMETRIZE { encoreUser = player; encoreTarget = opponent; speedPlayer = 10; speedOpponent = 20; }
     GIVEN {
-        WITH_CONFIG(CONFIG_ENCORE_TARGET, GEN_3);
+        WITH_CONFIG(B_ENCORE_TARGET, GEN_3);
         PLAYER(SPECIES_WOBBUFFET) { Speed(speedPlayer); }
         OPPONENT(SPECIES_WOBBUFFET) { Speed(speedOpponent); }
     } WHEN {
@@ -1746,8 +1752,8 @@ DOUBLE_BATTLE_TEST("Arcanum regression: Instruct-called status move fails if tau
         TURN { MOVE(playerRight, MOVE_GROWL); MOVE(opponentLeft, MOVE_TAUNT, target: playerRight); MOVE(playerLeft, MOVE_INSTRUCT, target: playerRight); }
     } SCENE {
         ANIMATION(ANIM_TYPE_MOVE, MOVE_GROWL, playerRight);
-        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, opponentRight);
         ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, opponentLeft);
+        ANIMATION(ANIM_TYPE_GENERAL, B_ANIM_STATS_CHANGE, opponentRight);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_TAUNT, opponentLeft);
         ANIMATION(ANIM_TYPE_MOVE, MOVE_INSTRUCT, playerLeft);
         NONE_OF {

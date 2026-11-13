@@ -42,7 +42,7 @@ static void Task_ObserveEndurance(u8 taskId)
         DestroyTask(taskId);
         return;
     }
-    struct PartyState *data = GetBattlerPartyState(B_POSITION_OPPONENT_LEFT);
+    struct PartyState *data = GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT));
     if (data->breakBarSavedMaxHp[0] == 0)
         return;
     u32 slot = IndexOfSpritePaletteTag(TAG_BREAK_BAR_OPPONENT_LEFT_PAL);
@@ -74,7 +74,7 @@ static s32 EnduranceTestScore(u32 battlerAtk, u32 battlerDef, u32 move, s32 scor
     {
         u32 maxHp = 200;
         gBattleMons[battlerAtk].maxHP = maxHp;
-        SetMonData(&gEnemyParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_MAX_HP, &maxHp);
+        SetMonData(&gParties[B_TRAINER_OPPONENT_A][gBattlerPartyIndexes[battlerAtk]], MON_DATA_MAX_HP, &maxHp);
         sEnduranceChangeMaxHp = FALSE;
     }
     if (!BattleAI_IsScoringArcanum())
@@ -171,7 +171,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Endurance remains outside production tactical s
         opponent->volatiles.castoriaTrueNameCharges = 0;
         EXPECT_EQ(EnduranceChooseMove(EnduranceProductionWishScore), 6);
         EXPECT_EQ(gBattleStruct->castoria.wishOutcome, CASTORIA_WISH_DOMINATION);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -197,7 +197,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Endurance fills over saved HP after its move
     } THEN {
         EXPECT_EQ(opponent->hp, 100);
         EXPECT_EQ(opponent->maxHP, 100);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), 100);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedHp[0], fasterDamage ? 20 : 40);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 100);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_OPPONENT_LEFT), 1);
@@ -242,8 +242,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Endurance reveals saved red HP without overk
             }
         }
     } THEN {
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), finalHit ? 0 : 30);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_MAX_HP), 80);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), finalHit ? 0 : 30);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_MAX_HP), 80);
         EXPECT_EQ(gBattleResults.opponentFaintCounter, finalHit ? 1 : 0);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedHp[0], 0);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 0);
@@ -287,10 +287,10 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Endurance survives switches and restores its
         EXPECT_EQ(opponent->species, SPECIES_CASTORIA);
         EXPECT_EQ(opponent->hp, 40);
         EXPECT_EQ(opponent->maxHP, 100);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 40);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_MAX_HP), 100);
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_HP), 11);
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_MAX_HP), 30);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), 40);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_MAX_HP), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HP), 11);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_MAX_HP), 30);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][1].breakBarConfig == NULL, TRUE);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_OPPONENT_LEFT), 0);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 0);
@@ -318,10 +318,10 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Endurance synchronizes its owner outside the
         EXPECT_EQ(gBattlerPartyIndexes[B_POSITION_OPPONENT_LEFT], 1);
         EXPECT_EQ(opponent->hp, 40);
         EXPECT_EQ(opponent->maxHP, 100);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 11);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_MAX_HP), 30);
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_HP), 40);
-        EXPECT_EQ(GetMonData(&gEnemyParty[1], MON_DATA_MAX_HP), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), 11);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_MAX_HP), 30);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_HP), 40);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][1], MON_DATA_MAX_HP), 100);
         EXPECT_EQ(GetBreakBarCount(B_POSITION_OPPONENT_LEFT), 0);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
     }
@@ -344,7 +344,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Endurance resolves after all hits and protec
     } THEN {
         EXPECT_EQ(gBattleResults.opponentFaintCounter, 0);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 0);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 3);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), 3);
     }
 }
 
@@ -366,15 +366,15 @@ SINGLE_BATTLE_TEST("Arcanum Wish Endurance obeys Taunt Encore Disable and Assaul
         sEnduranceChangeMaxHp = FALSE;
         gBattleStruct->castoria.nameResult = CASTORIA_NAME_FALSE;
         if (restriction == 0)
-            gDisableStructs[battler].tauntTimer = 1;
+            gBattleMons[battler].volatiles.tauntTimer = 1;
         else if (restriction == 1)
         {
-            gDisableStructs[battler].encoreTimer = 1;
-            gDisableStructs[battler].encoredMove = MOVE_TACKLE;
-            gDisableStructs[battler].encoredMovePos = 0;
+            gBattleMons[battler].volatiles.encoreTimer = 1;
+            gBattleMons[battler].volatiles.encoredMove = MOVE_TACKLE;
+            gBattleMons[battler].volatiles.encoredMovePos = 0;
         }
         else if (restriction == 2)
-            gDisableStructs[battler].disabledMove = MOVE_ARCANUM_WISH;
+            gBattleMons[battler].volatiles.disabledMove = MOVE_ARCANUM_WISH;
         else
             opponent->item = ITEM_ASSAULT_VEST;
         EXPECT_EQ(CastoriaCanWishFor(battler, CASTORIA_WISH_ENDURANCE), TRUE);
@@ -382,7 +382,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Endurance obeys Taunt Encore Disable and Assaul
         EXPECT_EQ(EnduranceChooseMove(EnduranceTestScore), 0);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, FALSE);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 0);
-        ResetDynamicAiFunc();
+        SetDynamicAiFunc(NULL);
     }
 }
 
@@ -437,7 +437,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Endurance overlay draws pixel boundaries wit
         EXPECT_EQ(DrawHealthbarOverlay(battler, 101, 100, 8), FALSE);
         EXPECT_EQ(DrawHealthbarOverlay(battler, 40, 100, B_HEALTHBAR_PIXELS + 1), FALSE);
         EXPECT_EQ(opponent->hp, 100);
-        EXPECT_EQ(GetMonData(&gEnemyParty[0], MON_DATA_HP), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_HP), 100);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedHp[0], 40);
         EXPECT_EQ(gBattleStruct->partyState[B_SIDE_OPPONENT][0].breakBarSavedMaxHp[0], 100);
         DrawHealthbarOverlay(battler, 40, 100, B_HEALTHBAR_PIXELS);

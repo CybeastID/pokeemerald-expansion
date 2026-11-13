@@ -19,7 +19,7 @@ static u32 GrownStat(u32 value, u32 count)
 static u32 BaseStat(u32 stat)
 {
     static const u16 sMonData[NUM_STATS] = {0, MON_DATA_ATK, MON_DATA_DEF, MON_DATA_SPEED, MON_DATA_SPATK, MON_DATA_SPDEF};
-    return GetMonData(&gPlayerParty[0], sMonData[stat]);
+    return GetMonData(&gParties[B_TRAINER_PLAYER][0], sMonData[stat]);
 }
 
 static u32 CurrentStat(struct BattlePokemon *mon, u32 stat)
@@ -67,7 +67,7 @@ SINGLE_BATTLE_TEST("Wishful Thinking: recovery ignores Heal Block and heals at l
     } THEN {
         EXPECT_EQ(player->hp, 1 + max(1, maxHP / 16));
         EXPECT_EQ(TotalGrowth(), 1);
-        EXPECT_EQ((u32)GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->breakBarsRemaining, 0);
+        EXPECT_EQ((u32)GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->breakBarsRemaining, 0);
     }
 }
 
@@ -110,8 +110,8 @@ SINGLE_BATTLE_TEST("Wishful Thinking: an opposing Wish immediately heals and gro
         EXPECT_EQ(player->hp, 120);
         EXPECT_EQ(TotalGrowth(), 1);
         EXPECT(RawStatsMatchGrowth(player));
-        EXPECT_EQ(gWishFutureKnock.wishCounter[B_POSITION_OPPONENT_LEFT], 1);
-        EXPECT_EQ(gWishFutureKnock.wishCounter[B_POSITION_PLAYER_LEFT], 0);
+        EXPECT_EQ(gBattleStruct->wish[GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT)].counter, 1);
+        EXPECT_EQ(gBattleStruct->wish[GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)].counter, 0);
     }
 }
 
@@ -139,7 +139,7 @@ DOUBLE_BATTLE_TEST("Wishful Thinking: both sides' holders activate once before t
         EXPECT_EQ(opponentRight->hp, 60);
         EXPECT_EQ(TotalGrowth(), 1);
         for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
-            growth += GetBattlerPartyState(B_POSITION_OPPONENT_RIGHT)->wishfulGrowth[stat];
+            growth += GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT))->wishfulGrowth[stat];
         EXPECT_EQ(growth, 1);
     }
 }
@@ -169,7 +169,7 @@ SINGLE_BATTLE_TEST("Wishful Thinking: full HP still grows each of the five raw s
         EXPECT_EQ(gBattleStruct->passiveHpUpdate[B_POSITION_PLAYER_LEFT], 0);
         EXPECT_EQ(gBattleStruct->healingHpUpdate & (1u << B_POSITION_PLAYER_LEFT), 0);
         EXPECT_EQ(TotalGrowth(), 1);
-        EXPECT_EQ(GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->wishfulGrowth[stat], 1);
+        EXPECT_EQ(GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->wishfulGrowth[stat], 1);
         EXPECT(RawStatsMatchGrowth(player));
     }
 }
@@ -249,8 +249,8 @@ SINGLE_BATTLE_TEST("Wishful Thinking: repeated stat reloads never apply the mult
         TURN { SWITCH(player, 0); MOVE(opponent, MOVE_CELEBRATE); }
     } THEN {
         // Switch-in path already ran once. Run the base-stat-copy path repeatedly on top of it.
-        RecalcBattlerStats(B_POSITION_PLAYER_LEFT, &gPlayerParty[0], FALSE);
-        RecalcBattlerStats(B_POSITION_PLAYER_LEFT, &gPlayerParty[0], FALSE);
+        RecalcBattlerStats(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), &gParties[B_TRAINER_PLAYER][0], FALSE);
+        RecalcBattlerStats(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT), &gParties[B_TRAINER_PLAYER][0], FALSE);
         EXPECT_EQ(TotalGrowth(), 1);
         EXPECT(RawStatsMatchGrowth(player));
     }

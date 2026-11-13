@@ -42,7 +42,7 @@ bool32 KoankoSmeargleAnyMoveActive(u32 battler)
 bool32 KoankoSmeargleIsFreshChoice(u32 battler)
 {
     return !(gBattleMons[battler].volatiles.multipleTurns
-          || gDisableStructs[battler].rechargeTimer > 0
+          || gBattleMons[battler].volatiles.rechargeTimer > 0
           || gBattleMons[battler].volatiles.timestop > 1);
 }
 

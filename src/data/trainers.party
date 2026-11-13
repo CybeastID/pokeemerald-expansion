@@ -26,6 +26,8 @@ Optional (but still recommended) fields for trainers:
     - Mugshot (enable Mugshots during battle transition
                set to one of Purple, Green, Pink, Blue or Yellow)
     - Starting Status (see include/constants/battle.h for values)
+    - Multi Party   (Half reduces two-trainer battle sides to 3 Pokemon each)
+                    (defaults to Full but requires B_MULTI_HALF_TEAMS to be FALSE)
 
 Pokemon are then specified using the Showdown Export format.
 If a field is not specified, it will use it's default value.
@@ -46,7 +48,7 @@ Optional fields for Pokemon:
           (Order does not matter)
     - EVs (252 HP / 128 Spe / 48 Def, defaults to all 0, is not capped at 512 total)
           (Order does not matter)
-    - Ball (Poke Ball or ITEM_POKE_BALL, defaults to Poke Ball)
+    - Ball (Poke, Great, Master, Dive, etc.; defaults to Poke)
     - Happiness (Number between 1 and 255)
     - Nature (Rash or NATURE_RASH, defaults to Hardy)
     - Shiny (Yes/No, defaults to No)
@@ -9370,6 +9372,7 @@ Gender: Male
 Music: Magma
 Double Battle: No
 AI: Check Bad Move
+Multi Party: Half
 
 Camerupt
 Level: 36
@@ -13534,6 +13537,7 @@ Gender: Male
 Music: Magma
 Double Battle: No
 AI: Basic Trainer
+Multi Party: Half
 
 Mightyena
 Level: 42
@@ -16885,7 +16889,7 @@ AI: AI_FLAG_CHECK_BAD_MOVE / AI_FLAG_ACE_POKEMON / AI_FLAG_OMNISCIENT / AI_FLAG_
 
 The Face (SPECIES_RAZE_KIRLIA) @ Psychium-Z
 Level: 100
-Ball: ITEM_LUXURY_BALL
+Ball: Luxury
 Nature: Timid
 EVs: 252 HP / 0 Atk / 0 Def / 4 SpA / 0 SpD / 252 Spe
 - Psychic
@@ -16896,7 +16900,7 @@ EVs: 252 HP / 0 Atk / 0 Def / 4 SpA / 0 SpD / 252 Spe
 
 The Sadist (Mewtwo) @ Mewtwonite Y
 Level: 102
-Ball: Master Ball
+Ball: Master
 - Spacial Rend  
 - Roar of Time  
 - Shadow Force
@@ -16908,7 +16912,7 @@ Ability: Magician
 Tera Type: Divine
 Level: 100
 Nature: Naive
-Ball: Sport Ball
+Ball: Sport
 - Hyperspace Fury
 - Psychic
 - Drain Punch
@@ -16917,7 +16921,7 @@ Ball: Sport Ball
 The Brains (Alakazam-Mega) @ Focus Sash
 Ability: Trace
 Level: 100
-Ball: Quick Ball
+Ball: Quick
 EVs: 4 HP / 0 Atk / 0 Def / 252 SpA / 0 SpD / 252 Spe
 - Psychic
 - Dazzling Gleam
@@ -16930,7 +16934,7 @@ Level: 105
 Dynamax Level: 10
 Nature: Bold
 EVs: 252 HP / 0 Atk / 4 Def / 0 SpA / 0 SpD / 252 Spe
-Ball: Cherish Ball  
+Ball: Cherish
 - Revival Blessing 2  
 - Calm Mind
 - Earth Power  

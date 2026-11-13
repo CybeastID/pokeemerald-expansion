@@ -1,6 +1,7 @@
 #include "global.h"
 #include "test/battle.h"
 #include "event_data.h"
+#include "battle_util.h"
 
 SINGLE_BATTLE_TEST("Kazuradrop Guts (cheat death) expires after one full turn")
 {
@@ -57,17 +58,19 @@ SINGLE_BATTLE_TEST("Kazuradrop Guts snaps internal HP to 50% immediately on chea
 SINGLE_BATTLE_TEST("Kazuradrop Guts snaps HP bar to 50% immediately on cheat death (visual)")
 {
     u16 species;
-    u16 terrain;
-    PARAMETRIZE { species = SPECIES_WOBBUFFET; terrain = STARTING_STATUS_NONE; }
-    PARAMETRIZE { species = SPECIES_REGISTEEL; terrain = STARTING_STATUS_NONE; }
-    PARAMETRIZE { species = SPECIES_XERNEAS; terrain = STARTING_STATUS_NONE; }
-    PARAMETRIZE { species = SPECIES_WOBBUFFET; terrain = STARTING_STATUS_GRASSY_TERRAIN; }
-    PARAMETRIZE { species = SPECIES_REGISTEEL; terrain = STARTING_STATUS_GRASSY_TERRAIN; }
-    PARAMETRIZE { species = SPECIES_XERNEAS; terrain = STARTING_STATUS_GRASSY_TERRAIN; }
+    bool32 grassyTerrain;
+    PARAMETRIZE { species = SPECIES_WOBBUFFET; grassyTerrain = FALSE; }
+    PARAMETRIZE { species = SPECIES_REGISTEEL; grassyTerrain = FALSE; }
+    PARAMETRIZE { species = SPECIES_XERNEAS; grassyTerrain = FALSE; }
+    PARAMETRIZE { species = SPECIES_WOBBUFFET; grassyTerrain = TRUE; }
+    PARAMETRIZE { species = SPECIES_REGISTEEL; grassyTerrain = TRUE; }
+    PARAMETRIZE { species = SPECIES_XERNEAS; grassyTerrain = TRUE; }
     // Initial Kazuradrop MaxHP is 20. Transformation doubles max HP to 40.
     // Cheat-death snap sets HP to maxHP / 2 => 20.
     GIVEN {
-        VarSet(B_VAR_STARTING_STATUS, terrain);
+        ResetStartingStatuses();
+        if (grassyTerrain)
+            SetStartingStatus(STARTING_STATUS_GRASSY_TERRAIN);
         PLAYER(species) { Moves(MOVE_PETAL_BLIZZARD, MOVE_CELEBRATE); Attack(100); Speed(100); }
         OPPONENT(SPECIES_KAZURADROP) { Ability(ABILITY_BUG_SPACE); Level(5); Defense(1); SpDefense(1); MaxHP(20); HP(20); Speed(1); Moves(MOVE_CELEBRATE, MOVE_TRASH_CRUSH, MOVE_INFINITE_GROWTH, MOVE_CRACK_ICE); }
     } WHEN {

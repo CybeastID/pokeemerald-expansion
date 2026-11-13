@@ -2,6 +2,12 @@
 
 Date: **2026-11-10**. Status: **research complete; upgrade and migration implementation not authorized**.
 
+Implementation update, **2026-11-11**: the user has now authorized the migration,
+including builds and tests. Implementation is underway on `upgrade-branch` in
+an isolated worktree. The historical assessment below retains its research
+provenance; the current execution record is in Section 11. Save compatibility
+has been waived for this migration, so old numeric IDs are not preserved.
+
 ## 1. Decision
 
 Recommend **rh-hideout/pokeemerald-expansion, tag `refs/tags/expansion/1.17.2`, commit `79dd436920845ebc145577649de624f65298c209`** as the upgrade destination. Complete the upgrade and its compatibility gates **before Stage 05**. Provisionally use **1.16.4 as one migration/validation bridge**, subject to the conversion-input audit below. Do not stop at every release.
@@ -235,3 +241,158 @@ git show 79dd436920845ebc145577649de624f65298c209:migration_scripts/1.16/trainer
 The common-base U0 inspection compares the actual custom patch and upstream changes against the same ancestor. It is not a dry-run upgrade, and hunk overlap cannot reveal all semantic dependencies. Chapters12–13 retain their original snapshot provenance; this report supplies the target decision and current-snapshot corrections without rewriting them.
 
 Delivery verification: local Markdown links resolve, with no trailing whitespace or replacement characters. An aggregate SHA-256 fingerprint of 5,820 existing files under source/header/data/assembly/test/docs plus inspected root instructions/build configuration matched before and after report creation (`50D781E20B5F0DD3217A6B716436C799C4681088A609B3686BF2D1046B29F36F`), excluding this new report. HEAD and the stale upstream tracking ref retained their recorded values. This is file-integrity evidence, not runtime validation.
+
+## 11. Authorized migration execution record — 2026-11-11
+
+### Baseline preservation and working locations
+
+- Protected baseline: `mypatch`, **`2bfc834d8c5b819b2f120f30de8216f6c35653ba`**.
+  This newer user commit contains the TX health module, TX/wild fixtures,
+  simplified new game, Break Charm numerical animation and separate guarded
+  4096-byte test stack. The older research HEAD is not the migration input.
+- Original checkout remains on `mypatch`; its additional
+  `graphics_file_rules.mk.bak` contents are preserved. No baseline commit was
+  changed, reset, cleaned, rebased or merged.
+- Implementation worktree: `TEMPSCRIPTS/upstream-1.17.2/worktree`, branch
+  **`upgrade-branch`**. Worktree metadata uses relative links so Windows/MSYS
+  Git and WSL Git can both access the same files.
+- Target: **`79dd436920845ebc145577649de624f65298c209`**, exact 1.17.2 release.
+  Checkpoint merge commit `f058e5220ce8177d38f99360199db0ad013a0a99` integrates
+  that target with the protected baseline. The merge is closed; resumed source
+  edits are uncommitted. **The worktree is not an acceptance build.**
+- Local recovery archive:
+  `TEMPSCRIPTS/upstream-1.17.2/pre-migration.tar.gz`, SHA-256
+  **`3aa906fafc2ec73ca43906ca83ca996f4ba16ce44a11ed17585a2356192cc629`**.
+  It includes working, untracked and ignored source/assets, generated assets,
+  tools, and existing ROM/ELF artifacts; excludes Git metadata, the build
+  object directory, the search index and the archive's own evidence directory.
+  The committed baseline and copied index/patch evidence preserve Git state.
+  `snapshot-sha256.json` fingerprints 57,607 archived input/artifact files.
+  Verification found changes only in rebuilt ROM/ELF/map outputs.
+
+### Route and conversion decisions
+
+Use the **direct 1.14.2-based fork → pinned 1.17.2** route. Clean copies of the
+original input and target trees are retained beside the worktree. The reviewed
+scripts can consume original data without compiling an intermediate release;
+no demonstrated ownership or conversion diagnostic currently justifies paying
+for a second reconciliation at 1.16.4. This is the conditional direct route
+allowed by Section 8, not a claim that the combined semantic port is low risk.
+
+All 1.15/1.16/1.17 migration scripts were inspected before execution. Applied or
+prepared conversions are recorded in `conversions.json` and `conversions.log`:
+
+- Trainer-picture migration ran against original `gTrainerSprites`, producing
+  review snippets. Razeluxe/Alice were manually registered in the target
+  `gTrainerPicInfo`; target back-picture and FRLG registrations remain intact.
+- The clean-input INCGFX converter prepared 21 modified graphics-bearing files.
+  Converted data registrations have been transferred; remaining custom runtime
+  declarations still require review. Original rules and assets remain available.
+- Five trainer Ball fields were converted to target names. The supplied
+  converter cannot parse this fork's existing `ITEM_LUXURY_BALL` field, so that
+  case and the four textual names were converted explicitly, preserving party
+  content. No trainer-party regeneration was run over authoring inputs.
+- Givemon, text-printer, text-color and money/coin scripts ran only in the
+  disposable conversion copy. Their remaining live custom call sites must be
+  reconciled; do not infer completion from prepared output.
+- Easy-chat and decoration inputs have no custom delta requiring a second
+  conversion. Regional dex changes were reconciled into the target macros,
+  retaining Castoria and Kazuradrop entries.
+- Animation load removal and implicit-wait deletion were deliberately **not
+  executed**. Custom timing and new assembler diagnostics must be reviewed
+  before removing waits. Teachable JSON regeneration has not run; original
+  helper inputs and generated header are preserved.
+- Map layouts, map groups, heal locations and encounter tables were merged by
+  symbolic identity. Custom layout versions are `emerald`; target FRLG content
+  is retained. Old saves/recordings are unsupported under the waived policy.
+
+### Identifier and interface checkpoint
+
+Custom bosses now use species **1573–1576**, with Egg/`NUM_SPECIES` **1577**.
+`GEN_CUSTOM_START` follows the complete upstream range. Break Charm is **874**,
+with `ITEMS_COUNT`/field arrow **875**. Bug Space/Wishful Thinking are **320/321**,
+with ability count **322**. Custom moves retain **848–859**, move count **860**,
+and Z/Max boundaries derive from the expanded count. Trainer pictures/classes
+and overworld objects/palette tags follow target ranges. Original and integrated
+ID expressions/values are in `id-manifest.json` and
+`integrated-id-manifest.json`; a full hardcoded-ID audit remains required.
+
+ARM header compilation and boundary assertions passed using
+`identifier_compile.c`. These checks cover actual C enum interpretation and
+sentinel separation; they do **not** validate battle behavior or every data
+reference. `GEN_LATEST GEN_9`, level 105/player cap 100, custom type values and
+the fork's explicit badge/obedience/item policies are retained.
+
+Battle PartyState adopts `MAX_BATTLE_TRAINERS`; pending-layer lookup now uses
+`GetBattlerPartyState`. Custom native effect IDs move to
+`constants/battle_set_effect.h`, Time Stop's canceler ID to
+`constants/battle_move_resolution.h`, and Wish's ability event to
+`constants/battle_util.h`. Melt Virus and Timestop now use target SetEffect
+handlers; the remaining custom module API ports are unfinished.
+
+Trainer generation uses the new target generator, with configuration recording
+in `trainer_break_bars.c` and narrow `battle_setup.c` hooks. Pending static
+configuration pointers bridge pre-battle generation to allocated PartyState;
+runtime Koanko generation can bind to existing state. No old generator was
+restored. This integration still requires owner, selection-source, override,
+partner/multi and consecutive-battle regressions.
+
+Graphics init/free now follows `AllocateBattleGfxResources` and
+`FreeBattleGfxResources`. Full teardown clears script overrides and pending
+generation configurations. Persistent battle records are not freed by menu
+closure. The test harness retains a separate aligned 4096-byte stack/guard,
+adopts target trainer bindings and preserves summoned-opponent/cleanup helpers.
+The original deleted AI switch module's No Order Change hook moves to
+`battle_ai_switch.c`; its empty Alice placeholder is retired.
+
+### Actual validation and remaining gates
+
+Frozen original baseline, executed in WSL before source integration:
+
+```sh
+make -j4
+make check -j4 TESTS='test/battle/tx_profiles.c'
+make check -j4
+```
+
+ROM build passed: EWRAM **239,764 B**, IWRAM **28,812 B**, ROM **25,184,640 B**.
+Focused TX profiles: **12 passed / 12 total**. Full suite: **4,896 total,
+4,096 passed, 18 known-failing, 779 TODO, 3 failures**. The three failures are
+exactly the accepted text-width cases: Roar of Eternity on the Contest screen,
+the Fireball description on the summary screen, and Castoria's real-name battle
+message. There were **zero unexpected battle failures**. Full-suite exit code
+is 1 because accepted text failures remain failures; `KNOWN_FAILING` was not
+expanded. A separate `TESTS='Break Charm'` invocation selected zero tests and is
+not coverage evidence. The full baseline suite includes the existing fixtures.
+Logs are in `TEMPSCRIPTS/upstream-1.17.2/baseline-*.log`.
+
+Migration checkpoint: numeric-manifest assertions and ARM identifier-header
+compilation passed. The initial merge had **107 conflicted paths**, now resolved
+and preserved in checkpoint merge commit `f058e5220ce8177d38f99360199db0ad013a0a99`.
+Resumed migration builds the ROM through `resume-rom-09.log`, exit 0: EWRAM
+238,608 B, IWRAM 28,608 B, ROM 27,049,696 B. This includes the controller/history,
+AI configuration, multihit and summon-entry repairs. Actual focused
+passes: TX profiles 12/12, TX wishes 23/23, AFTER_CLEANUP 6/6, migration
+ownership 4/4, trainer control 21/21 and complete `arcanum.c` 71/71. Remaining
+Arcanum files pass Endurance 10/10, Debilitation 22/22, More Wishes 18/18,
+Normality 9/9 and Reduction 20/20. Break Bars pass 21/21, grants 13/13,
+exit HP 4/4, trainer bars 11/11 and wild bars 4/4.
+The TESTING-only trainer override preserves both authored production rows and
+target mock fixtures. Ordinary-engine and remaining custom files run serially;
+Chapter 15 records logs, source boundaries and outstanding acceptance checks.
+Ownership, normalization, script sequencing and overall acceptance are incomplete.
+
+The user requested a stopping checkpoint due to the usage window. Read
+[the durable migration checkpoint](15_upstream_migration_checkpoint.md) for
+exact failures, partial ports, semantic risks, Git state and resume commands.
+It supersedes earlier unresolved-path counts. Do not mistake a WIP source
+checkpoint for an accepted migration.
+
+Next: finish those semantic ports, compile a coherent target, run each focused
+suite from Section 9 with nonzero selections, repair unexpected failures, then
+run the full suite. Preserve the source snapshot for each test run. The terrain
+and pivot/phazing master fixes have now been inspected and applied/adapted as
+documented in Chapter 15. Their regression validation remains pending.
+No Stage 05 implementation, push or merge into `mypatch` has occurred.
+All fresh-game, animation, healthbox/menu reconstruction and resource checks
+remain required in the emulator after automated integration succeeds.

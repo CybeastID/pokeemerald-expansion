@@ -253,7 +253,7 @@ static void Task_KazGameOver_Message(u8 taskId)
 
     case 2:
         RunTextPrinters();
-        if (!IsTextPrinterActive(gTasks[taskId].tWindowId))
+        if (!IsTextPrinterActiveOnWindow(gTasks[taskId].tWindowId))
             gTasks[taskId].tState++;
         break;
 

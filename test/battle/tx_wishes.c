@@ -1,13 +1,57 @@
 #include "global.h"
+#include "battle_script_native.h"
+#include "constants/battle_script_commands.h"
 #include "test/battle.h"
 #include "battle_ai_util.h"
 #include "battle_break_bar.h"
+#include "battle_tx_rollback.h"
 #include "battle_script_commands.h"
 #include "battle_util.h"
 #include "castoria_name_theft.h"
 
 extern AiScoreFunc sDynamicAiFunc;
 extern const u8 BattleScript_TxRollbackEndurance[];
+
+SINGLE_BATTLE_TEST("TX phase subroutines restore all four full-width move result flags")
+{
+    GIVEN {
+        PLAYER(SPECIES_WOBBUFFET);
+        OPPONENT(SPECIES_WOBBUFFET);
+    } WHEN {
+        TURN {}
+    } THEN {
+        const struct __attribute__((packed)) {
+            u8 opcode;
+            void (*func)(void);
+            u16 move;
+        } begin = {B_SCR_OP_CALLNATIVE, BS_TxRollbackBeginPhase, MOVE_DOOM_DESIRE};
+        const struct __attribute__((packed)) {
+            u8 opcode;
+            void (*func)(void);
+        } end = {B_SCR_OP_CALLNATIVE, BS_TxRollbackEndPhase};
+        const u32 flags[MAX_BATTLERS_COUNT] = {
+            MOVE_RESULT_PROTECTED, MOVE_RESULT_EXTREMELY_EFFECTIVE,
+            MOVE_RESULT_MOSTLY_INEFFECTIVE, MOVE_RESULT_NOT_PRESENT,
+        };
+        u32 savedFlags[MAX_BATTLERS_COUNT];
+        const u8 *savedInstr = gBattlescriptCurrInstr;
+        memcpy(savedFlags, gBattleStruct->moveResultFlags, sizeof(savedFlags));
+        memcpy(gBattleStruct->moveResultFlags, flags, sizeof(flags));
+        gBattlescriptCurrInstr = (const u8 *)&begin;
+        BS_TxRollbackBeginPhase();
+        for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
+        {
+            EXPECT_EQ(gBattleStruct->moveResultFlags[battler], 0);
+            gBattleStruct->moveResultFlags[battler] = MOVE_RESULT_FAILED;
+        }
+        gBattlescriptCurrInstr = (const u8 *)&end;
+        BS_TxRollbackEndPhase();
+        for (u32 battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
+            EXPECT_EQ(gBattleStruct->moveResultFlags[battler], flags[battler]);
+        memcpy(gBattleStruct->moveResultFlags, savedFlags, sizeof(savedFlags));
+        gBattlescriptCurrInstr = savedInstr;
+    }
+}
 
 static bool8 sSetup;
 static bool8 sDefaultEntry;
@@ -66,7 +110,7 @@ static void BS_SeedTxWish(void)
     if (sSeed == SEED_SUBSTITUTE)
     {
         gBattleMons[p].volatiles.substitute = TRUE;
-        gDisableStructs[p].substituteHP = 30;
+        gBattleMons[p].volatiles.substituteHP = 30;
     }
     if (sSeed == SEED_RESTORE)
     {
@@ -84,14 +128,14 @@ static void BS_SeedTxWish(void)
     {
         gBattleMons[tx].status1 = STATUS1_SLEEP_TURN(7);
         SetMonData(GetBattlerMon(tx), MON_DATA_STATUS, &gBattleMons[tx].status1);
-        gDisableStructs[tx].tauntTimer = 7;
+        gBattleMons[tx].volatiles.tauntTimer = 7;
     }
     if (sSeed == SEED_PENDING_DOOM)
     {
-        gWishFutureKnock.futureSightMove[p] = MOVE_FUTURE_SIGHT;
-        gWishFutureKnock.futureSightCounter[p] = 6;
-        gWishFutureKnock.futureSightBattlerIndex[p] = tx;
-        gWishFutureKnock.futureSightPartyIndex[p] = gBattlerPartyIndexes[tx];
+        gBattleStruct->futureSight[p].move = MOVE_FUTURE_SIGHT;
+        gBattleStruct->futureSight[p].counter = 6;
+        gBattleStruct->futureSight[p].battlerIndex = tx;
+        gBattleStruct->futureSight[p].partyIndex = gBattlerPartyIndexes[tx];
     }
     sSeedHp = gBattleMons[tx].hp;
     gBattlescriptCurrInstr = cmd->nextInstr;
@@ -102,7 +146,7 @@ static const struct __attribute__((packed))
     u8 callnative;
     void (*func)(void);
     u8 ret;
-} sSeedScript = {0xff, BS_SeedTxWish, 0x3c};
+} sSeedScript = {B_SCR_OP_CALLNATIVE, BS_SeedTxWish, B_SCR_OP_RETURN};
 
 static const struct TxRollbackProfile sSeedProfile = {.ambushScript = (const u8 *)&sSeedScript};
 static const struct TxRollbackProfile sEntryProfile = {.ambushScript = BattleScript_TxRollbackEndurance};
@@ -223,7 +267,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Calamity bypasses Soundproof and uses ordinary 
         NOT MESSAGE("A wish for Calamity doomed your active Pokémon!");
     } THEN {
         EXPECT_EQ((u32)player->volatiles.perishSong, TRUE);
-        EXPECT_EQ(gDisableStructs[0].perishSongTimer, 1);
+        EXPECT_EQ((u32)gBattleMons[0].volatiles.perishSongTimer, 1);
         EXPECT_EQ((u32)opponent->volatiles.perishSong, FALSE);
         EXPECT_EQ((u32)gBattleMons[3].volatiles.perishSong, FALSE);
     }
@@ -251,7 +295,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Calamity clears on switching and can affect the
         MESSAGE("Wobbuffet's perish count fell to 3!");
         MESSAGE("Wynaut's perish count fell to 3!");
     } THEN {
-        EXPECT_EQ(gDisableStructs[0].perishSongTimer, 2);
+        EXPECT_EQ((u32)gBattleMons[0].volatiles.perishSongTimer, 2);
     }
 }
 
@@ -337,8 +381,8 @@ AI_SINGLE_BATTLE_TEST("TX Wishes Reclamation transfers proportional Substitute H
     } THEN {
         EXPECT_EQ((u32)player->volatiles.substitute, FALSE);
         EXPECT_EQ((u32)gBattleMons[3].volatiles.substitute, TRUE);
-        EXPECT_EQ(gDisableStructs[3].substituteHP, 120);
-        EXPECT_EQ(gDisableStructs[0].substituteHP, 0);
+        EXPECT_EQ((u32)gBattleMons[3].volatiles.substituteHP, 120);
+        EXPECT_EQ((u32)gBattleMons[0].volatiles.substituteHP, 0);
     }
 }
 
@@ -456,8 +500,8 @@ AI_SINGLE_BATTLE_TEST("TX Wishes original breaks schedule Wish and Reduction wit
         EXPECT_EQ(GetBreakBarCount(3), 0);
         EXPECT_EQ(ReductionIsActive(), TRUE);
         EXPECT_EQ(gBattleStruct->reduction.nextLoss, existingReduction ? 29 : 10);
-        EXPECT_EQ(gWishFutureKnock.futureSightMove[0], MOVE_DOOM_DESIRE);
-        EXPECT_EQ(gWishFutureKnock.futureSightCounter[0], 2);
+        EXPECT_EQ((u32)gBattleStruct->futureSight[0].move, MOVE_DOOM_DESIRE);
+        EXPECT_EQ((u32)gBattleStruct->futureSight[0].counter, 2);
         EXPECT_EQ(gBattleMons[3].pp[1], GetMovePP(MOVE_WIDE_GUARD) - 2);
         EXPECT_EQ(gBattleMons[3].maxHP, 120);
         EXPECT_EQ(gBattleMons[3].hp, 120);
@@ -504,7 +548,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes first-break Wish triggers Wishful Thinking once
         EXPECT_EQ(total, 1);
         total = 0;
         for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
-            total += GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->wishfulGrowth[stat];
+            total += GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->wishfulGrowth[stat];
         EXPECT_EQ(total, 1);
         EXPECT_EQ(gBattleMons[3].statStages[STAT_ATK], DEFAULT_STAT_STAGE);
         EXPECT_EQ(gBattleMons[3].attack,    GrownByCount(GetMonData(GetBattlerMon(3), MON_DATA_ATK),   state->wishfulGrowth[STAT_ATK]));
@@ -540,7 +584,7 @@ AI_SINGLE_BATTLE_TEST("TX Wishes scripted Reversal activates an opposing Wishful
     } THEN {
         u32 total = 0;
         for (u32 stat = STAT_ATK; stat < NUM_STATS; stat++)
-            total += GetBattlerPartyState(B_POSITION_PLAYER_LEFT)->wishfulGrowth[stat];
+            total += GetBattlerPartyState(GetBattlerAtPosition(B_POSITION_PLAYER_LEFT))->wishfulGrowth[stat];
         EXPECT_EQ(total, 1);
         EXPECT_EQ(player->hp, 120);
     }
@@ -740,8 +784,8 @@ AI_SINGLE_BATTLE_TEST("TX Wishes break actions bypass turn blockers and preserve
             ANIMATION(ANIM_TYPE_MOVE, MOVE_DOOM_DESIRE, &gBattleMons[3]);
     } THEN {
         EXPECT_EQ(ReductionIsActive(), TRUE);
-        EXPECT_EQ(gWishFutureKnock.futureSightMove[0], occupied ? MOVE_FUTURE_SIGHT : MOVE_DOOM_DESIRE);
-        EXPECT_EQ(gWishFutureKnock.futureSightCounter[0], occupied ? 3 : 2);
+        EXPECT_EQ((u32)gBattleStruct->futureSight[0].move, occupied ? MOVE_FUTURE_SIGHT : MOVE_DOOM_DESIRE);
+        EXPECT_EQ((u32)gBattleStruct->futureSight[0].counter, occupied ? 3 : 2);
         if (!occupied)
             EXPECT_EQ(gBattleMons[3].status1 & STATUS1_SLEEP, STATUS1_SLEEP_TURN(5));
     }
@@ -778,9 +822,9 @@ AI_SINGLE_BATTLE_TEST("TX Wishes ownership and Restoration eligibility reject re
         EXPECT_EQ(TxRollbackHasWishes(3), TRUE);
         EXPECT_EQ(GetBattlerMoveAtSlot(3, MAX_MON_MOVES), MOVE_ARCANUM_WISH);
         EXPECT_EQ(GetBattlerMoveSlotCount(3), MAX_MON_MOVES + 1);
-        gDisableStructs[3].tauntTimer = 2;
+        gBattleMons[3].volatiles.tauntTimer = 2;
         EXPECT_EQ(IsArcanumSlotUsable(3, MAX_MON_MOVES), FALSE);
-        gDisableStructs[3].tauntTimer = 0;
+        gBattleMons[3].volatiles.tauntTimer = 0;
         EXPECT_EQ(IsArcanumSlotUsable(3, MAX_MON_MOVES), TRUE);
         gBattleMons[3].species = SPECIES_TX_ROLLBACK;
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);

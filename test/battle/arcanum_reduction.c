@@ -68,8 +68,8 @@ static void InvokePolymorph(void)
         void (*func)(void);
     } command = {0, BS_PolymorphTarget};
     const u8 *saved = gBattlescriptCurrInstr;
-    gBattlerAttacker = B_POSITION_OPPONENT_LEFT;
-    gBattlerTarget = B_POSITION_PLAYER_LEFT;
+    gBattlerAttacker = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
+    gBattlerTarget = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
     gCurrentMove = MOVE_POLYMORPH;
     gBattlescriptCurrInstr = (const u8 *)&command;
     BS_PolymorphTarget();
@@ -98,14 +98,14 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Reduction skips casting turn then decays 10 
         for (u32 i = 0; i < ARRAY_COUNT(expected); i++)
             EXPECT_EQ(sLevels[i], expected[i]);
         EXPECT_EQ(player->level, 1);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 100);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP), sOriginalMaxHp);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP), sOriginalMaxHp);
         EXPECT_EQ(player->hp, player->maxHP);
         EXPECT_EQ(gBattleStruct->castoria.wishUsed, TRUE);
         Test_RestorePlayerBattleStats();
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 100);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP), sOriginalMaxHp);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), sOriginalHp);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP), sOriginalMaxHp);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), sOriginalHp);
     }
 }
 
@@ -125,8 +125,8 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Reduction switching clears loss but preserve
     } THEN {
         EXPECT_EQ(player->level, 88); // Fresh original mon, next shared tick is 12.
         EXPECT_EQ(gBattleStruct->reduction.nextLoss, 13);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 100);
-        EXPECT_EQ(GetMonData(&gPlayerParty[1], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][1], MON_DATA_LEVEL), 100);
     }
 }
 
@@ -158,9 +158,9 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction uses exact lower-level stats without 
         TURN { MOVE(player, MOVE_CELEBRATE); }
     } THEN {
         // The runner assigns artificial turn-order speeds when none are supplied.
-        CalculateMonStats(&gPlayerParty[0]);
-        CopyMonLevelAndBaseStatsToBattleMon(0, &gPlayerParty[0]);
-        struct Pokemon original = gPlayerParty[0];
+        CalculateMonStats(&gParties[B_TRAINER_PLAYER][0]);
+        CopyMonLevelAndBaseStatsToBattleMon(0, &gParties[B_TRAINER_PLAYER][0], TRUE);
+        struct Pokemon original = gParties[B_TRAINER_PLAYER][0];
         struct Pokemon scratch = original;
         CalculateMonStatsAtLevel(&scratch, 70);
         ReduceTo(0, 30);
@@ -171,8 +171,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction uses exact lower-level stats without 
         EXPECT_EQ(player->speed, GetMonData(&scratch, MON_DATA_SPEED));
         EXPECT_EQ(player->spAttack, GetMonData(&scratch, MON_DATA_SPATK));
         EXPECT_EQ(player->spDefense, GetMonData(&scratch, MON_DATA_SPDEF));
-        EXPECT_EQ(memcmp(&original, &gPlayerParty[0], sizeof(original)), 0);
-        RecalcBattlerStats(0, &gPlayerParty[0], FALSE);
+        EXPECT_EQ(memcmp(&original, &gParties[B_TRAINER_PLAYER][0], sizeof(original)), 0);
+        RecalcBattlerStats(0, &gParties[B_TRAINER_PLAYER][0], FALSE);
         EXPECT_EQ(player->level, 70);
         EXPECT_EQ(player->maxHP, GetMonData(&scratch, MON_DATA_MAX_HP));
     }
@@ -196,7 +196,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction rescaling alone never manufactures HP
         }
         ReductionFinishBattle();
         EXPECT_EQ(player->hp, originalHp);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), originalHp);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), originalHp);
     }
 }
 
@@ -208,7 +208,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction normalizes full controller writes and
     } WHEN {
         TURN { MOVE(player, MOVE_CELEBRATE); }
     } THEN {
-        u32 exp = GetMonData(&gPlayerParty[0], MON_DATA_EXP);
+        u32 exp = GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_EXP);
         u32 maxHp = player->maxHP;
         ReduceTo(0, 60);
         player->hp /= 2;
@@ -218,16 +218,16 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction normalizes full controller writes and
         EXPECT_EQ(packet.level, 100);
         EXPECT_EQ(packet.experience, exp);
         EXPECT_EQ(packet.maxHP, maxHp);
-        EXPECT_EQ(packet.attack, GetMonData(&gPlayerParty[0], MON_DATA_ATK));
+        EXPECT_EQ(packet.attack, GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_ATK));
         EXPECT_LE(abs((s32)packet.hp * player->maxHP - (s32)player->hp * (s32)maxHp), player->maxHP);
         packet = *player;
         packet.experience = 1;
         BtlController_EmitSetMonData(0, B_COMM_TO_CONTROLLER, REQUEST_ALL_BATTLE, 0, sizeof(packet), &packet);
         BtlController_HandleSetMonData(0);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 100);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_EXP), exp);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP), maxHp);
-        u16 canonicalHp = GetMonData(&gPlayerParty[0], MON_DATA_HP);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_EXP), exp);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP), maxHp);
+        u16 canonicalHp = GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP);
         ReductionFinishBattle();
         EXPECT_EQ(player->hp, canonicalHp);
     }
@@ -247,7 +247,7 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Reduction healing items heal displayed HP")
     } SCENE {
         HP_BAR(player, damage: -20);
     } THEN {
-        EXPECT_GT(GetMonData(&gPlayerParty[0], MON_DATA_HP), sOriginalHp + 20);
+        EXPECT_GT(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), sOriginalHp + 20);
     }
 }
 
@@ -262,7 +262,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction protects Polymorph originals in both 
     } WHEN {
         TURN { MOVE(player, MOVE_GROWL); MOVE(opponent, MOVE_CELEBRATE); }
     } THEN {
-        struct Pokemon *mon = &gPlayerParty[0];
+        struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][0];
         u32 exp = GetMonData(mon, MON_DATA_EXP) + 17;
         SetMonData(mon, MON_DATA_EXP, &exp);
         StringCopy(mon->box.nickname, COMPOUND_STRING("Original"));
@@ -337,7 +337,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction Break Bars retain loss and store cano
         EXPECT_EQ(GetBattlerPartyState(0)->breakBarSavedMaxHp[0], maxHp);
         EXPECT_EQ(GetBattlerPartyState(0)->breakBarSavedHp[0], hp);
         EXPECT_EQ(player->level, 70);
-        RecalcBattlerStats(0, &gPlayerParty[0], FALSE);
+        RecalcBattlerStats(0, &gParties[B_TRAINER_PLAYER][0], FALSE);
         EXPECT_EQ(player->level, 70);
         EXPECT_EQ(gBattleStruct->reduction.occupant[0].lostLevels, 30);
         // Reveal the saved layer through the same native used by break scripts.
@@ -370,7 +370,7 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction faint cleanup never revives and reviv
         player->hp = 0;
         ReductionResetOccupant(0);
         EXPECT_EQ(player->hp, 0);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 0);
         EXPECT_EQ(player->level, 100);
         EXPECT_EQ(gBattleStruct->reduction.occupant[0].lostLevels, 0);
         EXPECT_EQ(ReductionIsActive(), TRUE);
@@ -426,12 +426,12 @@ AI_SINGLE_BATTLE_TEST("Arcanum Wish Reduction survives gimmick activation and Dy
         TURN { MOVE(player, MOVE_CELEBRATE); }
     } THEN {
         EXPECT_EQ(player->level, 54);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 100);
         EXPECT_EQ(player->hp, player->maxHP);
         if (gimmick == GIMMICK_DYNAMAX)
         {
             EXPECT_EQ(GetActiveGimmick(0), GIMMICK_NONE);
-            EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP), sOriginalMaxHp);
+            EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP), sOriginalMaxHp);
         }
     }
 }
@@ -465,8 +465,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction survives Transform without copying re
         ReduceTo(0, 50);
         EXPECT_EQ((u32)player->volatiles.transformed, TRUE);
         EXPECT_EQ(player->species, SPECIES_VENUSAUR);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_SPECIES), SPECIES_DITTO);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 100);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_DITTO);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 100);
         EXPECT_LT(player->attack, copiedAttack);
         ReductionResetOccupant(0);
         EXPECT_EQ(player->attack, copiedAttack);
@@ -494,10 +494,10 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction and Polymorph cooperate with Break Ba
         ReduceTo(0, 40);
         EXPECT_EQ(GrantSavedBreakBar(0), TRUE);
         Test_RestorePlayerBattleStats();
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_SPECIES), SPECIES_VENUSAUR);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 70);
-        u32 expectedHp = min(202, GetMonData(&gPlayerParty[0], MON_DATA_MAX_HP));
-        EXPECT_LE(abs((s32)GetMonData(&gPlayerParty[0], MON_DATA_HP) - (s32)expectedHp), 4);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_VENUSAUR);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 70);
+        u32 expectedHp = min(202, GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_MAX_HP));
+        EXPECT_LE(abs((s32)GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP) - (s32)expectedHp), 4);
     }
 }
 
@@ -575,12 +575,12 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction genuine level gains preserve the accu
     } THEN {
         ReduceTo(0, 30);
         u32 exp = gExperienceTables[gSpeciesInfo[SPECIES_VENUSAUR].growthRate][51];
-        SetMonData(&gPlayerParty[0], MON_DATA_EXP, &exp);
-        CalculateMonStats(&gPlayerParty[0]);
-        CopyMonLevelAndBaseStatsToBattleMon(0, &gPlayerParty[0]);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 51);
+        SetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_EXP, &exp);
+        CalculateMonStats(&gParties[B_TRAINER_PLAYER][0]);
+        CopyMonLevelAndBaseStatsToBattleMon(0, &gParties[B_TRAINER_PLAYER][0], TRUE);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 51);
         EXPECT_EQ(player->level, 21);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_EXP), exp);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_EXP), exp);
     }
 }
 
@@ -597,8 +597,8 @@ SINGLE_BATTLE_TEST("Arcanum Wish Reduction Polymorph cleanup retains a genuine f
         player->hp = 0;
         ReductionFinishBattle();
         EXPECT_EQ(TryRestorePolymorphedMon(0), TRUE);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_SPECIES), SPECIES_VENUSAUR);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), 70);
-        EXPECT_EQ(GetMonData(&gPlayerParty[0], MON_DATA_HP), 0);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_SPECIES), SPECIES_VENUSAUR);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_LEVEL), 70);
+        EXPECT_EQ(GetMonData(&gParties[B_TRAINER_PLAYER][0], MON_DATA_HP), 0);
     }
 }
