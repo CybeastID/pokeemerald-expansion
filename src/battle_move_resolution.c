@@ -3096,7 +3096,9 @@ static bool32 TryMoveDamageUpdate(struct BattleCalcValues *cv)
                     gBattleMons[cv->battlerDef].volatiles.kazuradropGuts = 0;
                     DestroyBattleStatusIcon(cv->battlerDef, BATTLE_STATUS_ICON_GUTS);
                     gBattleMons[cv->battlerDef].hp = gBattleMons[cv->battlerDef].maxHP / 2;
+                    #if !IS_FRLG
                     FlagSet(FLAG_GUTS_SNAP);
+                    #endif
                     BtlController_EmitHealthBarUpdate(cv->battlerDef, B_COMM_TO_CONTROLLER, INSTANT_HP_BAR_SNAP);
                     gBattleSpritesDataPtr->battleBars[cv->battlerDef].currValue = gBattleMons[cv->battlerDef].hp;
                     MarkBattlerForControllerExec(cv->battlerDef);
