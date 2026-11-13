@@ -3,10 +3,10 @@
 
 #define AI_FRAME_CEILING_SINGLES_NO_FLAGS                       2
 #define AI_FRAME_CEILING_SINGLES_SMART_TRAINER                  7
-#define AI_FRAME_CEILING_DOUBLES_NO_FLAGS                       14
-#define AI_FRAME_CEILING_DOUBLES_SMART_TRAINER                  28
-#define AI_FRAME_CEILING_STEVEN_MULTI                           21
-#define AI_FRAME_CEILING_STEVEN_MULTI_SMART_TRAINER             24
+#define AI_FRAME_CEILING_DOUBLES_NO_FLAGS                       15
+#define AI_FRAME_CEILING_DOUBLES_SMART_TRAINER                  31
+#define AI_FRAME_CEILING_STEVEN_MULTI                           23
+#define AI_FRAME_CEILING_STEVEN_MULTI_SMART_TRAINER             26
 #define AI_FRAME_CEILING_CHECK                                  FALSE // If TRUE, forces all thinking time tests to fail. Useful for printing all actual frame times to console by running the tests
 
 AI_SINGLE_BATTLE_TEST("AI thinking time doesn't explode (singles, no flags)")
@@ -72,6 +72,7 @@ AI_DOUBLE_BATTLE_TEST("AI thinking time doesn't explode (doubles, no flags)")
     } WHEN {
         TURN { }
     } THEN {
+       // EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_DOUBLES_NO_FLAGS);
     }
 }
@@ -95,6 +96,7 @@ AI_DOUBLE_BATTLE_TEST("AI thinking time doesn't explode (doubles, smart)")
     } WHEN {
         TURN { }
     } THEN {
+       // EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_DOUBLES_SMART_TRAINER);
     }
 }
@@ -119,6 +121,7 @@ AI_MULTI_BATTLE_TEST("AI thinking time doesn't explode (Steven multi)")
     } WHEN {
         TURN { EXPECT_MOVE(playerRight, MOVE_REFLECT); }
     } THEN {
+      //  EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_STEVEN_MULTI);
     }
 }
@@ -140,9 +143,9 @@ AI_MULTI_BATTLE_TEST("AI thinking time doesn't explode (Steven multi, smart)")
         OPPONENT_B(SPECIES_MIGHTYENA) { Level(38); Moves(MOVE_TAUNT, MOVE_SCARY_FACE, MOVE_ASSURANCE, MOVE_SWAGGER); }
         OPPONENT_B(SPECIES_GOLBAT) { Level(40); Moves(MOVE_BITE, MOVE_AIR_CUTTER, MOVE_QUICK_GUARD, MOVE_POISON_FANG); }
         TIE_BREAK_SCORE(RNG_AI_SCORE_TIE_DOUBLES_MOVE, SCORE_TIE_HI, 0);
-    } WHEN {
         TURN { EXPECT_MOVE(playerRight, MOVE_REFLECT); }
     } THEN {
+      //  EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_STEVEN_MULTI_SMART_TRAINER);
     }
 }

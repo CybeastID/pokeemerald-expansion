@@ -59,6 +59,7 @@ TEST("Tests initialize a terminated player name")
 
 WILD_BATTLE_TEST("Shiny wild battle tests preserve adjacent TV shows")
 {
+    
     GIVEN {
         gSaveBlock1Ptr->tvShows[NUM_NORMAL_TVSHOW_SLOTS + 1].common.kind = TVSHOW_FISHING_ADVICE;
         gSaveBlock1Ptr->tvShows[NUM_NORMAL_TVSHOW_SLOTS + 1].common.active = TRUE;

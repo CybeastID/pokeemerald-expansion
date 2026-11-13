@@ -130,8 +130,9 @@ SINGLE_BATTLE_TEST("Thief and Covet don't steal target's held item if target has
     }
 }
 
-WILD_BATTLE_TEST("Thief and Covet steal target's held item and it's added to Bag in wild battles (Gen 9+)")
+WILD_BATTLE_TEST("Thief and Covet steal target's held item and it's added to Bag in wild battles (Gen 9+)") // 
 {
+
     enum Move move;
     PARAMETRIZE { move = MOVE_THIEF; }
     PARAMETRIZE { move = MOVE_COVET; }
@@ -148,6 +149,7 @@ WILD_BATTLE_TEST("Thief and Covet steal target's held item and it's added to Bag
     } THEN {
         EXPECT_EQ(player->item, ITEM_NONE);
         EXPECT_EQ(opponent->item, ITEM_NONE);
+    } AFTER_CLEANUP {
         EXPECT_EQ(TRUE, CheckBagHasItem(ITEM_HYPER_POTION, 1));
     }
 }
