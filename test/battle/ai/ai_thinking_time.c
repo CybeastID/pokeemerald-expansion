@@ -72,7 +72,6 @@ AI_DOUBLE_BATTLE_TEST("AI thinking time doesn't explode (doubles, no flags)")
     } WHEN {
         TURN { }
     } THEN {
-       // EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_DOUBLES_NO_FLAGS);
     }
 }
@@ -96,7 +95,6 @@ AI_DOUBLE_BATTLE_TEST("AI thinking time doesn't explode (doubles, smart)")
     } WHEN {
         TURN { }
     } THEN {
-       // EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_DOUBLES_SMART_TRAINER);
     }
 }
@@ -121,7 +119,6 @@ AI_MULTI_BATTLE_TEST("AI thinking time doesn't explode (Steven multi)")
     } WHEN {
         TURN { EXPECT_MOVE(playerRight, MOVE_REFLECT); }
     } THEN {
-      //  EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_STEVEN_MULTI);
     }
 }
@@ -145,7 +142,6 @@ AI_MULTI_BATTLE_TEST("AI thinking time doesn't explode (Steven multi, smart)")
         TIE_BREAK_SCORE(RNG_AI_SCORE_TIE_DOUBLES_MOVE, SCORE_TIE_HI, 0);
         TURN { EXPECT_MOVE(playerRight, MOVE_REFLECT); }
     } THEN {
-      //  EXPECT_LT(gBattleStruct->aiDelayFrames, gBattleStruct->aiDelayCycles);
         EXPECT_LE(gBattleStruct->aiDelayFrames, AI_FRAME_CEILING_CHECK ? 0 : AI_FRAME_CEILING_STEVEN_MULTI_SMART_TRAINER);
     }
 }
